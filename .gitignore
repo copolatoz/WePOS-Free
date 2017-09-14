@@ -12,6 +12,7 @@
 uploads/
 backup/
 migrate/
+db/
 apps/
 .buildpath
 .project

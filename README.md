@@ -24,6 +24,7 @@ copy config.php.org --> config.php
 copy database.php.org --> database.php (edit isi file, sesuaikan dengan nama database)
 
 
+3. import database: db/database_wepos_free.sql
 
 
 #silahkan Donasi untuk versi yang lebih baik ^^
