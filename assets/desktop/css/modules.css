@@ -1,0 +1,166 @@
+
+/*shortcut-dt-view-style*/
+.open-column-shortcut{float:left; width:120px;margin-right:10px;text-align:center;}
+
+.ux-desktop-shortcut,.ux-preferences-shortcut {
+    cursor: pointer;
+    text-align: center;
+    padding: 8px;
+    margin: 8px;
+    width: 96px;
+    height: 84px;
+	border:1px solid rgba(0,0,0,0);
+	float: left;
+}
+
+.ux-desktop-shortcut-icon, .ux-preferences-shortcut-icon {
+    width: 60px;
+    height: 40px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+	background-position: center;
+	color:#ccc;
+	text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.6);
+	margin: 0 auto;
+	/*background-size:36px*/
+}
+
+.ux-desktop-shortcut-text, .ux-preferences-shortcut-text {
+    font: normal 12px tahoma,arial,verdana,sans-serif;
+    text-decoration: none;
+    padding-top: 5px;
+    color: #fff;
+	text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.6);
+}
+
+.ux-desktop-shortcut.x-view-over, .preferences-shortcut-over{
+    border:1px solid rgba(0,0,0,0.2);
+	background-color: rgba(0,0,0,0.2);	
+	-moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -khtml-border-radius: 4px;
+    border-radius: 4px;
+	
+}
+
+.ux-desktop-shortcut.x-view-over .ux-desktop-shortcut-text, .preferences-shortcut-over .ux-preferences-shortcut-text {
+    text-decoration: none;
+	color:#fff;
+}
+
+/*
+.ux-desktop-shortcut.x-view-over .ux-desktop-shortcut-icon, .preferences-shortcut-over .ux-preferences-shortcut-icon {	
+	-webkit-animation: dohover 100ms;
+	-moz-animation: dohover 100ms;
+	-o-animation: dohover 100ms;
+	animation: dohover 100ms;
+	color:#fff;
+	font-size: 3.4em;
+}
+
+@-moz-keyframes dohover {
+  from {color:#ccc;font-size: 3em;}
+  to {color:#fff;font-size: 3.4em;}
+}
+@-webkit-keyframes dohover {
+  from {color:#ccc;font-size: 3em;}
+  to {color:#fff;font-size: 3.4em;}
+}
+@-o-keyframes dohover {
+  from {color:#ccc;font-size: 3em;}
+  to {color:#fff;font-size: 3.4em;}
+}
+@keyframes dohover {
+  from {color:#ccc;font-size: 3em;}
+  to {color:#fff;font-size: 3.4em;}
+}
+
+.ux-start-button.x-btn-default-toolbar-small-over .x-btn-glyph,
+.x-btn-toolbar.x-btn-default-toolbar-small-over .x-btn-glyph {color:#000;opacity:0.8;}
+*/
+
+/*PRODUCT VIEW*/
+.ux-product-list {
+    cursor: pointer;
+    text-align: center;
+    padding: 2px;
+    margin: 8px;
+    width: 160px;
+    height: 126px;
+	border:1px solid rgba(0,0,0,0);
+	float: left;
+	display: inline-block;
+	border:1px solid rgba(0,0,0,0.2);
+	background-color: rgba(0,0,0,0.2);	
+	-moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -khtml-border-radius: 4px;
+    border-radius: 4px;
+}
+
+.ux-product-list-icon {
+    max-width: 160px;
+    height: 120px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+	background-position: center;
+	color:#ccc;
+	text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.6);
+	margin: 0 auto;
+	position: relative;
+	/*background-size:36px*/
+}
+
+.ux-product-list-icon img{height: 120px;}
+
+.ux-product-list-text {
+    font: normal 12px tahoma,arial,verdana,sans-serif;
+    text-decoration: none;
+    padding: 5px;
+    color: #fff;
+	text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.6);
+	background: none repeat scroll 0 0 rgba(0, 0, 0, 0.9);
+	width: 154px;
+	position: absolute;
+	bottom:0px;
+	left:0x;
+}
+
+.product-list-over{
+    border:1px solid rgba(255,255,255,0.8);
+	background-color: rgba(255,255,255,0.8);	
+	-moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -khtml-border-radius: 4px;
+    border-radius: 4px;
+	
+}
+
+.product-list-over .ux-product-list-text {
+    text-decoration: none;
+	color:#fff;
+}
+
+/*BUTTON ENV*/
+.button-billing .x-btn-inner {
+    font-size:15px;
+}
+
+.button-category .x-btn-inner {
+    font-size:14px;
+	margin-right: 10px;
+	text-align: center;
+}
+
+/*COSTUMIZE*/
+#QuickStartToolbar a#QuickStartToolbar-menu-trigger{margin-top:3px;}
+#rightCashierCategory div#rightCashierCategory-before-scroller, 
+#rightCashierCategory div#rightCashierCategory-after-scroller{
+	margin-top: 16px !important;
+}
+#rightPanelCashier-body{overflow:auto;}
+
+/*list table*/
+.ux-product-list.list-dttable{height: 76px;}
+.ux-product-list-icon.list-dttable{height: 70px;}
+.ux-product-list-text.list-dttable{padding: 20px 10px 10px 10px; height:70px;}
