@@ -1,0 +1,419 @@
+
+/* 16x16 */
+.facebook-app-start-icon{
+	background:transparent url(../images/icons/16/facebook.png) 0 0 no-repeat;
+}
+.twitter-app-start-icon{
+	background:transparent url(../images/icons/16/twitter.png) 0 0 no-repeat;
+}
+.notepad-app-start-icon{
+	background:transparent url(../images/icons/16/notepad.png) 0 0 no-repeat;
+}
+.safari-app-start-icon{
+	background:transparent url(../images/icons/16/Safari.png) 0 0 no-repeat;
+}
+.messenger-app-start-icon{
+	background:transparent url(../images/icons/16/SMS.png) 0 0 no-repeat;
+}
+.explorer-app-start-icon{
+	background:transparent url(../images/icons/16/folder.png) 0 0 no-repeat;
+}
+
+
+.roles-icon{
+	background:transparent url(../images/icons/16/vcard_edit.png) 0 0 no-repeat;
+}
+.clients-icon{
+	background:transparent url(../images/icons/16/user_suit.png) 0 0 no-repeat;
+}
+.users-icon{
+	background:transparent url(../images/icons/16/user_edit.png) 0 0 no-repeat;
+}
+.applications-icon{
+	background:transparent url(../images/icons/16/applications-blue.png) 0 0 no-repeat;
+}
+.groups-icon-16{
+	background:transparent url(../images/icons/16/user-detective.png) 0 0 no-repeat;
+}
+.permissions-icon-16{
+	background:transparent url(../images/icons/16/key--arrow.png) 0 0 no-repeat;
+}
+
+
+/* SYSTEM ICONS 16x16 */
+.extapp-start-button-icon{
+	background:transparent url(../images/startmenu/extapp-logo-small.png) 0 center no-repeat !important;
+}
+.extapp-folder-icon{
+	background:transparent url(../images/icons/16/folder.png) 0 0 no-repeat;
+}
+.extapp-desktop-icon{
+	background:transparent url(../images/icons/16/desktop.png) 0 0 no-repeat;
+}
+.extapp-settings-icon{
+	background:transparent url(../images/icons/16/System.png) 0 0 no-repeat;
+}
+.extapp-gear-icon{
+	background:transparent url(../images/icons/16/gear.png) 0 0 no-repeat;
+}
+.extapp-logout-icon{
+	background:transparent url(../images/icons/16/User.png) 0 0 no-repeat;
+}
+.extapp-add-icon-16{
+	background:transparent url(../images/icons/16/add.png) 0 0 no-repeat;
+}
+.extapp-delete-icon-16,.extapp-failure-icon-16{
+	background:transparent url(../images/icons/16/delete.png) 0 0 no-repeat;
+}
+.extapp-success-icon-16{
+	background:transparent url(../images/icons/16/accept.png) 0 0 no-repeat;
+}
+
+
+/* ACTIONS ICONS 32x32 */
+.save-action-icon{
+	background:transparent url('../images/icons/32/floppy_disk_48.png') 0 0 no-repeat;
+}
+.new-action-icon{
+	background:transparent url('../images/icons/32/paper_48.png') 0 0 no-repeat;
+}
+.delete-action-icon{
+	background:transparent url('../images/icons/32/cancel_48.png') 0 0 no-repeat;
+}
+.export-action-icon{
+	background:transparent url('../images/icons/32/paper_content_pencil_48.png') 0 0 no-repeat;
+}
+.print-action-icon{
+	background:transparent url('../images/icons/32/printer_48.png') 0 0 no-repeat;
+}
+.prev-action-icon{
+	background:transparent url('../images/icons/32/arrow_left_green_48.png') 0 0 no-repeat;
+}
+.next-action-icon{
+	background:transparent url('../images/icons/32/arrow_right_green_48.png') 0 0 no-repeat;
+}
+.search-name-action-icon{
+	background:transparent url('../images/icons/32/user_48.png') 0 0 no-repeat;
+}
+.search-rfc-action-icon{
+	background:transparent url('../images/icons/32/tabs_48.png') 0 0 no-repeat;
+}
+.search-phone-action-icon{
+	background:transparent url('../images/icons/32/app_48.png') 0 0 no-repeat;
+}
+.search-nip-action-icon{
+	background:transparent url('../images/icons/32/book_48.png') 0 0 no-repeat;
+}
+.close-action-icon{
+	background:transparent url('../images/icons/32/cross_48.png') 0 0 no-repeat;
+}
+
+/* ICONS 48x48 */
+.roles-app-shorcut-icon{
+	background:transparent url('../images/icons/48/im48x48.png') 0 0 no-repeat;
+}
+
+/*general - button*/
+
+.btn-exit {
+	background-image:url(../icons/general/exit.png) !important;
+}
+.btn-add {
+	background-image:url(../icons/general/add.png) !important;
+}
+.btn-add-multiple {
+	background-image:url(../icons/general/add-multiple.png) !important;
+}
+.btn-edit {
+	background-image:url(../icons/general/edit.png) !important;
+}
+.btn-cancel {
+	background-image:url(../icons/general/cross.png) !important;
+}
+.btn-delete {
+	background-image:url(../icons/general/delete.png) !important;
+}
+.btn-posting {
+	background-image:url(../icons/general/posting.png) !important;
+}
+.btn-refresh {
+	background-image:url(../icons/general/refresh.png) !important;
+}
+.btn-search {
+	background-image:url(../icons/general/search.png) !important;
+}
+.btn-search2 {
+	background-image:url(../icons/general/search2.png) !important;
+}
+.btn-search2_remove {
+	background-image:url(../icons/general/search2_remove.png) !important;
+}
+
+.btn-info-blue {
+	background-image:url(../icons/general/info-blue.png) !important;
+}
+
+.btn-info-white {
+	background-image:url(../icons/general/info-white.png) !important;
+}
+.btn-print {
+	background-image:url(../icons/general/printer.png) !important;
+}
+.btn-reset {
+	background-image:url(../icons/general/reset.png) !important;
+}
+.btn-clear {
+	background-image:url(../icons/general/clear.png) !important;
+}
+.btn-select {
+	background-image:url(../icons/general/ok.png) !important;
+}
+.btn-next {
+	background-image:url(../icons/general/next.png) !important;
+}
+.btn-save {
+	background-image:url(../icons/general/save.png) !important;
+}
+.btn-upload {
+	background-image:url(../icons/general/inbox_upload.png) !important;
+}
+.btn-excel {
+	background-image:url(../icons/fam/page_excel.png) !important;
+}
+
+
+/*general - icon*/
+.icon-exit {
+	background-image:url(../icons/general/exit.png) !important;
+}
+.icon-add {
+	background-image:url(../icons/general/add.png) !important;
+}
+.icon-add-multiple {
+	background-image:url(../icons/general/add-multiple.png) !important;
+}
+.icon-edit {
+	background-image:url(../icons/general/edit.png) !important;
+}
+.icon-cancel {
+	background-image:url(../icons/general/cross.png) !important;
+}
+.icon-delete {
+	background-image:url(../icons/general/delete.png) !important;
+}
+.icon-posting {
+	background-image:url(../icons/general/posting.png) !important;
+}
+.icon-refresh {
+	background-image:url(../icons/general/refresh.png) !important;
+}
+.icon-search {
+	background-image:url(../icons/general/search.png) !important;
+}
+.icon-search2 {
+	background-image:url(../icons/general/search2.png) !important;
+}
+.icon-search2_remove {
+	background-image:url(../icons/general/search2_remove.png) !important;
+}
+
+.icon-info-blue {
+	background-image:url(../icons/general/info-blue.png) !important;
+}
+
+.icon-info-white {
+	background-image:url(../icons/general/info-white.png) !important;
+}
+.icon-print {
+	background-image:url(../icons/general/printer.png) !important;
+}
+.icon-reset {
+	background-image:url(../icons/general/reset.png) !important;
+}
+.icon-clear {
+	background-image:url(../icons/general/clear.png) !important;
+}
+.icon-select {
+	background-image:url(../icons/general/ok.png) !important;
+}
+.icon-next {
+	background-image:url(../icons/general/next.png) !important;
+}
+.icon-save {
+	background-image:url(../icons/general/save.png) !important;
+}
+.icon-upload {
+	background-image:url(../icons/general/inbox_upload.png) !important;
+}
+
+/*icon Modules*/
+.icon-role-modules {
+    background-image:url( ../icons/fam/user_silhouette.png ) !important;
+}
+.icon-user-data {
+    background-image:url( ../icons/fam/administrator.png ) !important;
+}
+.icon-link {
+    background-image:url( ../icons/fam/application_link2.png ) !important;
+}
+.icon-multilang {
+    background-image:url( ../icons/fam/language.png ) !important;
+}
+.icon-category {
+    background-image:url( ../icons/fam/category.png ) !important;
+}
+.icon-webmenu {
+    background-image:url( ../icons/fam/menu.png ) !important;
+}
+.icon-embedvideo {
+    background-image:url( ../icons/fam/movies.png ) !important;
+}
+.icon-webslider {
+    background-image:url( ../icons/fam/images_slider.png ) !important;
+}
+.icon-page-content {
+    background-image:url( ../icons/fam/page-content.png ) !important;
+}
+.icon-page-content-multiple {
+    background-image:url( ../icons/fam/document_copies.png ) !important;
+}
+.icon-gallery {
+    background-image:url( ../icons/fam/app_gallery.png ) !important;
+}
+.icon-news {
+    background-image:url( ../icons/fam/newspaper2.png ) !important;
+}
+.icon-rating {
+    background-image:url( ../icons/fam/page_white_star2.png ) !important;
+}
+.icon-paspor-ol {
+    background-image:url( ../icons/fam/paspor-ol.png ) !important;
+}
+.icon-pengaduan {
+    background-image:url( ../icons/fam/pengaduan.png ) !important;
+}
+.icon-smsgateway {
+    background-image:url( ../icons/fam/phone.png ) !important;
+}
+.icon-calevent {
+    background-image:url( ../icons/fam/calendar_view_month2.png ) !important;
+}
+.icon-websetting {
+    background-image:url( ../icons/fam/application_view_tile.png ) !important;
+}
+.icon-download {
+    background-image:url( ../icons/fam/drive-download.png ) !important;
+}
+.icon-file-manager {
+    background-image:url( ../icons/fam/application-icon-large.png ) !important;
+}
+.icon-application-form {
+    background-image:url( ../icons/fam/application_form.png ) !important;
+}
+.icon-reports {
+    background-image:url( ../icons/fam/reports.png ) !important;
+}
+.icon-flag {
+    background-image:url( ../icons/fam/flag_red.png ) !important;
+}
+.icon-building {
+    background-image:url( ../icons/fam/building.png ) !important;
+}
+.icon-group-error {
+    background-image:url( ../icons/fam/group_error.png ) !important;
+}
+.icon-drive-user {
+    background-image:url( ../icons/fam/drive_user.png ) !important;
+}
+.icon-user-org {
+    background-image:url( ../icons/fam/user.png ) !important;
+}
+.icon-user-gray {
+    background-image:url( ../icons/fam/user_gray.png ) !important;
+}
+.icon-user-suit {
+    background-image:url( ../icons/fam/user_suit.png ) !important;
+}
+.icon-vcard {
+    background-image:url( ../icons/fam/vcard.png ) !important;
+}
+.icon-chart-bar {
+    background-image:url( ../icons/fam/chart_bar.png ) !important;
+}
+.icon-bricks {
+    background-image:url( ../icons/fam/bricks.png ) !important;
+}
+.icon-pesawat {
+    background-image:url( ../icons/fam/pesawat.png ) !important;
+}
+.icon-kapal {
+    background-image:url( ../icons/fam/kapal.png ) !important;
+}
+.icon-penolakan {
+    background-image:url( ../icons/fam/penolakan.png ) !important;
+}
+.icon-database {
+    background-image:url( ../icons/fam/database.png ) !important;
+}
+.icon-database-blue {
+    background-image:url( ../icons/fam/database_blue.png ) !important;
+}
+.icon-database-green {
+    background-image:url( ../icons/fam/database_green.png ) !important;
+}
+.icon-database-red {
+    background-image:url( ../icons/fam/database_red.png ) !important;
+}
+.icon-database-yellow {
+    background-image:url( ../icons/fam/database_yellow.png ) !important;
+}
+.icon-database-black {
+    background-image:url( ../icons/fam/database_black.png ) !important;
+}
+.icon-world {
+    background-image:url( ../icons/fam/world.png ) !important;
+}
+.icon-penjamin {
+    background-image:url( ../icons/fam/penjamin.png ) !important;
+}
+.icon-user-medical {
+    background-image:url( ../icons/fam/user-medical.png ) !important;
+}
+.icon-preferences {
+    background-image:url( ../icons/fam/preferences.png ) !important;
+}
+.icon-wallpaper {
+    background-image:url( ../icons/fam/wallpaper.png ) !important;
+}
+.icon-wallpaper-32 {
+    background-image:url( ../icons/launcher/wallpaper.png ) !important;
+}
+.icon-about {
+    background-image:url( ../icons/fam/about.png ) !important;
+}
+.icon-about-32 {
+    background-image:url( ../icons/launcher/about.png ) !important;
+}
+.icon-logout {
+    background-image:url( ../icons/fam/lock.png ) !important;
+}
+.icon-logout-32 {
+    background-image:url( ../icons/launcher/lock.png ) !important;
+}
+.icon-user-business-gray {
+    background-image:url( ../icons/fam/user-business-gray.png ) !important;
+}
+.user-32 {
+    background-image:url( ../icons/launcher/user.png ) !important;
+}
+
+/*other icon*/
+.icon-money {
+    background-image:url( ../icons/fam/money.png ) !important;
+}
+.icon-lock {
+    background-image:url( ../icons/fam/lock-warning.png ) !important;
+}
+.icon-lock-open {
+    background-image:url( ../icons/fam/lock-unlock.png ) !important;
+}

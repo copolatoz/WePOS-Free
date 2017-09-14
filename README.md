@@ -13,12 +13,18 @@ Untuk Instalasi bisa baca di dokumentasi (login website, wepos.id)
 2. copy dan rename file:
 
 copy index.php.org --> index.php
+
 copy .htaccess.org --> .htaccess (edit isi file, sesuaikan dengan nama folder)
 
-folder /applications/config
+#folder /applications/config
 copy app_config.php.org --> app_config.php
+
 copy config.php.org --> config.php
+
 copy database.php.org --> database.php (edit isi file, sesuaikan dengan nama database)
+
+
+
 
 #silahkan Donasi untuk versi yang lebih baik ^^
 

@@ -1,0 +1,219 @@
+.report_area_LX{
+      background-color: white;
+      font-size:10px;
+      padding:5px;
+      font-family: arial;
+      width: 99%;
+} 
+
+.report_area_LX table {margin-bottom:5px;}
+
+.report_area_LX table tr.tbl-title td{
+	text-align: left; 
+	font-weight:bold; 
+	font-size:16px;
+}
+.report_area_LX table tr.tbl-title td .title_lap{
+	text-align: left; 
+	font-weight:bold; 
+	font-size:16px;
+}
+.report_area_LX table tr.tbl-title td .title_lap.title_rs{
+	text-align: left; 
+	font-weight:bold; 
+	font-size:16px;
+	padding-top:0px;
+}
+.report_area_LX table tr.tbl-subtitle td{
+	text-align: left; 
+	font-weight:bold; 
+	font-size:16px;
+}
+.report_area_LX table tr.tbl-subtitle td .title_lap.title_daftar_rincian{
+	text-align: center; 
+	font-weight:bold; 
+	font-size:15px;
+	padding-bottom:0px;
+	border-bottom: 1px solid #000;
+	width:310px;
+	margin: 0px auto;
+}
+.report_area_LX table tr.tbl-subtitle td .title_lap.title_daftar_rincian_sementara{
+	text-align: center; 
+	font-weight:bold; 
+	font-size:15px;
+	padding-bottom:0px;
+	border-bottom: 1px solid #000;
+	width:410px;
+	margin: 0px auto;
+}
+.report_area_LX table tr.tbl-subtitle td .title_lap.title_no_invoice{
+	font-weight:bold; 
+	font-size:15px;
+	padding-bottom:20px;
+	width:350px;
+	margin: 0px auto;
+	text-align:center;
+}
+.report_area_LX table tr.tbl-subtitle td .title_lap.title_no_invoice_sementara{
+	font-weight:bold; 
+	font-size:16px;
+	padding-bottom:20px;
+	width:360px;
+	margin: 0px auto;
+	text-align:center;
+}
+.report_area_LX div.subheader{
+	font-size:10px;
+}
+
+.report_area_LX div.fleft{
+	float:left;  
+}      
+
+.report_area_LX div.fright{
+	float:right;  
+}       
+
+.report_area_LX div.fclear{
+	clear:both;  
+}      
+                           
+.report_area_LX table tr td.tbltitle{
+	font-weight:bold;        	 
+	font-size:14px;
+	vertical-align: top;
+}                           
+.report_area_LX table tr td.kode_rs{
+	font-weight:bold; 
+	border:1px solid #000;
+	text-align: center;        	 
+	font-size:10px;
+	width:20px;
+} 
+
+.report_area_LX table tr.tbl-header td{
+	vertical-align: middle; 
+	text-align: center; 
+	/*border-right:1px solid #000;*/
+	border-top:1px solid #000;
+	border-bottom:1px solid #000;
+	font-size:16px;
+	line-height:16px;
+	font-weight: bold;
+	padding:5px;
+	/*background-color:#e8e8e8;*/
+}
+.report_area_LX table tr.tbl-header td.first{
+	border-top:1px solid #000;
+	border-bottom:1px solid #000;
+	font-size:16px;
+	line-height:16px;
+	padding:5px;
+	/*background-color:#e8e8e8;*/
+}
+
+.report_area_LX table tr.tbl-header td.xcenter{
+	text-align:center; 
+}
+.report_area_LX table tr.tbl-header td.xleft{
+	text-align:left; 
+}
+.report_area_LX table tr.tbl-header td.xright{
+	text-align:right; 
+}
+.report_area_LX table tr.tbl-header td.notop{
+	border-top:0;
+}
+
+.report_area_LX table tr.tbl-data td{
+	vertical-align: top; 
+	text-align:left; 
+	/*border-right:1px solid #000;*/
+	border-bottom:1px solid #e8e8e8;
+	padding:3px 5px;
+	font-size:14px;
+	line-height:14px;
+}
+.report_area_LX table tr.tbl-data td.first{
+	/*border-right:1px solid #000;
+	border-left:1px solid #000;
+	border-bottom:1px solid #000;
+	padding:2px 5px;*/
+	font-size:14px;
+	line-height:16px;
+	text-align:left;
+	padding:3px 5px;
+}
+
+.report_area_LX table tr.tbl-data td.topbottom{
+	border-top:1px solid #000;
+	border-bottom:1px solid #000;
+}
+
+.report_area_LX table tr.tbl-data td.bottom{
+	border-top:0;
+	border-bottom:1px solid #000;
+}
+
+.report_area_LX table tr.tbl-data td.noborder{
+	border:0px;
+}
+
+.report_area_LX table tr.tbl-data td.xcenter{
+	text-align:center; 
+}
+.report_area_LX table tr.tbl-data td.xleft{
+	text-align:left; 
+}
+.report_area_LX table tr.tbl-data td.xright{
+	text-align:right; 
+}
+.report_area_LX table tr.tbl-data td.bold{
+	font-weight:bold;
+}
+.report_area_LX table tr.tbl-total td{
+	border-top:0px solid #000;
+	border-bottom:1px solid #e8e8e8;
+	padding: 2px;
+	text-align:right; 
+	font-size:15px;
+}
+.report_area_LX table tr.tbl-total td.first{
+	border-top:1px solid #000;
+	border-bottom:1px solid #e8e8e8;
+	padding: 2px;
+	text-align:right; 
+	font-size:15px;
+}
+.report_area_LX table tr.tbl-total td.xtotal{
+	border-top:1px solid #000;
+	border-bottom:1px solid #000;
+	padding: 2px;
+	text-align:right; 
+	font-size:16px;
+}
+.report_area_LX table tr.tbl-total td.xterbilang{
+	border-top:0px solid #000;
+	border-bottom:1px solid #e8e8e8;
+	padding: 8px 2px;
+	text-align:right; 
+	font-size:14px;
+}
+.report_area_LX table tr.tbl-total td.xright{
+	text-align:right; 
+}
+.report_area_LX table tr.tbl-total td.xleft{
+	text-align:left; 
+}
+.report_area_LX table tr.tbl-total td.xcenter{
+	text-align:center; 
+}
+.report_area_LX table tr.tbl-total td.bold{
+	font-weight:bold;
+}
+.report_area_LX table tr.tbl-sign td{
+	padding-top:0px;
+	text-align:center; 
+	font-size:14px;
+}

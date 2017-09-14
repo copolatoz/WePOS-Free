@@ -1,0 +1,54 @@
+.icon-posting{
+    background-image:url( ../icons/fam/report_go.png ) !important;
+}
+.btn-users {
+    background-image:url( ../icons/fam/users.png ) !important;
+}
+.btn-lock {
+    background-image:url( ../icons/fam/lock.png ) !important;
+}
+.btn-lock-open {
+    background-image:url( ../icons/fam/lock-unlock.png ) !important;
+}
+.btn-generate {
+	background-image:url(../icons/general/posting.png) !important;
+}
+.btn-play {
+	background-image:url(../icons/fam/control_play_blue.png) !important;
+}
+.btn-stop {
+	background-image:url(../icons/fam/control_stop_blue.png) !important;
+}
+.btn-gear {
+	background-image:url(../icons/fam/table_gear.png) !important;
+}
+.btn-tick {
+    background-image:url( ../icons/fam/tick.png ) !important;
+}
+.btn-switch {
+    background-image:url( ../icons/fam/arrow_switch.png ) !important;
+}
+.icon-org {
+    background-image:url( ../icons/fam/chart_organisation.png ) !important;
+}
+.icon-sync {
+    background-image:url( ../icons/fam/database_refresh.png ) !important;
+}
+.icon-house {
+    background-image:url( ../icons/fam/house.png ) !important;
+}
+.icon-backup {
+    background-image:url( ../icons/fam/database_save.png ) !important;
+}
+.icon-aplikasi {
+    background-image:url( ../icons/fam/aplikasi.png ) !important;
+}
+.icon-generate {
+    background-image:url( ../icons/fam/table_refresh.png ) !important;
+}
+.icon-cog {
+	background-image:url(../icons/fam/cog.png) !important;
+}
+.icon-home {
+	background-image:url(../icons/fam/application_home.png) !important;
+}

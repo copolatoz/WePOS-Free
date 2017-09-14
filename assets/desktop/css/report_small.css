@@ -1,0 +1,288 @@
+.report_area{
+	background-color: white;
+	font-size:10px;
+	padding:5px;
+	font-family: 'calibri', Arial, Trebuchet MS, tahoma, helvetica;
+	width: 99%;
+} 
+
+.report_area table {
+	margin-bottom:5px; 
+	text-align: left; 
+	font-size:10px;
+	border-collapse: collapse;
+}
+
+.report_area table tr td{
+	vertical-align: top;
+}
+
+/*TITLE*/
+.report_area table tr.tbl-title td{
+	text-align: left; 
+	font-weight:bold; 
+	font-size:10px;
+}
+.report_area table tr.tbl-title td .title_lap{
+	text-align: left; 
+	font-weight:bold; 
+	font-size:10px;
+}
+.report_area table tr.tbl-title td .title_lap.title_rs{
+	text-align: left; 
+	font-weight:bold; 
+	font-size:10px;
+	padding-top:0px;
+}
+
+/*SUBTITLE*/
+.report_area table tr.tbl-subtitle td{
+	text-align: left; 
+	font-weight:bold; 
+	font-size:10px;
+}
+.report_area table tr.tbl-subtitle td .title_lap.title_daftar_rincian{
+	text-align: center; 
+	font-weight:bold; 
+	font-size:12px;
+	padding-bottom:0px;
+	border-bottom: 1px solid #ccc;
+	width:310px;
+	margin: 0px auto;
+}
+.report_area table tr.tbl-subtitle td .title_lap.title_daftar_rincian_sementara{
+	text-align: center; 
+	font-weight:bold; 
+	font-size:12px;
+	padding-bottom:0px;
+	border-bottom: 1px solid #ccc;
+	width:410px;
+	margin: 0px auto;
+}
+.report_area table tr.tbl-subtitle td .title_lap.title_no_invoice{
+	font-weight:bold; 
+	font-size:12px;
+	padding-bottom:20px;
+	width:350px;
+	margin: 0px auto;
+	text-align:center;
+}
+.report_area table tr.tbl-subtitle td .title_lap.title_no_invoice_sementara{
+	font-weight:bold; 
+	font-size:10px;
+	padding-bottom:20px;
+	width:360px;
+	margin: 0px auto;
+	text-align:center;
+}
+
+/*MAIN STYLE*/
+.report_area {
+	font-size:10px;
+}
+
+.report_area h1{
+	font-size:16px;
+	line-height:18px;
+	font-weight:bold;
+	margin:0px;
+}
+.report_area .f14{
+	font-size:14px;
+}
+.report_area .xbold{
+	font-weight:bold;
+}
+.report_area div.subheader{
+	font-size:10px;
+}
+
+.report_area div.fleft{
+	float:left;  
+}      
+
+.report_area div.fright{
+	float:right;  
+}       
+
+.report_area div.fclear{
+	clear:both;  
+}      
+    
+/*CONTENT --- HEADER*/
+.report_area table tr.tbl-header td{
+	vertical-align: middle; 
+	text-align: center; 
+	border-top:1px solid #ccc;
+	border-bottom:1px solid #ccc;
+	border-right:1px solid #ccc;
+	font-size:10px;
+	line-height:12px;
+	font-weight: bold;
+	padding:5px;
+	background-color:#d8d8d8;
+}
+.report_area table tr.tbl-header td.first{
+	border-top:1px solid #ccc;
+	border-bottom:1px solid #ccc;
+	border-left:1px solid #ccc;
+	font-size:10px;
+	line-height:12px;
+	padding:5px;
+}
+
+.report_area table tr.tbl-header td.xcenter{
+	text-align:center; 
+}
+.report_area table tr.tbl-header td.xleft{
+	text-align:left; 
+}
+.report_area table tr.tbl-header td.xright{
+	text-align:right; 
+}
+.report_area table tr.tbl-header td.notop{
+	border-top:0;
+}
+
+/*CONTENT --- DATA*/
+.report_area table tr.tbl-data td{
+	vertical-align: top; 
+	text-align:left; 
+	border-bottom:1px solid #ccc;
+	border-right:1px solid #ccc;
+	padding:4px 5px;
+	font-size:10px;
+	line-height:12px;
+}
+.report_area table tr.tbl-data td.first{	
+	border-left:1px solid #ccc;
+	font-size:10px;
+	line-height:12px;
+	text-align:left;
+	padding:4px 5px;
+}
+
+.report_area table tr.tbl-data td.topbottom{
+	border-top:1px solid #000;
+	border-bottom:1px solid #000;
+}
+
+.report_area table tr.tbl-data td.bottom{
+	border-top:0;
+	border-bottom:1px solid #000;
+}
+
+.report_area table tr.tbl-data td.noborder{
+	border:0px;
+}
+
+.report_area table tr.tbl-data td.xcenter{
+	text-align:center; 
+}
+.report_area table tr.tbl-data td.xleft{
+	text-align:left; 
+}
+.report_area table tr.tbl-data td.xright{
+	text-align:right; 
+}
+.report_area table tr.tbl-data td.bold{
+	font-weight:bold;
+}
+
+/*CONTENT --- SUMMARY / TOTAL*/
+.report_area table tr.tbl-total td{
+	border-top:0px solid #000;
+	border-bottom:1px solid #ccc;
+	border-right:1px solid #ccc;
+	padding: 2px;
+	text-align:right; 
+	font-size:10px;
+	font-weight:bold;
+}
+.report_area table tr.tbl-total td.first{
+	border-top:1px solid #000;
+	border-bottom:1px solid #ccc;
+	border-left:1px solid #ccc;
+	padding: 2px 5px;
+	text-align:right; 
+	font-size:10px;
+}
+.report_area table tr.tbl-total td.xtotal{
+	border-top:1px solid #000;
+	border-bottom:1px solid #000;
+	padding: 2px;
+	text-align:right; 
+	font-size:10px;
+}
+.report_area table tr.tbl-total td.xterbilang{
+	border-top:0px solid #000;
+	border-bottom:1px solid #ccc;
+	padding: 8px 2px;
+	text-align:right; 
+	font-size:10px;
+}
+.report_area table tr.tbl-total td.xright{
+	text-align:right; 
+}
+.report_area table tr.tbl-total td.xleft{
+	text-align:left; 
+}
+.report_area table tr.tbl-total td.xcenter{
+	text-align:center; 
+}
+.report_area table tr.tbl-total td.bold{
+	font-weight:bold;
+}
+
+/*CONTENT --- FOOTER-SIGN*/
+.report_area table tr.tbl-footer td{
+	padding-top:0px;
+	text-align:center; 
+	font-size:10px;
+}
+.report_area table tr.tbl-sign td{
+	padding-top:0px;
+	text-align:center; 
+	font-size:14px;
+}
+
+.xbox{
+	border: 1px solid #ccc;
+}
+.xbox-ship{
+	border: 1px solid #ccc;
+    min-height: 60px;
+    padding: 2px 5px;
+    width: 300px;
+}
+.xbox-total{
+	border: 1px solid #ccc;
+	padding: 0 5px;
+}
+.xcenter{
+	text-align:center; 
+}
+.xleft{
+	text-align:left; 
+}
+.xright{
+	text-align:right; 
+}
+.xf14{
+	font-size:14px;
+}
+.title_report {
+	padding:0px;
+	font-size: 20px;
+	font-weight: bold;
+}
+
+.subtitle_report {
+	padding:0px;
+	font-size: 16px;
+	font-weight: bold;
+}
+
+.logo img {
+	padding-right: 10px;
+}

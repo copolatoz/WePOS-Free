@@ -1,0 +1,196 @@
+body {
+    background-color: #fff;
+}
+
+body.login_bg{
+    background: url(../images/background.png) no-repeat center -115px;
+	
+}
+
+.page {
+    width: 1024px;
+    margin: auto;
+    background-color: #fff;
+}
+
+hr {
+    border: 0;
+    border-bottom: 1px #ddd dotted;
+    color: #ddd;
+    background-color: #ddd;
+}
+h4{font-weight:normal;}
+
+#page-login{
+	/*F5F5F5*/
+	background: none repeat scroll 0 0 rgba(255,255,255,0.4);
+    border: 2px solid #fff;
+    box-shadow: 3px 5px 5px rgba(100, 100, 100, 0.7);
+	-moz-box-shadow: 3px 5px 5px rgba(100, 100, 100, 0.7);
+	-webkit-box-shadow: 3px 5px 5px rgba(100, 100, 100, 0.7);
+    margin-top: 120px;
+    overflow: hidden;
+    padding: 20px;
+    width: 300px;
+}
+#page-login .input-control > input.with-helper[type="text"], 
+#page-login .input-control > input.with-helper[type="email"], 
+#page-login .input-control > input.with-helper[type="url"], 
+#page-login .input-control > input.with-helper[type="phone"], 
+#page-login .input-control > input.with-helper[type="password"], 
+#page-login .input-control > input.with-helper[type="number"], 
+#page-login .input-control > input.with-helper[type="time"], 
+#page-login .input-control > select.with-helper, 
+#page-login .input-control > textarea.with-helper{
+	padding: 0 5px;
+	width:288px;
+	background: none repeat scroll 0 0 rgba(255, 255, 255, 0.6);
+}
+
+#page-login .input-control.text .helper, 
+#page-login .input-control.password .helper, 
+#page-login .input-control.text .btn-search, 
+#page-login .input-control.password .btn-search{
+	top: 3px;
+	left: 99%;
+}
+
+.footer_login{font-size:11px; text-align:center; font-weight:bold; margin-top:10px; color:#000;}
+
+.page-control .frames{
+	width: 633px;
+}
+.page-control .frames .frame{
+	width: 593px;
+}
+#content-area .left-content .content-page .content-text .page-control.pagetab ul.pagetab-ul{
+	margin-left: 0px;
+}
+
+.align-center{text-align:center;}
+
+button, button:focus, .button:focus{
+	border:0px;
+	outline: 1px solid #353535;
+}
+
+/*fix FF*/
+* .file-attr .image-button img,
+* .file-attr .image-button img:after,
+* .file-attr .image-button img:before {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+* button,
+* .button {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.formContent input {
+    -moz-box-sizing: border-box;
+	box-sizing:border-box;
+}
+
+.span1 {
+    width: 60px;
+}
+.span2 {
+    width: 140px;
+}
+.span3 {
+    width: 220px;
+}
+.span4 {
+    width: 300px;
+}
+.span5 {
+    width: 380px;
+}
+.span6 {
+    width: 460px;
+}
+.span7 {
+    width: 540px;
+}
+.span8 {
+    width: 620px;
+}
+.span9 {
+    width: 700px;
+}
+.span10 {
+    width: 780px;
+}
+.span11 {
+    width: 860px;
+}
+.span12 {
+    width: 940px;
+}
+.offset1 {
+    margin-left: 80px;
+}
+.offset2 {
+    margin-left: 160px;
+}
+.offset3 {
+    margin-left: 240px;
+}
+.offset4 {
+    margin-left: 320px;
+}
+.offset5 {
+    margin-left: 400px;
+}
+.offset6 {
+    margin-left: 480px;
+}
+.offset7 {
+    margin-left: 560px;
+}
+.offset8 {
+    margin-left: 640px;
+}
+.offset9 {
+    margin-left: 720px;
+}
+.offset10 {
+    margin-left: 800px;
+}
+.offset11 {
+    margin-left: 880px;
+}
+.offset12 {
+    margin-left: 960px;
+}
+[class*="span"] {
+    float: none;
+    margin-bottom: 5px;
+    margin-right: 20px;
+    min-height: 1px;
+}
+[class*="span"]:before, [class*="span"]:after {
+    content: "";
+    display: table;
+}
+[class*="span"]:after {
+    clear: both;
+}
+[class*="span"]:last-child {
+    margin-right: 0;
+}
+[class*="span"] > img {
+    height: auto;
+    max-width: 100%;
+}
+
+.listview.image li .icon{
+	border:0px;
+}
+.listview li .icon img{
+	height:auto;
+	border: 1px solid #CCCCCC;
+}

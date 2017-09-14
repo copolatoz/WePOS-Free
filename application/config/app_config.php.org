@@ -1,0 +1,23 @@
+<?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+
+/*General Info*/
+$config['program_name']			=	'WePOS-Free';
+$config['program_version']		=	'3.42.15';
+$config['program_release']		=	'2017';
+$config['program_name_short'] 	=	'WePOS-Free';
+$config['copyright']			=	$config['program_name_short'].' v'.$config['program_version'].' &copy copyright '.$config['program_release'];
+$config['client_name']			=	'WePOS-dev';
+$config['program_author']		=	'WePOS-dev';
+
+/*Common config*/
+$config['db_prefix']	= 'apps_';
+$config['db_prefix2']	= 'pos_';
+$config['db_prefix3']	= 'acc_';
+
+$config['timezone_default']	= 'Asia/Jakarta';
+
+/*Config Rest Server*/
+$config['use_rest']			= false;
+$config['rest_server_url']	=	'';
+$config['rest_username']	=	'';
+$config['rest_password']	=	'';

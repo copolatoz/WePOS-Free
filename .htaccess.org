@@ -1,0 +1,12 @@
+RewriteEngine On
+
+#If installed in the public_html on linux, then add the users folder
+RewriteBase /wepos/
+
+RewriteCond $1 !^(index\.php|themes|js|files)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php/$1 [L]
+
+#Disable Directory Indexes
+Options -Indexes
