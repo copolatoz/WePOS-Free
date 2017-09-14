@@ -9,7 +9,7 @@ Terima Kasih sudah Download dan Support WePOS.id
 
 Untuk Instalasi bisa baca di dokumentasi (login website, wepos.id)
 
-1. download via bitbucket.org
+1. download via github.com: https://github.com/copolatoz/WePOS-Free
 2. copy dan rename file:
 
 copy index.php.org --> index.php
