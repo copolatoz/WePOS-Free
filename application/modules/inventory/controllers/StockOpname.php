@@ -189,7 +189,7 @@ class StockOpname extends MY_Controller {
 		$session_user = $this->session->userdata('user_username');
 		
 		if(empty($session_user)){
-			$r = array('success' => false, 'info' => 'User Session Expired, Please Re-Login!');
+			$r = array('success' => false, 'info' => 'Sesi Login sudah habis, Silahkan Login ulang!');
 			die(json_encode($r));
 		}
 		
@@ -384,7 +384,7 @@ class StockOpname extends MY_Controller {
 				
 				if($warning_update_stok){
 					$r['is_warning'] = 1;
-					$r['info'] = 'Stock Been Changed (Realtime)<br/>Please Re-Generate/Fix Stock Transaction on List Stock Module!<br/>Re-generate/fix from: '.$sto_date;
+					$r['info'] = 'Silahkan Re-Generate/Perbaiki Stok Transaksi pada List Stock Module!<br/>Perbaiki Stok dari: '.$sto_date;
 				}
 				
 			}  
@@ -481,7 +481,7 @@ class StockOpname extends MY_Controller {
 				
 				if($warning_update_stok){
 					$r['is_warning'] = 1;
-					$r['info'] = 'Stock Been Changed (Realtime)<br/>Please Re-Generate/Fix Stock Transaction on List Stock Module!<br/>Re-generate/fix from: '.$sto_date;
+					$r['info'] = 'Silahkan Re-Generate/Perbaiki Stok Transaksi pada List Stock Module!<br/>Perbaiki Stok dari: '.$sto_date;
 				}
 				
 			}  
@@ -728,7 +728,7 @@ class StockOpname extends MY_Controller {
 		$user_fullname = $this->session->userdata('user_fullname');					
 		
 		if(empty($session_user)){
-			die('User Session Expired, Please Re-Login!');
+			die('Sesi Login sudah habis, Silahkan Login ulang!');
 		}
 		
 		extract($_GET);
@@ -1254,7 +1254,7 @@ class StockOpname extends MY_Controller {
 		$user_fullname = $this->session->userdata('user_fullname');					
 		
 		if(empty($session_user)){
-			die('User Session Expired, Please Re-Login!');
+			die('Sesi Login sudah habis, Silahkan Login ulang!');
 		}
 		
 		extract($_GET);

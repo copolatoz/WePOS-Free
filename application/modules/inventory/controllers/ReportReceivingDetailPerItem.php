@@ -27,7 +27,7 @@ class reportReceivingDetailPerItem extends MY_Controller {
 		$user_fullname = $this->session->userdata('user_fullname');					
 		
 		if(empty($session_user)){
-			die('User Session Expired, Please Re-Login!');
+			die('Sesi Login sudah habis, Silahkan Login ulang!');
 		}
 		
 		extract($_GET);

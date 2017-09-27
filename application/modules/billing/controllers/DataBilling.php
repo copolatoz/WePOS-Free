@@ -2182,7 +2182,7 @@ class DataBilling extends MY_Controller {
 		$client_id = $this->session->userdata('client_id');					
 		
 		if(empty($session_user)){
-			die('User Session Expired, Please Re-Login!');
+			die('Sesi Login sudah habis, Silahkan Login ulang!');
 		}
 		
 		extract($_GET);

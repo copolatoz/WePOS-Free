@@ -256,7 +256,7 @@ class SupervisorAccess extends MY_Controller {
 		$id_user = $this->session->userdata('id_user');
 		$ip_addr = get_client_ip();
 		if(empty($session_user)){
-			$r = array('success' => false, 'info' => 'User Session Expired, Please Re-Login!');
+			$r = array('success' => false, 'info' => 'Sesi Login sudah habis, Silahkan Login ulang!');
 			echo json_encode($r);
 			die();
 		}
@@ -288,7 +288,7 @@ class SupervisorAccess extends MY_Controller {
 		$id_user = $this->session->userdata('id_user');
 		$ip_addr = get_client_ip();
 		if(empty($session_user)){
-			$r = array('success' => false, 'info' => 'User Session Expired, Please Re-Login!');
+			$r = array('success' => false, 'info' => 'Sesi Login sudah habis, Silahkan Login ulang!');
 			echo json_encode($r);
 			die();
 		}

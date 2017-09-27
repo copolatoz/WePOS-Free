@@ -327,7 +327,7 @@ class ReceivingList extends MY_Controller {
 		$session_user = $this->session->userdata('user_username');
 		
 		if(empty($session_user)){
-			$r = array('success' => false, 'info' => 'User Session Expired, Please Re-Login!');
+			$r = array('success' => false, 'info' => 'Sesi Login sudah habis, Silahkan Login ulang!');
 			die(json_encode($r));
 		}
 		
@@ -351,7 +351,7 @@ class ReceivingList extends MY_Controller {
 		}
 		
 		if(empty($storehouse_id)){
-			$r = array('success' => false, 'info' => 'No Primary Warehouse! Please Setup Warehouse'); 
+			$r = array('success' => false, 'info' => 'Tidak ditemukan Gudang Utama/Primary! Silahkan setup data gudang'); 
 			die(json_encode($r));
 		}
 		
@@ -428,7 +428,7 @@ class ReceivingList extends MY_Controller {
 			);
 			$is_closing = is_closing($var_closing);
 			if($is_closing){
-				$r = array('success' => false, 'info' => 'Purchasing & Receiving Date Been Closed!'); 
+				$r = array('success' => false, 'info' => 'Transaksi untuk Purchasing & Receiving pada tanggal: '.$date_now.' sudah ditutup!'); 
 				die(json_encode($r));
 			}
 			
@@ -464,7 +464,7 @@ class ReceivingList extends MY_Controller {
 				//cek warehouse
 				$default_warehouse = $this->stock->get_primary_storehouse();
 				if(empty($default_warehouse)){
-					$r = array('success' => false, 'info' => 'No Primary Warehouse! Please Setup Warehouse'); 
+					$r = array('success' => false, 'info' => 'Tidak ditemukan Gudang Utama/Primary! Silahkan setup data gudang'); 
 					die(json_encode($r));
 				}
 				
@@ -484,7 +484,7 @@ class ReceivingList extends MY_Controller {
 				$this->db->where("po_status = 'done'");
 				$get_stat_po = $this->db->get();	
 				if($get_stat_po->num_rows() > 0){
-					$r = array('success' => false, 'info' => 'Cannot Update Receiving to Done!<br/>Please Check PO Status.. all item been received!'); 
+					$r = array('success' => false, 'info' => 'Tidak boleh update status ke Done/Selesai<br/>Silahkan Cek Status PO.. Kemungkinan Barang sudah diterima!'); 
 					die(json_encode($r));
 				}
 				
@@ -576,7 +576,7 @@ class ReceivingList extends MY_Controller {
 			);
 			$is_closing = is_closing($var_closing);
 			if($is_closing){
-				$r = array('success' => false, 'info' => 'Purchasing & Receiving Date Been Closed!'); 
+				$r = array('success' => false, 'info' => 'Transaksi untuk Purchasing & Receiving pada tanggal: '.$old_data['receive_date'].' sudah ditutup!'); 
 				die(json_encode($r));
 			}
 			
@@ -587,7 +587,7 @@ class ReceivingList extends MY_Controller {
 				//cek warehouse
 				$default_warehouse = $this->stock->get_primary_storehouse();
 				if(empty($default_warehouse)){
-					$r = array('success' => false, 'info' => 'No Primary Warehouse! Please Setup Warehouse'); 
+					$r = array('success' => false, 'info' => 'Tidak ditemukan Gudang Utama/Primary! Silahkan setup data gudang'); 
 					die(json_encode($r));
 				}
 				
@@ -605,7 +605,7 @@ class ReceivingList extends MY_Controller {
 				$this->db->where("po_status = 'done'");
 				$get_stat_po = $this->db->get();	
 				if($get_stat_po->num_rows() > 0){
-					$r = array('success' => false, 'info' => 'Cannot Update Receiving to Done!<br/>Please Check PO Status.. all item been received!'); 
+					$r = array('success' => false, 'info' => 'Tidak boleh update status ke Done/Selesai<br/>Silahkan Cek Status PO.. Kemungkinan Barang sudah diterima!'); 
 					die(json_encode($r));
 				}	
 				
@@ -648,11 +648,16 @@ class ReceivingList extends MY_Controller {
 			$r = array('success' => true, 'id' => $id);
 			
 			//from add
-			if($this->input->post('form_type_receivingList', true) == 'add')
-			{
+			//if($this->input->post('form_type_receivingList', true) == 'add')
+			//{
 				$q_det = $this->m2->receiveDetail($receiveDetail, $id);
 				
-				if($receive_status == 'done'){
+				$old_status = '';
+				if(!empty($old_data['receive_status'])){
+					$old_status = $old_data['receive_status'];
+				}
+				
+				if($receive_status == 'done' AND $old_status != 'done'){
 					//get/update ID -> $usageItemDetail
 					$item_id_prod = array();
 					$this->db->from($this->prefix.'receive_detail');
@@ -664,7 +669,8 @@ class ReceivingList extends MY_Controller {
 						}
 					}
 					
-					$update_stok = 'update_add';
+					//$update_stok = 'update_add';
+					$update_stok = 'update';
 					
 					$receiveDetail_BU = $receiveDetail;
 					$receiveDetail = array();
@@ -679,11 +685,11 @@ class ReceivingList extends MY_Controller {
 					
 					$r['receiveDetail_done'] = $receiveDetail;
 				}
-			}
+			//}
 				
 			$q_det = $this->m2->receiveDetail($receiveDetail, $id, $update_stok);
 			if($q_det == false){
-				$r = array('success' => false, 'info' => 'Input Receiving Failed!'); 
+				$r = array('success' => false, 'info' => 'Input Receiving Gagal!'); 
 				die(json_encode($r));
 			}
 			
@@ -691,7 +697,7 @@ class ReceivingList extends MY_Controller {
 			
 			if($warning_update_stok){
 				$r['is_warning'] = 1;
-				$r['info'] = 'Stock Been Changed (Realtime)<br/>Please Re-Generate/Fix Stock Transaction on List Stock Module!<br/>Re-generate/fix from: '.$receive_date;
+				$r['info'] = 'Silahkan Re-Generate/Perbaiki Stok Transaksi pada List Stock Module!<br/>Perbaiki Stok dari: '.$receive_date;
 			}
 			
 			if(!empty($q_det['dtReceive']['receive_number'])){
@@ -816,7 +822,7 @@ class ReceivingList extends MY_Controller {
         }  
         else
         {  
-            $r = array('success' => false, 'info' => 'Delete Receiving List Failed!'); 
+            $r = array('success' => false, 'info' => 'Hapus Receiving List Gagal!'); 
         }
 		die(json_encode($r));
 	}
@@ -852,7 +858,7 @@ class ReceivingList extends MY_Controller {
         }  
         else
         {  
-            $r = array('success' => false, 'info' => 'Delete Receiving List Detail Failed!'); 
+            $r = array('success' => false, 'info' => 'Hapus Receiving List Detail Gagal!'); 
         }
 		die(json_encode($r));
 	}
@@ -948,7 +954,7 @@ class ReceivingList extends MY_Controller {
 		}
 		
 		if(empty($session_user)){
-			die('User Session Expired, Please Re-Login!');
+			die('Sesi Login sudah habis, Silahkan Login ulang!');
 		}
 		
 		extract($_GET);

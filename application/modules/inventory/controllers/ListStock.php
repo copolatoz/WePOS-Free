@@ -299,7 +299,7 @@ class ListStock extends MY_Controller {
 		$session_user = $this->session->userdata('user_username');
 		
 		if(empty($session_user)){
-			$r = array('success' => false, 'info' => 'User Session Expired, Please Re-Login!');
+			$r = array('success' => false, 'info' => 'Sesi Login sudah habis, Silahkan Login ulang!');
 			die(json_encode($r));
 		}
 				

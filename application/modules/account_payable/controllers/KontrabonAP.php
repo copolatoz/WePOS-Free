@@ -900,7 +900,7 @@ class KontrabonAP extends MY_Controller {
 		}
 		
 		if(empty($session_user)){
-			die('User Session Expired, Please Re-Login!');
+			die('Sesi Login sudah habis, Silahkan Login ulang!');
 		}
 		
 		extract($_GET);
