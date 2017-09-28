@@ -22,10 +22,18 @@ class Model_receivedetail extends DB_Model {
 		$from_add = false;
 		$storehouse_id = 0;
 		
+		//form type
+		$from_type = '';
+		if($update_stok == 'add'){
+			$update_stok = '';
+			$from_type = $update_stok;
+		}
+		
 		if($update_stok == 'update_add'){
 			$update_stok = 'update';
 			$from_add = true;
 		}
+		
 		
 		if(!empty($receiveDetail)){
 			
@@ -70,7 +78,12 @@ class Model_receivedetail extends DB_Model {
 					}
 				}
 				
-				$receive_status = $dt_rowguid['receive_status'];
+				if($from_type == 'add'){
+					$receive_status = 'progress';
+				}else{
+					$receive_status = $dt_rowguid['receive_status'];
+				}
+				
 			}
 			
 			
@@ -96,7 +109,7 @@ class Model_receivedetail extends DB_Model {
 			
 			//get Receive QTY
 			//if(!empty($all_po_det_id) AND $from_add == false){
-			if(!empty($all_po_det_id)){
+			if(!empty($all_po_det_id) AND $receive_status == 'done'){
 					
 				$all_po_det_id_sql = implode(",", $all_po_det_id);
 				$this->db->select("a.*");

@@ -647,10 +647,12 @@ class ReceivingList extends MY_Controller {
 			
 			$r = array('success' => true, 'id' => $id);
 			
+			$form_type = $this->input->post('form_type_receivingList', true);
+			
 			//from add
 			//if($this->input->post('form_type_receivingList', true) == 'add')
 			//{
-				$q_det = $this->m2->receiveDetail($receiveDetail, $id);
+				$q_det = $this->m2->receiveDetail($receiveDetail, $id, $form_type);
 				
 				$old_status = '';
 				if(!empty($old_data['receive_status'])){
@@ -669,8 +671,11 @@ class ReceivingList extends MY_Controller {
 						}
 					}
 					
-					//$update_stok = 'update_add';
 					$update_stok = 'update';
+					if($form_type == 'add'){
+						$update_stok = 'update_add';
+					}
+					//$update_stok = 'update';
 					
 					$receiveDetail_BU = $receiveDetail;
 					$receiveDetail = array();
