@@ -96,7 +96,7 @@ class OpenCashierShift extends MY_Controller {
 			$get_data['id'] = $this->db->insert_id();
 			
 			if($save_openShift){
-				$r = array('success' => true, 'openShiftData' => $get_data);
+				$r = array('success' => true, 'openShiftData' => $get_data, 'id = '.$get_data['id']);
 			}else{
 				$r = array('success' => false, 'Save Open Cashier (Shift) Failed!');
 			}
@@ -199,7 +199,7 @@ class OpenCashierShift extends MY_Controller {
 				'tipe_shift'	=> 'open',
 				'tanggal_shift'	=> $tanggal_shift,
 				'jam_shift'	=> $jam_shift,
-				'user_shift'	=> 1,
+				'user_shift'	=> $user_shift,
 				'uang_kertas_100000'=> 0,
 				'uang_kertas_50000'	=> 0,
 				'uang_kertas_20000'	=> 0,
@@ -369,10 +369,10 @@ class OpenCashierShift extends MY_Controller {
 					if(empty($uang_kertas_data)){
 						$total_uang_kertas = $get_data['jumlah_uang_kertas'];
 						$total_uang_kertas = printer_command_align_right($total_uang_kertas, 9);
-						$uang_kertas_data = "[size=2][align=1]UANG KERTAS[tab]".$total_uang_kertas."\n";
+						$uang_kertas_data = "[size=1][align=0]UANG KERTAS[tab]".$total_uang_kertas."\n";
 					}
 					
-					$uang_kertas_data .= "[size=1][align=0]".$data_name."[tab]X ".$value_show."\n"; 
+					$uang_kertas_data .= "[size=0][align=0]".$data_name."[tab]X ".$value_show."\n"; 
 					
 				}else
 				if(strstr($key, 'uang_koin_')){
@@ -389,10 +389,10 @@ class OpenCashierShift extends MY_Controller {
 					if(empty($uang_koin_data)){
 						$total_uang_koin = $get_data['jumlah_uang_koin'];
 						$total_uang_koin = printer_command_align_right($total_uang_koin, 9);
-						$uang_koin_data = "[size=2][align=1]UANG KOIN[tab]".$total_uang_koin."\n";
+						$uang_koin_data = "[size=1][align=0]UANG KOIN[tab]".$total_uang_koin."\n";
 					}
 					
-					$uang_koin_data .= "\n"."[size=1][align=0]".$data_name."[tab]X ".$value_show;
+					$uang_koin_data .= "\n"."[size=0][align=0]".$data_name."[tab]X ".$value_show;
 					
 				}else{
 					$new_data[$key] = array("name" => '', "value" => '');

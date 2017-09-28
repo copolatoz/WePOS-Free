@@ -96,7 +96,7 @@ class CloseCashierShift extends MY_Controller {
 			$get_data['id'] = $this->db->insert_id();
 			
 			if($save_closeShift){
-				$r = array('success' => true, 'closeShiftData' => $get_data);
+				$r = array('success' => true, 'closeShiftData' => $get_data, 'id = '.$get_data['id']);
 			}else{
 				$r = array('success' => false, 'Save Close Cashier (Shift) Failed!');
 			}
@@ -202,7 +202,7 @@ class CloseCashierShift extends MY_Controller {
 				'tipe_shift'	=> 'close',
 				'tanggal_shift'	=> $tanggal_shift,
 				'jam_shift'	=> $jam_shift,
-				'user_shift'	=> 1,
+				'user_shift'	=> $user_shift,
 				'uang_kertas_100000'=> 0,
 				'uang_kertas_50000'	=> 0,
 				'uang_kertas_20000'	=> 0,
@@ -373,10 +373,10 @@ class CloseCashierShift extends MY_Controller {
 					if(empty($uang_kertas_data)){
 						$total_uang_kertas = $get_data['jumlah_uang_kertas'];
 						$total_uang_kertas = printer_command_align_right($total_uang_kertas, 9);
-						$uang_kertas_data = "[size=2][align=1]UANG KERTAS[tab]".$total_uang_kertas."\n";
+						$uang_kertas_data = "[size=1][align=0]UANG KERTAS[tab]".$total_uang_kertas."\n";
 					}
 					
-					$uang_kertas_data .= "[size=1][align=0]".$data_name."[tab]X ".$value_show."\n"; 
+					$uang_kertas_data .= "[size=0][align=0]".$data_name."[tab]X ".$value_show."\n"; 
 					
 				}else
 				if(strstr($key, 'uang_koin_')){
@@ -393,10 +393,10 @@ class CloseCashierShift extends MY_Controller {
 					if(empty($uang_koin_data)){
 						$total_uang_koin = $get_data['jumlah_uang_koin'];
 						$total_uang_koin = printer_command_align_right($total_uang_koin, 9);
-						$uang_koin_data = "[size=2][align=1]UANG KOIN[tab]".$total_uang_koin;
+						$uang_koin_data = "[size=1][align=0]UANG KOIN[tab]".$total_uang_koin;
 					}
 					
-					$uang_koin_data .= "\n"."[size=1][align=0]".$data_name."[tab]X ".$value_show;
+					$uang_koin_data .= "\n"."[size=0][align=0]".$data_name."[tab]X ".$value_show;
 					
 				}else{
 					$new_data[$key] = array("name" => '', "value" => '');
@@ -897,8 +897,8 @@ class CloseCashierShift extends MY_Controller {
 			$compliment_total = printer_command_align_right(priceFormat($data_post['summary_data']['compliment_total']), 11);
 			$grand_total = printer_command_align_right($data_post['summary_data']['grand_total'], 11);
 			
-			$all_summary_data = "\n\n[size=2][align=1]SALES SUMMARY[tab]\n";
-			$all_summary_data .= "[size=1]";
+			$all_summary_data = "\n\n[size=1][align=0]SALES SUMMARY[tab]\n";
+			$all_summary_data .= "[size=0]";
 			$all_summary_data .= "[align=0]MENU SALES[tab]".$menu_sales."\n"; 
 			$all_summary_data .= "[align=0]DISC/ITEM[tab]".$disc_per_item."\n"; 
 			$all_summary_data .= "[align=0]NET SALES[tab]".$menu_net_sales."\n"; 
@@ -972,8 +972,8 @@ class CloseCashierShift extends MY_Controller {
 							}
 							
 							if(empty($all_payment_data)){
-								$all_payment_data = "[size=2][align=1]PAYMENT SUMMARY[tab]\n";
-								$all_payment_data .= "[size=1]";
+								$all_payment_data = "[size=1][align=0]PAYMENT SUMMARY[tab]\n";
+								$all_payment_data .= "[size=0]";
 							}
 							
 							$value_show = printer_command_align_right($dt['payment_'.$key], 11);
