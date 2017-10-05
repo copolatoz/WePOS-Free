@@ -189,7 +189,7 @@ if(!empty($payment_data)){
 			
 			?>
 			<tr>
-				<td class="tbl_summary_td_first_xright" colspan="<?php echo 3; ?>">TOTAL</td>
+				<td class="tbl_summary_td_first_xright" colspan="<?php echo 2; ?>">TOTAL</td>
 				<td class="tbl_summary_td_xright"><?php echo priceFormat($total_qty); ?></td>
 				<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_billing); ?></td>
 				<?php

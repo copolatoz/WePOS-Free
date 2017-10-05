@@ -183,7 +183,7 @@
 				
 				?>
 				<tr class="tbl-data">
-					<td class="first xright xbold" colspan="<?php echo 3; ?>">TOTAL</td>
+					<td class="first xright xbold" colspan="<?php echo 2; ?>">TOTAL</td>
 					<td class="xcenter xbold"><?php echo priceFormat($total_qty); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_billing); ?></td>
 					<?php

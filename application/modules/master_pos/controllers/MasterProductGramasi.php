@@ -49,7 +49,7 @@ class MasterProductGramasi extends MY_Controller {
 		);		
 		
 		if(!empty($product_id)){
-			$params['where'] = array('product_id' => $product_id);
+			$params['where'][] = array('product_id' => $product_id);
 		}
 		
 		//get data -> data, totalCount

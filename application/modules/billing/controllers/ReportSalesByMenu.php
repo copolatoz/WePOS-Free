@@ -653,7 +653,9 @@ class ReportSalesByMenu extends MY_Controller {
 			}
 		
 			arsort($sort_qty);	
+			$tipe_report = '';
 			if(!empty($order_qty)){
+				$tipe_report = 'QTY';
 				//RANK QTY
 				if($order_qty == 1){
 					arsort($sort_qty);
@@ -670,6 +672,7 @@ class ReportSalesByMenu extends MY_Controller {
 					
 				//RANK PROFIT
 				if($order_qty == 2){
+					$tipe_report = 'PROFIT';
 					arsort($sort_profit);
 					$xnewData = array();
 					foreach($sort_profit as $key => $dt){
@@ -732,10 +735,14 @@ class ReportSalesByMenu extends MY_Controller {
 		}else{
 			$do = '';
 		}
-
+		
 		if(empty($useview)){
 			$useview = 'print_reportSalesByMenu';
-			$data_post['report_name'] = 'SALES REPORT BY MENU';
+			$data_post['report_name'] = 'SALES PRODUCT/MENU';
+			
+			if($tipe_report == 'QTY'){
+				$data_post['report_name'] = 'SALES PRODUCT/MENU BY QTY';
+			}
 			
 			if($do == 'excel'){
 				$useview = 'excel_reportSalesByMenu';
@@ -743,30 +750,61 @@ class ReportSalesByMenu extends MY_Controller {
 			
 		}else{
 			$useview = 'print_reportProfitSalesByMenu';
-			$data_post['report_name'] = 'SALES PROFIT REPORT MENU';
+			$data_post['report_name'] = 'SALES PROFIT BY PRODUCT/MENU';
+			
+			if($tipe_report == 'QTY'){
+				$data_post['report_name'] = 'SALES PROFIT BY PRODUCT/MENU QTY';
+			}
+			if($tipe_report == 'PROFIT'){
+				$data_post['report_name'] = 'SALES PROFIT BY PRODUCT/MENU PROFIT';
+			}
 			
 			if($do == 'excel'){
 				$useview = 'excel_reportProfitSalesByMenu';
 			}
 			
 		}
+		
 
 		if(!empty($groupCat)){
 			
-			if($groupCat == 'cat'){
-				$useview = 'print_reportSalesByMenuCategory';
-				$data_post['report_name'] = 'SALES REPORT BY MENU CATEGORY';
+			if($groupCat == 'subcat'){
 				
-				if($do == 'excel'){
-					$useview = 'excel_reportSalesByMenuCategory';
+				if($useview == 'print_reportProfitSalesBySubMenuCategory'){
+					
+					$data_post['report_name'] = 'SALES PROFIT REPORT BY SUB MENU CATEGORY';
+					
+					if($do == 'excel'){
+						$useview = 'excel_reportProfitSalesBySubMenuCategory';
+					}
+					
+				}else{
+					$useview = 'print_reportSalesBySubMenuCategory';
+					$data_post['report_name'] = 'SALES REPORT BY SUB MENU CATEGORY';
+					
+					if($do == 'excel'){
+						$useview = 'excel_reportSalesBySubMenuCategory';
+					}
 				}
 				
-			}else{
-				$useview = 'print_reportProfitSalesByMenuCategory';
-				$data_post['report_name'] = 'SALES PROFIT REPORT BY MENU CATEGORY';
+			}else
+			{
 				
-				if($do == 'excel'){
-					$useview = 'excel_reportProfitSalesByMenuCategory';
+				if($useview == 'print_reportProfitSalesByMenuCategory'){
+					
+					$data_post['report_name'] = 'SALES PROFIT REPORT BY MENU CATEGORY';
+					
+					if($do == 'excel'){
+						$useview = 'excel_reportProfitSalesByMenuCategory';
+					}
+					
+				}else{
+					$useview = 'print_reportSalesByMenuCategory';
+					$data_post['report_name'] = 'SALES REPORT BY MENU CATEGORY';
+					
+					if($do == 'excel'){
+						$useview = 'excel_reportSalesByMenuCategory';
+					}
 				}
 				
 			}
