@@ -7,7 +7,6 @@
 /application/config/database.php
 /application/.htaccess
 /application/modules/fixbugs/models
-/apps.min/core/application.js
 /.settings
 uploads/
 backup/
