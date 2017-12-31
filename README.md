@@ -5,7 +5,9 @@ ExtJS: 4.2
 Cocok untuk: Cafe & Resto
 
 ----------------------------------------------------------------------
-Terima Kasih sudah Download dan Support WePOS.id
+Terima Kasih sudah Download dan Support WePOS.id,
+WePOS sudah dibuat sejak tahun 2015, update bertahap sesuai kebutuhan Cafe
+WePOS merupakan Karya anak bangsa, support Team WePOS dengan Donasi dari rekan-rekan
 
 Untuk Instalasi bisa baca di dokumentasi (login website, wepos.id)
 
@@ -26,8 +28,10 @@ copy database.php.org --> database.php (edit isi file, sesuaikan dengan nama dat
 
 3. import database: db/database_wepos_free.sql
 
+4. untuk setup printer Thermal -> silahkan download extension PHP di website
 
 #silahkan Donasi untuk versi yang lebih baik ^^
+#terima kasih untuk rekan-rekan yang sudah support WePOS
 
 
 Team WePOS ^^
@@ -35,7 +39,8 @@ Team WePOS ^^
 contact@wepos.id / angga.nugraha@gmail.com
 
 ----------------------------------------------------------------------
-SELALU DUKUNG KARYA ANAK BANGSA!!
+*SELALU DUKUNG KARYA ANAK BANGSA!!
+*JANGAN MALU UNTUK BERTANYA - GRATIS KONSULTASI
 
 
 
