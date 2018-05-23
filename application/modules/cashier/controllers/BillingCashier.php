@@ -3872,7 +3872,7 @@ class BillingCashier extends MY_Controller {
 									$ph = false;
 								}
 								
-								//$ph = @printer_open($printer_ip_qcReceipt);
+								$ph = @printer_open($printer_ip_qcReceipt);
 								if($ph)
 								{
 									
