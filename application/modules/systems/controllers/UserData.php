@@ -46,15 +46,28 @@ class UserData extends MY_Controller {
 		$is_dropdown = $this->input->post('is_dropdown');
 		$show_all_text = $this->input->post('show_all_text');
 		
-		$params['where'] = 'a.is_deleted = 0';
-		if($session_user != 1){
-			$params['where'] = 'a.is_deleted = 0 AND a.id != 1';
+		$searching = $this->input->post('query');
+		$keywords = $this->input->post('keywords');
+		if(!empty($keywords)){
+			$searching = $keywords;
 		}
+		
+		
+		if($session_user != 1){
+			$params['where'][] = 'a.is_deleted = 0 AND a.id != 1';
+		}else{
+			$params['where'][] = 'a.is_deleted = 0';
+		}
+		
 		if(!empty($role_name)){
-			$params['where'] = "c.role_name = '".$role_name."'";
+			$params['where'][] = "c.role_name = '".$role_name."'";
 		}
 		if(!empty($role_id)){
-			$params['where'] = "b2.role_id = '".$role_id."'";
+			$params['where'][] = "b2.role_id = '".$role_id."'";
+		}
+		
+		if(!empty($searching)){
+			$params['where'][] = "(a.user_username LIKE '%".$searching."%' OR a.user_firstname LIKE '%".$searching."%' OR a.user_lastname LIKE '%".$searching."%' OR c.role_name LIKE '%".$searching."%')";
 		}
 		
 		//get data -> data, totalCount
@@ -141,9 +154,28 @@ class UserData extends MY_Controller {
 		if(!empty($_POST['is_active'])){
 			$is_active = 1;
 		}
-				
+		
+		$id = $this->input->post('id', true);
+		
+		$dt_deleted = array();
+		$form_type_UserData = $this->input->post('form_type_UserData', true);
+		if($form_type_UserData == 'add')
+		{
+			//cchek if user is not active
+			$this->db->from($this->table);
+			$this->db->where('user_username', $user_username);
+			$this->db->where('is_deleted', 1);
+			$getuser_deleted = $this->db->get();
+			if($getuser_deleted->num_rows() > 0){
+				$dt_deleted = $getuser_deleted->row();
+				$id = $dt_deleted->id;
+				$form_type_UserData = 'edit';
+				$old_pass = '';
+			}
+		}
+		
 		$r = '';
-		if($this->input->post('form_type_UserData', true) == 'add')
+		if($form_type_UserData == 'add')
 		{
 			if(empty($new_pass)){
 				$r = array('success' => false);
@@ -214,7 +246,7 @@ class UserData extends MY_Controller {
 			}
       		
 		}else
-		if($this->input->post('form_type_UserData', true) == 'edit'){
+		if($form_type_UserData == 'edit'){
 			$var = array('fields'	=>	array(
 				    'user_username' => 	$user_username,
 					'role_id'		=>	$role_id,
@@ -236,7 +268,7 @@ class UserData extends MY_Controller {
 			);
 
 
-			$id = $this->input->post('id', true);
+			
 			
 			//SKIP STRUCTURE IF SUPER ADMIN
 			if($id == 1){
@@ -281,6 +313,11 @@ class UserData extends MY_Controller {
 				
 				$var['fields']['user_pin'] = $user_pin;
 				
+			}
+			
+			if(!empty($dt_deleted)){
+				$var['fields']['is_active'] = 1;
+				$var['fields']['is_deleted'] = 0;
 			}
 						
 			//UPDATE
@@ -352,10 +389,26 @@ class UserData extends MY_Controller {
 	{
 		$role_id = $this->session->userdata('role_id');
 		$id_user = $this->session->userdata('id_user');
-			
+		
+		$type_check = '';
+		if(!empty($_POST['type_check'])){
+			$type_check = $_POST['type_check'];
+		}
+		
 		$user_shortcuts = array();
-		if(!empty($id_user)){
+		if(!empty($id_user) AND $type_check == 'quickStart'){
 			$userQuickStartShortcuts =	$this->m->userQuickStartShortcuts($id_user);
+			if(!empty($userQuickStartShortcuts)){
+				foreach($userQuickStartShortcuts as $dt){
+					$user_shortcuts[] = $dt->id;
+				}
+			}
+			
+		}
+		
+		$user_shortcuts = array();
+		if(!empty($id_user) AND $type_check == 'desktopShortcuts'){
+			$userQuickStartShortcuts =	$this->m->userDesktopShortcuts($id_user);
 			if(!empty($userQuickStartShortcuts)){
 				foreach($userQuickStartShortcuts as $dt){
 					$user_shortcuts[] = $dt->id;
@@ -366,9 +419,12 @@ class UserData extends MY_Controller {
 		
 		$r = array('data' => '', 'totalCount'	=>	'');
 		if(!empty($role_id)){
+			
+			$get_data = $this->m->userModuleRoles($role_id, $user_shortcuts, $type_check);
+			
 			$r = array(
-				'data'			=>	$this->m->userModuleRoles($role_id, $user_shortcuts),
-				'totalCount'	=>	''
+				'data'			=>	$get_data,
+				'totalCount'	=>	count($get_data)
 			);
 		}
 		
@@ -380,9 +436,12 @@ class UserData extends MY_Controller {
 		$id_user = $this->session->userdata('id_user');
 		$r = array('data' => '', 'totalCount'	=>	'');
 		if(!empty($id_user)){
+			
+			$userDesktopShortcuts = $this->m->userDesktopShortcuts($id_user);
+			
 			$r = array(
-				'data'			=>	$this->m->userDesktopShortcuts($id_user),
-				'totalCount'	=>	''
+				'data'			=>	$userDesktopShortcuts,
+				'totalCount'	=>	count($userDesktopShortcuts)
 			);
 		}
 		
@@ -403,7 +462,7 @@ class UserData extends MY_Controller {
 			die(json_encode($r));
 		}
 		
-		$id_module = '';
+		$id_module = array();
 		if(!empty($_POST['id_module'])){
 			$id_module = json_decode($_POST['id_module'], true);
 		}

@@ -30,14 +30,15 @@ class MasterProductPackage extends MY_Controller {
 		
 		// Default Parameter
 		$params = array(
-			'fields'		=> 'a.*, b.product_name, b.product_image, b.product_desc, c.product_category_name',
+			'fields'		=> 'a.*, b.product_name, b.product_image, b.product_desc, c.product_category_name, d.varian_name',
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table.' as a',
 			'join'			=> array(
 									'many', 
 									array( 
 										array($this->prefix.'product as b','b.id = a.product_id','LEFT'),
-										array($this->prefix.'product_category as c','c.id = b.category_id','LEFT')
+										array($this->prefix.'product_category as c','c.id = b.category_id','LEFT'),
+										array($this->prefix.'varian as d','d.id = a.varian_id','LEFT')
 									) 
 								),
 			'where'			=> array('a.is_deleted' => 0),
@@ -60,8 +61,12 @@ class MasterProductPackage extends MY_Controller {
 				if(empty($s['product_image'])){
 					$s['product_image'] = 'no-image.jpg';
 				}
-				$s['product_image_show'] = '<img src="'.$this->product_img_url.$s['product_image'].'" style="max-width:80px; max-height:60px;"/>';
-				$s['product_image_src'] = $this->product_img_url.$s['product_image'];
+				//$s['product_image_show'] = '<img src="'.$this->product_img_url.$s['product_image'].'" style="max-width:80px; max-height:60px;"/>';
+				//$s['product_image_src'] = $this->product_img_url.$s['product_image'];
+				
+				$s['normal_price_show'] = priceFormat($s['normal_price'],2);
+				$s['product_price_show'] = priceFormat($s['product_price'],2);
+				$s['product_hpp_show'] = priceFormat($s['product_hpp'],2);
 				
 				array_push($newData, $s);
 			}
@@ -172,8 +177,12 @@ class MasterProductPackage extends MY_Controller {
 		
 		$package_id = $this->input->post('package_id');
 		$product_id = $this->input->post('product_id');
+		$normal_price = $this->input->post('normal_price');
 		$product_price = $this->input->post('product_price');
 		$product_hpp = $this->input->post('product_hpp');		
+		$has_varian = $this->input->post('has_varian');		
+		$varian_id = $this->input->post('varian_id');		
+		$product_varian_id = $this->input->post('product_varian_id');		
 		
 		if(empty($product_id) OR empty($package_id)){
 			$r = array('success' => false);
@@ -187,8 +196,12 @@ class MasterProductPackage extends MY_Controller {
 				'fields'	=>	array(
 				    'package_id'  => 	$package_id,
 				    'product_id'  => 	$product_id,
+					'normal_price'	=>	$normal_price,
 					'product_price'	=>	$product_price,
 					'product_hpp'	=>	$product_hpp,
+					'has_varian'	=>	$has_varian,
+					'varian_id'		=>	$varian_id,
+					'product_varian_id'	=>	$product_varian_id,
 					'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
@@ -223,8 +236,12 @@ class MasterProductPackage extends MY_Controller {
 			$var = array('fields'	=>	array(
 				    'package_id'  => 	$package_id,
 				    'product_id'  => 	$product_id,
+					'normal_price'	=>	$normal_price,
 					'product_price'	=>	$product_price,
 					'product_hpp'	=>	$product_hpp,
+					'has_varian'	=>	$has_varian,
+					'varian_id'		=>	$varian_id,
+					'product_varian_id'	=>	$product_varian_id,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user
 				),

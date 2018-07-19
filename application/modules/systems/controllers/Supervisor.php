@@ -29,7 +29,9 @@ class Supervisor extends MY_Controller {
 			'verifyMode'=> 1, //using username + password, 0 -> just using username
 			'access'	=> '', //if empty -> just verify user
 			'log'		=> 0, //1 -> save to log make sure there a data to save
-			'data'		=> '' //json
+			'data'		=> '', //json
+			'ref_id_1'		=> '', //text
+			'ref_id_2'		=> '' //text
 		);
 		
 		$username = $this->input->post('username', true);
@@ -72,6 +74,8 @@ class Supervisor extends MY_Controller {
 		$spv['access'] = $this->input->post('access', true);
 		$spv['log'] = $this->input->post('log', true);
 		$spv['data'] = $this->input->post('data', true);
+		$spv['ref_id_1'] = $this->input->post('ref_id_1', true);
+		$spv['ref_id_2'] = $this->input->post('ref_id_2', true);
 		if(!empty($spv['log']) AND empty($spv['data'])){
 			$r = array('success' => false, 'info' => 'Requirement a log data!');
 			echo json_encode($r);

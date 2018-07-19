@@ -52,3 +52,15 @@
 .icon-home {
 	background-image:url(../icons/fam/application_home.png) !important;
 }
+.icon-notes {
+	background-image:url(../icons/fam/note.png) !important;
+}
+.icon-grid-search {
+	background-image:url(../icons/fam/application_form_magnify.png) !important;
+}
+.icon-receipt {
+	background-image:url(../icons/fam/page_white_text.png) !important;
+}
+.icon-list-order {
+	background-image:url(../icons/fam/table_edit.png) !important;
+}

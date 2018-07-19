@@ -146,6 +146,12 @@ class MasterSupplierItem extends MY_Controller {
 					$s['item_hpp_show'] = priceFormat($s['item_hpp']);
 					$s['item_code_name'] = $s['item_code'].' / '.$s['item_name'];
 					
+					if(empty($s['last_in'])){
+						$s['last_in'] = $s['item_hpp'];
+					}
+					
+					$s['last_in_show'] = priceFormat($s['last_in']);
+					
 					if(empty($s['supplier_item_id'])){
 						$no++;
 						$s['supplier_item_id'] = 'x'.$no;
@@ -179,21 +185,27 @@ class MasterSupplierItem extends MY_Controller {
 			die(json_encode($r));
 		}
 		
-		$r = '';
-		if($this->input->post('form_type_masterSupplierItem', true) == 'add')
-		{	
-			
-			//check supplier item
-			$this->db->select('id');
-			$this->db->from($this->table);
-			$this->db->where('supplier_id', $supplier_id);
-			$this->db->where('item_id', $item_id);
-			$get_supplier_item = $this->db->get();
-			if($get_supplier_item->num_rows() > 0){
-				$r = array('success' => false, 'info'	=> "Item been added on list<br/>double click to edit item");
+		//check supplier item
+		$deleted_id = 0;
+		$this->db->select('id');
+		$this->db->from($this->table);
+		$this->db->where('supplier_id', $supplier_id);
+		$this->db->where('item_id', $item_id);
+		$get_supplier_item = $this->db->get();
+		if($get_supplier_item->num_rows() > 0){
+			$old_item = $get_supplier_item->row();
+			if($old_item->is_deleted = 1){
+				$deleted_id = $old_item->id;
+			}else{
+				$r = array('success' => false, 'info'	=> "Item sudah ditambahkan dilist<br/>double click untuk ubah item");
 				die(json_encode($r));
 				die();
 			}
+		}
+		
+		$r = '';
+		if($this->input->post('form_type_masterSupplierItem', true) == 'add' AND $deleted_id == 0)
+		{	
 			
 			$var = array(
 				'fields'	=>	array(
@@ -205,7 +217,8 @@ class MasterSupplierItem extends MY_Controller {
 					'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
-					'updatedby'		=>	$session_user
+					'updatedby'		=>	$session_user,
+					'is_deleted'	=>	0
 				),
 				'table'		=>  $this->table
 			);	
@@ -226,7 +239,7 @@ class MasterSupplierItem extends MY_Controller {
 			}
       		
 		}else
-		if($this->input->post('form_type_masterSupplierItem', true) == 'edit'){
+		if($this->input->post('form_type_masterSupplierItem', true) == 'edit' OR $deleted_id > 0){
 			$var = array('fields'	=>	array(
 				    'supplier_id'  => 	$supplier_id,
 				    'item_id'  => 	$item_id,
@@ -234,7 +247,8 @@ class MasterSupplierItem extends MY_Controller {
 					'item_price'	=>	$item_price,
 					'item_hpp'	=>	$item_hpp,
 					'updated'		=>	date('Y-m-d H:i:s'),
-					'updatedby'		=>	$session_user
+					'updatedby'		=>	$session_user,
+					'is_deleted'	=>	0
 				),
 				'table'			=>  $this->table,
 				'primary_key'	=>  'id'
@@ -242,6 +256,11 @@ class MasterSupplierItem extends MY_Controller {
 								
 			//UPDATE
 			$id = $this->input->post('id', true);
+			
+			if(!empty($deleted_id)){
+				$id = $deleted_id;
+			}
+			
 			$this->lib_trans->begin();
 				$update = $this->m->save($var, $id);
 			$this->lib_trans->commit();

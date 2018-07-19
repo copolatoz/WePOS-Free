@@ -27,6 +27,12 @@ class MasterItem extends MY_Controller {
 		$params = array(
 			'fields'		=> 'a.*, b.unit_name, b.unit_code, c.supplier_name, d.item_category_name, d.item_category_code,
 								e.item_subcategory_name, e.item_subcategory_code',
+
+
+
+
+
+
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table.' as a',
 			'join'			=> array(
@@ -36,6 +42,12 @@ class MasterItem extends MY_Controller {
 										array($this->prefix.'supplier as c','c.id = a.supplier_id','LEFT'),
 										array($this->prefix.'item_category as d','d.id = a.category_id','LEFT'),
 										array($this->prefix.'item_subcategory as e','e.id = a.subcategory_id','LEFT')
+
+
+
+
+
+
 									) 
 								),
 			'where'			=> array('a.is_deleted' => 0),
@@ -142,6 +154,8 @@ class MasterItem extends MY_Controller {
 				}
 				
 				$s['item_code_name'] = $s['item_code'].' / '.$s['item_name'];
+
+				$s['item_name_code'] = $s['item_name'].' / '.$s['item_code'];
 				
 				if($use_current_stock == true){
 					if(in_array($s['id'], $all_item_stock)){
@@ -198,6 +212,94 @@ class MasterItem extends MY_Controller {
       	die(json_encode($get_data));
 	}
 
+	public function gridDataSKU()
+	{
+		$this->table = $this->prefix.'items';
+		
+		//is_active_text
+		$sortAlias = array(
+			'is_active_text' => 'is_active',
+		);		
+		
+		// Default Parameter
+		$params = array(
+			'fields'		=> 'a.*',
+			'primary_key'	=> 'a.id',
+			'table'			=> $this->table.' as a',
+			'join'			=> array(
+									'many', 
+								),
+			'where'			=> array('a.is_deleted' => 0),
+			'order'			=> array('a.id' => 'DESC'),
+			'sort_alias'	=> $sortAlias,
+			'single'		=> false,
+			'output'		=> 'array' //array, object, json
+		);
+		
+		
+		//DROPDOWN & SEARCHING
+		$is_dropdown = $this->input->post('is_dropdown');
+		$searching = $this->input->post('query');
+		$keywords = $this->input->post('keywords');
+		$show_all_text = $this->input->post('show_all_text');
+		$show_choose_text = $this->input->post('show_choose_text');
+		
+		
+		if(!empty($keywords)){
+			$searching = $keywords;
+		}
+		
+		if(!empty($is_dropdown)){
+			$params['order'] = array('item_sku' => 'ASC');
+			$params['where'][] = array('a.is_active' => 1);
+		}
+		if(!empty($searching)){
+			$params['where'][] = "(a.item_code LIKE '".$searching."%' OR a.item_sku LIKE '".$searching."%' OR a.item_name LIKE '%".$searching."%' OR a.item_sku LIKE '%".$searching."%')";
+		}
+		
+		//get data -> data, totalCount
+		$get_data = $this->m->find_all($params);
+		  		
+  		$kodeSKU = array();
+  		$newDataSKU = array();
+		
+		
+		if(!empty($show_all_text)){
+			$dt = array('item_sku' => '', 'item_sku_name' => 'Pilih Semua');
+			array_push($newDataSKU, $dt);
+		}else{
+			if(!empty($show_choose_text)){
+				$dt = array('item_sku' => '', 'item_sku_name' => 'Pilih');
+				array_push($newDataSKU, $dt);
+			}
+		}
+		
+		
+		if(!empty($get_data['data'])){
+			foreach ($get_data['data'] as $s){
+				
+				$item_name = explode(" - ", $s['item_name']);
+				$s['item_name'] = $item_name[0];
+				
+				$s['item_sku_name'] = $s['item_sku'].' / '.$s['item_name'];
+				
+				if(!in_array($s['item_sku'], $kodeSKU) AND !empty($s['item_sku'])){
+					$kodeSKU[] = $s['item_sku'];
+					$newDataSKU[] = array(
+						'item_sku' => $s['item_sku'],
+						'item_sku_name' => $s['item_sku_name'],
+					);
+				}
+				
+			}
+		}
+		
+		$get_data['data'] = $newDataSKU;
+		$get_data['totalCount'] = count($newDataSKU);
+		
+      	die(json_encode($get_data));
+	}
+
 	public function gridDataDistribution()
 	{
 		$this->table = $this->prefix.'items';
@@ -213,7 +315,7 @@ class MasterItem extends MY_Controller {
 			
 		// Default Parameter
 		$params = array(
-			'fields'		=> 'a.id, a.item_code, a.item_name, a.item_price, a.sales_price, a.item_hpp, a.last_in, a.unit_id, b.unit_name, a.use_stok_kode_unik',
+			'fields'		=> 'a.id, a.item_code, a.item_sku, a.item_name, a.item_price, a.sales_price, a.item_hpp, a.last_in, a.unit_id, b.unit_name, a.use_stok_kode_unik',
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table.' as a',
 			'join'			=> array(
@@ -241,7 +343,8 @@ class MasterItem extends MY_Controller {
 		
 		$use_current_stock = false;
 		$all_item_stock = array();
-		if($from_module == 'distribution' OR $from_module == 'salesorder'){
+		//OR $from_module == 'production' 
+		if($from_module == 'usagewaste' OR $from_module == 'distribution' OR $from_module == 'salesorder'){
 			
 			if(!empty($storehouse_id)){
 				
@@ -329,7 +432,7 @@ class MasterItem extends MY_Controller {
 			$params['where'][] = array('a.is_active' => 1);
 		}
 		if(!empty($searching)){
-			$params['where'][] = "(item_code LIKE '%".$searching."%' OR item_name LIKE '%".$searching."%' OR d.item_category_name LIKE '%".$searching."%' OR e.item_subcategory_name LIKE '%".$searching."%')";
+			$params['where'][] = "(item_code LIKE '%".$searching."%' OR item_sku LIKE '%".$searching."%' OR item_name LIKE '%".$searching."%' OR d.item_category_name LIKE '%".$searching."%' OR e.item_subcategory_name LIKE '%".$searching."%')";
 		}
 		if(!empty($supplier_id)){
 			$params['where'][] = "a.supplier_id = ".$supplier_id."";
@@ -421,6 +524,7 @@ class MasterItem extends MY_Controller {
 		
 		$form_module_masterItem = $this->input->post('form_module_masterItem');
 		$item_name = $this->input->post('item_name');
+		$item_sku = $this->input->post('item_sku');
 		$item_desc = $this->input->post('item_desc');
 		$sales_price = $this->input->post('sales_price');
 		$item_price = $this->input->post('item_price');
@@ -433,6 +537,7 @@ class MasterItem extends MY_Controller {
 		$item_image = $this->input->post('item_image');
 		$item_type = $this->input->post('item_type');
 		$item_hpp = $this->input->post('item_hpp');
+		$min_stock = $this->input->post('min_stock');
 		$id_ref_product = $this->input->post('id_ref_product');
 		$persentase_bagi_hasil = $this->input->post('persentase_bagi_hasil');
 		$item_manufacturer = '';
@@ -477,7 +582,12 @@ class MasterItem extends MY_Controller {
 		if(empty($item_name)){
 			$r = array('success' => false);
 			die(json_encode($r));
-		}		
+		}			
+		
+		if(empty($item_sku)){
+			//$r = array('success' => false, 'info' => 'SKU harus diisi');
+			//die(json_encode($r));
+		}	
 		
 		$is_active = $this->input->post('is_active');
 		if(empty($is_active)){
@@ -523,7 +633,19 @@ class MasterItem extends MY_Controller {
 		if(empty($sales_price)){
 			$sales_price = 0;
 		}
-			
+		
+		$opt_value = array(
+			'item_sku_from_code',
+		);
+		
+		$get_opt = get_option_value($opt_value);
+		
+		$item_sku_from_code = 0;
+		if(!empty($get_opt['item_sku_from_code'])){
+			$item_sku_from_code = $get_opt['item_sku_from_code'];
+		}
+		
+		
 		$r = '';
 		if($this->input->post('form_type_masterItem', true) == 'add')
 		{
@@ -538,12 +660,12 @@ class MasterItem extends MY_Controller {
 			if($get_last->num_rows() > 0){
 				
 				//available
-				$r = array('success' => false, 'info' => 'Code Available or been used!'); 
+				$r = array('success' => false, 'info' => 'Kode sudah digunakan!'); 
 				
 				//suggestion
 				if(!empty($item_category_code) OR !empty($item_subcategory_code)){
 					$get_item_code = $this->generate_item_code($tipe);
-					$r = array('success' => false, 'info' => 'Code Available or been used!<br/>Try use this code: '.$get_item_code['item_code']); 
+					$r = array('success' => false, 'info' => 'Kode sudah digunakan!<br/>Try use this code: '.$get_item_code['item_code']); 
 				}
 				
 				die(json_encode($r));
@@ -553,10 +675,15 @@ class MasterItem extends MY_Controller {
 			//$r = array('success' => false, 'info' => $get_item_code, 'item_no' => $get_item_code['item_no']);
 			//die(json_encode($r));
 			
+			if(empty($item_sku) AND $item_sku_from_code == 1){
+				$item_sku = $get_item_code['item_code'];
+			}
+			
 			$var = array(
 				'fields'	=>	array(
 				    'item_code' => 	$get_item_code['item_code'],
 				    'item_no' => 	$get_item_code['item_no'],
+				    'item_sku' => 	$item_sku,
 				    'item_name' => 	$item_name,
 					'item_desc'	=>	$item_desc,
 					'unit_id'	=>	$unit_id,
@@ -566,6 +693,7 @@ class MasterItem extends MY_Controller {
 					'sales_price'=>	$sales_price,
 					'item_price'=>	$item_price,
 					'item_hpp'	=>	$item_hpp,
+					'min_stock'	=>	$min_stock,
 					'item_type'	=>	$item_type,
 					//'item_manufacturer'	=>	$item_manufacturer,
 					'use_for_sales'	=>	$use_for_sales,
@@ -626,7 +754,13 @@ class MasterItem extends MY_Controller {
       		
 		}else
 		if($this->input->post('form_type_masterItem', true) == 'edit'){
+			
+			if($item_sku_from_code == 1){
+				$item_sku = $item_code;
+			}
+			
 			$var = array('fields'	=>	array(
+				    'item_sku' => 	$item_sku,
 				    'item_name' => 	$item_name,
 					'item_desc'	=>	$item_desc,
 					'sales_price'=>	$sales_price,
@@ -636,6 +770,7 @@ class MasterItem extends MY_Controller {
 					'subcategory_id'	=>	$subcategory_id,
 					'supplier_id'	=>	$supplier_id,
 					'item_hpp'	=>	$item_hpp,
+					'min_stock'	=>	$min_stock,
 					'item_type'	=>	$item_type,
 					'use_for_sales'	=>	$use_for_sales,
 					'sales_use_tax'	=>	$sales_use_tax,
@@ -667,7 +802,14 @@ class MasterItem extends MY_Controller {
 			
 			if($update)
 			{  
+				//update supplier item unit
+				if(!empty($id)){
+					$update_supplier_item = array('unit_id'	=> $unit_id);
+					$this->db->update($this->prefix.'supplier_item',$update_supplier_item,"item_id = ".$id);
+				}
 				
+
+
 				if($is_upload_file){					
 					//thumb width 200pixel
 					do_thumb($data_upload_temp, $this->item_img_path_big, $this->item_img_path_thumb, '', $thumb_size_width);
@@ -856,8 +998,10 @@ class MasterItem extends MY_Controller {
 		
 		$id = $this->input->post('id');
 		$item_code = $this->input->post('item_code');
+		$item_sku = $this->input->post('item_sku');
 		$item_category_code = $this->input->post('item_category_code');
 		$item_subcategory_code = $this->input->post('item_subcategory_code');
+
 		$tipe = $this->input->post('tipe');
 		
 		$r = array('success' => false, 'info' => 'Update Code Failed!'); 
@@ -885,7 +1029,8 @@ class MasterItem extends MY_Controller {
 			$opt_value = array(
 				'item_code_format',
 				'item_code_separator',
-				'item_no_length'
+				'item_no_length',
+				'item_sku_from_code'
 			);
 			
 			$get_opt = get_option_value($opt_value);
@@ -900,6 +1045,15 @@ class MasterItem extends MY_Controller {
 				$item_no_length = $get_opt['item_no_length'];
 			}
 			
+			$item_sku_from_code = 0;
+			if(!empty($get_opt['item_sku_from_code'])){
+				$item_sku_from_code = $get_opt['item_sku_from_code'];
+			}
+			
+			if($item_sku_from_code == 1){
+				$item_sku = '';
+			}
+			
 			$repl_attr = array(
 				"{Cat}"		=> $item_category_code,
 				"{SubCat}"	=> $item_subcategory_code
@@ -908,6 +1062,7 @@ class MasterItem extends MY_Controller {
 			$item_code_format = strtr($item_code_format, $repl_attr);
 			$get_exp = explode("{ItemNo}", $item_code_format);
 			$first_format = '';
+			$item_no = 0;
 			if(!empty($get_exp[0])){
 				$first_format = $get_exp[0];
 				$first_format_length_code = strlen($first_format);
@@ -916,8 +1071,15 @@ class MasterItem extends MY_Controller {
 			}
 			//update 
 			$update_code = array('item_code' => $item_code,'item_no' => $item_no);
+			
+			if($item_sku_from_code == 1){
+				$item_sku = $item_code;
+				$update_code['item_sku'] = $item_sku;
+			}
+			
+			
 			$this->db->update($this->table, $update_code, "id = ".$id);
-			$r = array('success' => true, 'item_code' => $item_code, 'item_no' => $item_no);
+			$r = array('success' => true, 'item_sku_from_code' => $item_sku_from_code, 'item_code' => $item_code, 'item_sku' => $item_sku, 'item_no' => $item_no);
 			
 		}
 		
@@ -934,11 +1096,13 @@ class MasterItem extends MY_Controller {
 		$item_subcategory_code = $this->input->post('item_subcategory_code');
 		
 		$item_name = $this->input->post('item_name');
+		$item_sku = $this->input->post('item_sku');
 		
 		$opt_value = array(
 			'item_code_format',
 			'item_code_separator',
-			'item_no_length'
+			'item_no_length',
+			'item_sku_from_code'
 		);
 		
 		$get_opt = get_option_value($opt_value);
@@ -953,7 +1117,17 @@ class MasterItem extends MY_Controller {
 			$item_no_length = $get_opt['item_no_length'];
 		}
 		
+		$item_sku_from_code = 0;
+		if(!empty($get_opt['item_sku_from_code'])){
+			$item_sku_from_code = $get_opt['item_sku_from_code'];
+		}
+		
+		if($item_sku_from_code == 1){
+			$item_sku = '';
+		}
+		
 		$repl_attr = array(
+			"{SKU}"		=> $item_sku,
 			"{Cat}"		=> $item_category_code,
 			"{SubCat}"	=> $item_subcategory_code
 		);

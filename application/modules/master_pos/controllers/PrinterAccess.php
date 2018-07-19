@@ -18,9 +18,17 @@ class PrinterAccess extends MY_Controller {
 		$this->table = $this->prefix.'options';
 		$this->table_printer = $this->prefix_pos.'printer';
 		
+		
+		$keywords = $this->input->post('keywords');
+
 		$all_printer_name = array();
 		$this->db->select("*");
 		$this->db->from($this->table_printer);
+		
+		if(!empty($keywords)){
+			$this->db->where("(printer_name LIKE '%".$keywords."%' OR printer_tipe LIKE '%".$keywords."%' OR printer_pin LIKE '%".$keywords."%')");
+		}
+		
 		$all_printer = $this->db->get();
 		if($all_printer->num_rows() > 0){
 			foreach($all_printer->result() as $dt){
@@ -31,11 +39,13 @@ class PrinterAccess extends MY_Controller {
 		
 		$this->db->select("*");
 		$this->db->from($this->table);
-		$this->db->where("option_var LIKE '%qcReceipt%' OR option_var LIKE '%barReceipt%' OR option_var LIKE '%kitchenReceipt%' OR option_var LIKE '%cashierReceipt%' OR option_var LIKE '%otherReceipt%'");
+		$this->db->where("(option_var LIKE '%reservationReceipt%' OR option_var LIKE '%qcReceipt%' OR option_var LIKE '%barReceipt%' OR option_var LIKE '%kitchenReceipt%' OR option_var LIKE '%cashierReceipt%' OR option_var LIKE '%otherReceipt%')");
+		
+		
 		$this->db->order_by("id", "DESC");
 		$data_access = $this->db->get();
 		
-		$allow_var = array("qcReceipt","barReceipt","kitchenReceipt","cashierReceipt","otherReceipt");
+		$allow_var = array("qcReceipt","barReceipt","kitchenReceipt","cashierReceipt","otherReceipt","reservationReceipt");
 		
 		$allow_index = array(
 			'id',
@@ -54,6 +64,7 @@ class PrinterAccess extends MY_Controller {
 			'printer'
 		);
 		
+		$not_found = array();
 		$data_group = array();
 		if($data_access->num_rows() > 0){
 			foreach($data_access->result() as $dt){
@@ -89,10 +100,17 @@ class PrinterAccess extends MY_Controller {
 						if(in_array($exp_var[0], $allow_index)){
 							
 							
-							
 							if($exp_var[0] == 'printer_id'){
-								$data_group[$exp_var[1]."_".$exp_var[2]]['printer_name'] = $all_printer_name[$dt->option_value];
-								$data_group[$exp_var[1]."_".$exp_var[2]]['printer_id'] = $dt->option_value;
+								
+								if(!empty($all_printer_name[$dt->option_value])){
+									$data_group[$exp_var[1]."_".$exp_var[2]]['printer_name'] = $all_printer_name[$dt->option_value];
+									$data_group[$exp_var[1]."_".$exp_var[2]]['printer_id'] = $dt->option_value;
+								}else{
+									if(!in_array($exp_var[1]."_".$exp_var[2], $not_found)){
+										$not_found[] = $exp_var[1]."_".$exp_var[2];
+									}
+								}
+								
 							}else
 							if($exp_var[0] == 'tipe_printer'){
 								$data_group[$exp_var[1]."_".$exp_var[2]]['printer_pin'] = $dt->option_value;
@@ -125,10 +143,14 @@ class PrinterAccess extends MY_Controller {
   		$newData = array();
 		
 		if(!empty($data_group)){
-			foreach ($data_group as $s){
+			foreach ($data_group as $key => $s){
+				
 				$s['do_print_text'] = ($s['do_print'] == '1') ? '<span style="color:green;">Ya</span>':'<span style="color:red;">Tidak</span>';
 				
-				array_push($newData, $s);
+				if(!in_array($key, $not_found)){
+					array_push($newData, $s);
+				}
+				
 			}
 		}
 		

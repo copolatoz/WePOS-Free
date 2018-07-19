@@ -36,7 +36,11 @@ class itemCategory extends MY_Controller {
 		$searching = $this->input->post('query');
 		$show_all_text = $this->input->post('show_all_text');
 		$show_choose_text = $this->input->post('show_choose_text');
+		$keywords = $this->input->post('keywords');
 		
+		if(!empty($keywords)){
+			$searching = $keywords;
+		}
 		if(!empty($is_dropdown)){
 			$params['order'] = array('item_category_desc' => 'ASC');
 			//$params['where'] = array('parent_id != 0');

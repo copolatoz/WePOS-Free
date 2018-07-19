@@ -141,7 +141,8 @@ class Model_kontrabonapdetail extends DB_Model {
 						$dtUpdate_AP[] = array(
 								'id'  => $rAP->ap_id,
 								'ap_status'  => 'kontrabon',
-								'ap_used' => 1				
+								'ap_used' => 1,				
+								'no_kontrabon' => $dt_rowguid['kb_no']	
 						);						
 					}
 					

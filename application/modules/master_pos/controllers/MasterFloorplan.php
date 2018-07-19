@@ -34,7 +34,11 @@ class MasterFloorplan extends MY_Controller {
 		//DROPDOWN & SEARCHING
 		$is_dropdown = $this->input->post('is_dropdown');
 		$searching = $this->input->post('query');
+		$keywords = $this->input->post('keywords');
 		
+		if(!empty($keywords)){
+			$searching = $keywords;
+		}
 		if(!empty($is_dropdown)){
 			$params['order'] = array('floorplan_desc' => 'ASC');
 		}

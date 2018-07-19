@@ -32,7 +32,7 @@ class Model_UserData extends DB_Model {
 		}
 	}
 	
-	public function userModuleRoles($role_id = -1, $user_shortcuts = array())
+	public function userModuleRoles($role_id = -1, $user_shortcuts = array(), $type_check = '')
 	{
 		$prefix = $this->prefix;
 		
@@ -42,6 +42,10 @@ class Model_UserData extends DB_Model {
 		$this->db->join($prefix.'roles_module as b','b.module_id = a.id','left');
 		//$this->db->where('a.show_on_start_menu',1);
 		$this->db->where('b.role_id',$role_id);
+		
+		if($type_check == 'desktopShortcuts'){
+			$this->db->where('a.show_on_shorcut_desktop',1);
+		}
 		
 		if(!empty($user_shortcuts)){
 			$id_shortcut = implode("','", $user_shortcuts);
@@ -61,12 +65,12 @@ class Model_UserData extends DB_Model {
 	{
 		$prefix = $this->prefix;
 		
-		$result = '';
-		$this->db->select('a.id, a.module_name, a.module_folder');
-		$this->db->from($prefix.'modules as a');
-		$this->db->join($prefix.'users_shortcut as b','b.module_id = a.id','left');
-		$this->db->where('a.show_on_shorcut_desktop',1);
-		$this->db->where('b.user_id',$user_id);
+		$result = array();
+		$this->db->select('a.module_id, a.module_id as id, b.module_name, b.module_folder');
+		$this->db->from($prefix.'users_shortcut as a');
+		$this->db->join($prefix.'modules as b','b.id = a.module_id','left');
+		$this->db->where('b.show_on_shorcut_desktop',1);
+		$this->db->where('a.user_id',$user_id);
 		$dt_module = $this->db->get();
 		
 		if($dt_module->num_rows() > 0){
@@ -81,7 +85,7 @@ class Model_UserData extends DB_Model {
 		$prefix = $this->prefix;
 		$session_user = $this->session->userdata('user_username');
 		
-		if(empty($dt_module) OR empty($id)){
+		if(empty($id)){
 			return false;
 		}		
 		
@@ -104,34 +108,55 @@ class Model_UserData extends DB_Model {
 		$all_module_data = array();
 		
 		if(!empty($dt_module)){
+			
+			//modules
+			$allowed_module_id = array();
+			$this->db->select("*");
+			$this->db->from($prefix.'modules');
+			$this->db->where("id IN (".implode(",", $dt_module).")");
+			$get_sel_module = $this->db->get();	
+			if($get_sel_module->num_rows() > 0){
+				foreach($get_sel_module->result() as $dt){
+					
+					if($dt->show_on_shorcut_desktop == 1){
+						if(!in_array($dt->id, $allowed_module_id)){
+							$allowed_module_id[] = $dt->id;
+						}
+					}
+					
+				}
+			}
+			
 			for($i=0; $i<count($dt_module); $i++)
 			{	
 				
-				if(!in_array($dt_module[$i], $old_module_id)){
-					
-					if(!in_array($dt_module[$i], $new_module_id)){
-						$new_module_id[] = $dt_module[$i];
+				if(in_array($dt_module[$i],$allowed_module_id)){
+					if(!in_array($dt_module[$i], $old_module_id)){
 						
-						$new_module_data[] = array(
-							'user_id'		=>	$id,
-							'module_id'		=>	$dt_module[$i],
-							'created'		=>	date('Y-m-d H:i:s'),
-							'createdby'		=>	$session_user,
-							'updated'		=>	date('Y-m-d H:i:s'),
-							'updatedby'		=>	$session_user
-						);
-					}
+						if(!in_array($dt_module[$i], $new_module_id)){
+							$new_module_id[] = $dt_module[$i];
+							
+							$new_module_data[] = array(
+								'user_id'		=>	$id,
+								'module_id'		=>	$dt_module[$i],
+								'created'		=>	date('Y-m-d H:i:s'),
+								'createdby'		=>	$session_user,
+								'updated'		=>	date('Y-m-d H:i:s'),
+								'updatedby'		=>	$session_user
+							);
+						}
+						
+						if(!in_array($dt_module[$i], $all_module_data)){
+							$all_module_data[] = $dt_module[$i];
+						}
+						
+					}else{
 					
-					if(!in_array($dt_module[$i], $all_module_data)){
-						$all_module_data[] = $dt_module[$i];
+						if(!in_array($dt_module[$i], $all_module_data)){
+							$all_module_data[] = $dt_module[$i];
+						}
+						
 					}
-					
-				}else{
-				
-					if(!in_array($dt_module[$i], $all_module_data)){
-						$all_module_data[] = $dt_module[$i];
-					}
-					
 				}
 			}
 			
@@ -185,7 +210,7 @@ class Model_UserData extends DB_Model {
 		$prefix = $this->prefix;
 		$session_user = $this->session->userdata('user_username');
 		
-		if(empty($dt_module) OR empty($id)){
+		if(empty($id)){
 			return false;
 		}		
 		
@@ -208,34 +233,55 @@ class Model_UserData extends DB_Model {
 		$all_module_data = array();
 		
 		if(!empty($dt_module)){
+			
+			//modules
+			$allowed_module_id = array();
+			$this->db->select("*");
+			$this->db->from($prefix.'modules');
+			$this->db->where("id IN (".implode(",", $dt_module).")");
+			$get_sel_module = $this->db->get();	
+			if($get_sel_module->num_rows() > 0){
+				foreach($get_sel_module->result() as $dt){
+					
+					if($dt->show_on_start_menu == 1 OR $dt->show_on_context_menu == 1){
+						if(!in_array($dt->id, $allowed_module_id)){
+							$allowed_module_id[] = $dt->id;
+						}
+					}
+					
+				}
+			}
+			
 			for($i=0; $i<count($dt_module); $i++)
 			{	
 				
-				if(!in_array($dt_module[$i], $old_module_id)){
-					
-					if(!in_array($dt_module[$i], $new_module_id)){
-						$new_module_id[] = $dt_module[$i];
+				if(in_array($dt_module[$i],$allowed_module_id)){
+					if(!in_array($dt_module[$i], $old_module_id)){
 						
-						$new_module_data[] = array(
-							'user_id'		=>	$id,
-							'module_id'		=>	$dt_module[$i],
-							'created'		=>	date('Y-m-d H:i:s'),
-							'createdby'		=>	$session_user,
-							'updated'		=>	date('Y-m-d H:i:s'),
-							'updatedby'		=>	$session_user
-						);
-					}
+						if(!in_array($dt_module[$i], $new_module_id)){
+							$new_module_id[] = $dt_module[$i];
+							
+							$new_module_data[] = array(
+								'user_id'		=>	$id,
+								'module_id'		=>	$dt_module[$i],
+								'created'		=>	date('Y-m-d H:i:s'),
+								'createdby'		=>	$session_user,
+								'updated'		=>	date('Y-m-d H:i:s'),
+								'updatedby'		=>	$session_user
+							);
+						}
+						
+						if(!in_array($dt_module[$i], $all_module_data)){
+							$all_module_data[] = $dt_module[$i];
+						}
+						
+					}else{
 					
-					if(!in_array($dt_module[$i], $all_module_data)){
-						$all_module_data[] = $dt_module[$i];
+						if(!in_array($dt_module[$i], $all_module_data)){
+							$all_module_data[] = $dt_module[$i];
+						}
+						
 					}
-					
-				}else{
-				
-					if(!in_array($dt_module[$i], $all_module_data)){
-						$all_module_data[] = $dt_module[$i];
-					}
-					
 				}
 			}
 			

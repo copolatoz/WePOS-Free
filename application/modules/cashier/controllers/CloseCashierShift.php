@@ -463,7 +463,10 @@ class CloseCashierShift extends MY_Controller {
 			
 			if(!empty($get_opt['diskon_sebelum_pajak_service'])){
 				$data_post['diskon_sebelum_pajak_service'] = $get_opt['diskon_sebelum_pajak_service'];
+			}else{
+				$data_post['diskon_sebelum_pajak_service'] = 0;
 			}
+			
 			if(empty($get_opt['cashier_max_pembulatan'])){
 				$get_opt['cashier_max_pembulatan'] = 0;
 			}

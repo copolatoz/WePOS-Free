@@ -73,7 +73,7 @@ class AccountPayable extends MY_Controller {
 			if(!empty($date_from) OR !empty($date_till)){
 			
 				if(empty($date_from)){ $date_from = date('Y-m-d'); }
-				if(empty($date_till)){ $date_till = date('Y-m-td'); }
+				if(empty($date_till)){ $date_till = date('Y-m-t'); }
 				
 				$mktime_dari = strtotime($date_from);
 				$mktime_sampai = strtotime($date_till);
@@ -263,10 +263,10 @@ class AccountPayable extends MY_Controller {
 			die(json_encode($r));
 		}
 		
-		$is_active = $this->input->post('is_active');
+		/*$is_active = $this->input->post('is_active');
 		if(empty($is_active)){
 			$is_active = 0;
-		}
+		}*/
 		
 		if($old_ap_tipe == 'purchasing' AND !empty($po_id)  AND !empty($supplier_id)){
 			if($old_ap_tipe == 'purchasing' AND $ap_tipe != 'purchasing'){
@@ -297,7 +297,7 @@ class AccountPayable extends MY_Controller {
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,
-					'is_active'	=>	$is_active
+					//'is_active'	=>	$is_active
 				),
 				'table'		=>  $this->table_account_payable
 			);	
@@ -324,7 +324,8 @@ class AccountPayable extends MY_Controller {
 		}else
 		if($this->input->post('form_type_accountPayable', true) == 'edit'){
 			
-			if($old_ap_tipe == 'purchasing' AND !empty($po_id)  AND !empty($supplier_id)){
+			//if($old_ap_tipe == 'purchasing' AND !empty($po_id)  AND !empty($supplier_id)){
+			if($old_ap_tipe == 'purchasing' AND !empty($po_id)){
 				$var = array('fields'	=>	array(
 						'autoposting_id'=> 	$autoposting_id,
 						'ap_address' 	=> 	$ap_address,

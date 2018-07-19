@@ -149,7 +149,7 @@ if(!empty($payment_data)){
 									//$tot_payment = $det['grand_total'];	
 									//$tot_payment_show = $det['grand_total_show'];	
 									
-									if($key_id == 3 OR $key_id == 2){
+									if($key_id == 2 OR $key_id == 3 OR $key_id == 4){
 										$tot_payment = $det['total_credit'];	
 									}else{
 										$tot_payment = $det['total_cash'];	

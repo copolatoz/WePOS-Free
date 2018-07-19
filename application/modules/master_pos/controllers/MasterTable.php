@@ -35,13 +35,14 @@ class MasterTable extends MY_Controller {
 		
 		// Default Parameter
 		$params = array(
-			'fields'		=> "a.*, b.floorplan_name",
+			'fields'		=> "a.*, b.floorplan_name, c.room_name, c.room_no",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table.' as a',
 			'join'			=> array(
 									'many', 
 									array( 
-										array($this->prefix.'floorplan as b','b.id = a.floorplan_id','LEFT')
+										array($this->prefix.'floorplan as b','b.id = a.floorplan_id','LEFT'),
+										array($this->prefix.'room as c','c.id = a.room_id','LEFT')
 									) 
 								),
 			'where'			=> array('a.is_deleted' => 0),
@@ -56,6 +57,7 @@ class MasterTable extends MY_Controller {
 		$searching = $this->input->post('query');
 		$show_all_text = $this->input->post('show_all_text');
 		$show_choose_text = $this->input->post('show_choose_text');
+		$keywords = $this->input->post('keywords');
 
 		$show_available = $this->input->post('show_available');
 		if(empty($show_available)){
@@ -64,11 +66,14 @@ class MasterTable extends MY_Controller {
 		
 		$curr_billing = $this->input->post('curr_billing');
 		
+		if(!empty($keywords)){
+			$searching = $keywords;
+		}
 		if(!empty($is_dropdown)){
 			$params['order'] = array('table_no' => 'ASC');
 		}
 		if(!empty($searching)){
-			$params['where'][] = "(table_name LIKE '%".$searching."%' OR table_no LIKE '%".$searching."%')";
+			$params['where'][] = "(table_name LIKE '%".$searching."%' OR table_no LIKE '%".$searching."%' OR  b.floorplan_name LIKE '%".$searching."%' OR c.room_name LIKE '%".$searching."%'  OR c.room_no LIKE '%".$searching."%' )";
 		}
 		
 		//get data -> data, totalCount
@@ -123,6 +128,16 @@ class MasterTable extends MY_Controller {
 			foreach ($get_data['data'] as $s){
 				$s['is_active_text'] = ($s['is_active'] == '1') ? '<span style="color:green;">Active</span>':'<span style="color:red;">Inactive</span>';
 				
+				$text_tipe = 'Dine In';
+				if($s['table_tipe'] == 'takeaway'){
+					$text_tipe = 'Take Away';
+				}
+				if($s['table_tipe'] == 'delivery'){
+					$text_tipe = 'Delivery';
+				}
+				$s['table_tipe_text'] = '<span style="color:green;">'.$text_tipe.'</span>';
+				
+				
 				if(!in_array($s['id'], $available_table)){
 					array_push($newData, $s);
 				}
@@ -143,6 +158,9 @@ class MasterTable extends MY_Controller {
 		$table_name = $this->input->post('table_name');
 		$table_desc = $this->input->post('table_desc');
 		$table_no = $this->input->post('table_no');
+		$room_id = $this->input->post('room_id');
+		$kapasitas = $this->input->post('kapasitas');
+		$table_tipe = $this->input->post('table_tipe');
 		
 		if(empty($table_no) OR empty($table_name) OR empty($floorplan_id)){
 			$r = array('success' => false);
@@ -153,16 +171,23 @@ class MasterTable extends MY_Controller {
 		if(!empty($_POST['is_active'])){
 			$is_active = 1;
 		}
+		
+		if(empty($table_tipe)){
+			$table_tipe = 'dinein';
+		}
 			
 		$r = '';
 		if($this->input->post('form_type_masterTable', true) == 'add')
 		{
 			$var = array(
 				'fields'	=>	array(
-				    'table_no' => 	$table_no,
-				    'table_name' => 	$table_name,
-				    'table_desc' => 	$table_desc,
+				    'table_no' 		=> 	$table_no,
+				    'table_name' 	=> 	$table_name,
+				    'table_desc' 	=> 	$table_desc,
 				    'floorplan_id' 	=> 	$floorplan_id,
+				    'room_id' 		=> 	$room_id,
+				    'kapasitas' 	=> 	$kapasitas,
+				    'table_tipe' 	=> 	$table_tipe,
 					'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
@@ -192,8 +217,11 @@ class MasterTable extends MY_Controller {
 			$var = array('fields'	=>	array(
 				    'table_no'		=> 	$table_no,
 				    'table_name' 	=> 	$table_name,
-				    'table_desc' => 	$table_desc,
+				    'table_desc'	=> 	$table_desc,
 				    'floorplan_id' 	=> 	$floorplan_id,
+				    'room_id' 		=> 	$room_id,
+				    'kapasitas' 	=> 	$kapasitas,
+				    'table_tipe' 	=> 	$table_tipe,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,
 					'is_active'		=>	$is_active
@@ -247,7 +275,7 @@ class MasterTable extends MY_Controller {
         }  
         else
         {  
-            $r = array('success' => false, 'info' => 'Delete Table Failed!'); 
+            $r = array('success' => false, 'info' => 'Hapus Data Meja Gagal!'); 
         }
 		die(json_encode($r));
 	}

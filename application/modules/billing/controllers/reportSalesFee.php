@@ -52,7 +52,8 @@ class reportSalesFee extends MY_Controller {
 			'date_from'	=> $date_from,
 			'date_till'	=> $date_till,
 			'user_fullname'	=> $user_fullname,
-			'sorting'	=> $sorting
+			'sorting'	=> $sorting,
+			'diskon_sebelum_pajak_service' => 0
 		);
 		
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service'));
@@ -128,6 +129,42 @@ class reportSalesFee extends MY_Controller {
 						$sales_name_report = $s['sales_name'].' - '.$s['sales_company'];
 					}
 					
+					$s['total_billing_awal'] = $s['total_billing'];
+					
+					//CHECK REAL TOTAL BILLING
+					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
+						
+							if($data_post['diskon_sebelum_pajak_service'] == 1){
+								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
+								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+								$s['total_billing'] = $get_total_billing;
+							}else{
+								$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
+							}
+							
+						}else{
+							if(!empty($s['include_tax'])){
+								if($data_post['diskon_sebelum_pajak_service'] == 1){
+									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
+									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+									$s['total_billing'] = $get_total_billing;
+								}else{
+									$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
+								}
+							}
+							if(!empty($s['include_service'])){
+								if($data_post['diskon_sebelum_pajak_service'] == 1){
+									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
+									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+									$s['total_billing'] = $get_total_billing;
+								}else{
+									$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
+								}
+							}
+						}
+					}
+					
 					if(!empty($s['is_compliment'])){
 						$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
 						$s['service_total'] = 0;
@@ -139,6 +176,26 @@ class reportSalesFee extends MY_Controller {
 						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
 					}else{
 						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+						
+						if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+							//CHECKING BALANCE #1
+							if(empty($s['discount_total'])){
+								if($s['sub_total'] != $s['total_billing_awal']){
+									$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
+									$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+								}
+							}else{
+								if(($s['sub_total'] + $s['total_pembulatan']) != $s['grand_total']){
+									$s['sub_total'] = ($s['grand_total']-$s['total_pembulatan'])+$s['compliment_total'];
+								}
+								
+								$cek_total_billing = $s['sub_total'] - ($s['tax_total'] + $s['service_total']) + $s['discount_total'];
+								if($s['total_billing'] != $cek_total_billing){
+									$s['total_billing'] = $cek_total_billing;
+								}
+							}
+						}
+						
 					}
 					
 					//SPLIT DISCOUNT TYPE
@@ -380,7 +437,8 @@ class reportSalesFee extends MY_Controller {
 			'report_name'	=> 'SALES REPORT (RECAP)',
 			'date_from'	=> $date_from,
 			'date_till'	=> $date_till,
-			'user_fullname'	=> $user_fullname
+			'user_fullname'	=> $user_fullname,
+			'diskon_sebelum_pajak_service' => 0
 		);
 		
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service'));
@@ -463,6 +521,40 @@ class reportSalesFee extends MY_Controller {
 					
 					if(!empty($sales_id)){
 						$sales_name_report = $s['sales_name'].' - '.$s['sales_company'];
+					}
+					
+					//CHECK REAL TOTAL BILLING
+					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
+						
+							if($data_post['diskon_sebelum_pajak_service'] == 1){
+								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
+								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+								$s['total_billing'] = $get_total_billing;
+							}else{
+								$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
+							}
+							
+						}else{
+							if(!empty($s['include_tax'])){
+								if($data_post['diskon_sebelum_pajak_service'] == 1){
+									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
+									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+									$s['total_billing'] = $get_total_billing;
+								}else{
+									$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
+								}
+							}
+							if(!empty($s['include_service'])){
+								if($data_post['diskon_sebelum_pajak_service'] == 1){
+									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
+									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+									$s['total_billing'] = $get_total_billing;
+								}else{
+									$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
+								}
+							}
+						}
 					}
 					
 					if(!empty($s['is_compliment'])){
@@ -689,7 +781,7 @@ class reportSalesFee extends MY_Controller {
 									//$tot_payment = $s['grand_total'];
 									//$tot_payment_show = $s['grand_total_show'];
 									
-									if($key_id == 3 OR $key_id == 2){
+									if($key_id == 2 OR $key_id == 3 OR $key_id == 4){
 										$tot_payment = $s['total_credit'];	
 									}else{
 										$tot_payment = $s['total_cash'];	

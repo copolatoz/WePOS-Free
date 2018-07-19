@@ -379,7 +379,7 @@ class ClosingSales extends MY_Controller {
 		
 		//CEK FIRST TO START DATE
 		$opt_value = array(
-			'closing_sales_start_date'
+			'closing_sales_start_date', 'diskon_sebelum_pajak_service'
 		);
 		$get_opt = get_option_value($opt_value);
 		
@@ -387,6 +387,11 @@ class ClosingSales extends MY_Controller {
 		if(!empty($get_opt['closing_sales_start_date'])){
 			$closing_sales_start_date = $get_opt['closing_sales_start_date'];
 			$closing_sales_start_date = date("Y-m-d", strtotime($closing_sales_start_date));
+		}
+		if(!empty($get_opt['diskon_sebelum_pajak_service'])){
+			$get_opt['diskon_sebelum_pajak_service'] = $get_opt['diskon_sebelum_pajak_service'];
+		}else{
+			$get_opt['diskon_sebelum_pajak_service'] = 0;
 		}
 		
 		if(empty($closing_sales_start_date)){
@@ -557,6 +562,40 @@ class ClosingSales extends MY_Controller {
 				if(!in_array($s['id'], $all_bil_id)){
 					$all_bil_id[] = $s['id'];
 				}		
+					
+				//CHECK REAL TOTAL BILLING
+				if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+					if(!empty($s['include_tax']) AND !empty($s['include_service'])){
+					
+						if($get_opt['diskon_sebelum_pajak_service'] == 1){
+							$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
+							$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+							$s['total_billing'] = $get_total_billing;
+						}else{
+							$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
+						}
+						
+					}else{
+						if(!empty($s['include_tax'])){
+							if($get_opt['diskon_sebelum_pajak_service'] == 1){
+								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
+								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+								$s['total_billing'] = $get_total_billing;
+							}else{
+								$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
+							}
+						}
+						if(!empty($s['include_service'])){
+							if($get_opt['diskon_sebelum_pajak_service'] == 1){
+								$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
+								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+								$s['total_billing'] = $get_total_billing;
+							}else{
+								$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
+							}
+						}
+					}
+				}	
 				
 				if(!empty($s['is_compliment'])){
 					$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
@@ -993,7 +1032,7 @@ class ClosingSales extends MY_Controller {
 		
 		if(!empty($get_opt['closing_sales_start_date'])){
 			$closing_sales_start_date = $get_opt['closing_sales_start_date'];
-			$closing_sales_start_date = date("Y-m-d", strtotime($closing_sales_start_date));
+			//$closing_sales_start_date = date("Y-m-d", strtotime($closing_sales_start_date));
 		}
 		
 		if(empty($closing_sales_start_date)){

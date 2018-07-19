@@ -21,13 +21,64 @@ class MY_Controller extends MX_Controller{
 		
 		$this->id_client = $this->session->userdata('id_client');
 		$this->id_user	= $this->session->userdata('id_user');
+		$this->view_multiple_store	= $this->session->userdata('view_multiple_store');
+		$this->timezone_default	= $this->session->userdata('timezone_default');
 		
 		//Timezone
-		$timezone_default = config_item('timezone_default');
-		if(!empty($get_opt['timezone_default'])){
-			$timezone_default = $get_opt['timezone_default'];
+		if(!empty($this->timezone_default)){
+			$timezone_default = $this->timezone_default;
+		}else{
+			$timezone_default = config_item('timezone_default');
 		}
 		date_default_timezone_set($timezone_default);
+		
+		if(!empty($this->view_multiple_store)){
+			
+			$this->client_ip	= $this->session->userdata('client_ip');
+			$this->mysql_user	= $this->session->userdata('mysql_user');
+			$this->mysql_pass	= $this->session->userdata('mysql_pass');
+			$this->mysql_port	= $this->session->userdata('mysql_port');
+			$this->mysql_database	= $this->session->userdata('mysql_database');
+			
+			
+			if($this->client_ip == '127.0.0.1'){
+				$this->client_ip = 'localhost';
+			}
+			if($this->mysql_port == ''){
+				$this->mysql_port = '3306';
+			}
+			
+			if(!empty($this->client_ip) AND !empty($this->mysql_user) AND !empty($this->mysql_database)){
+				$this->db->close();
+				$config = array();
+				$config['hostname'] = $this->client_ip;
+				$config['username'] = $this->mysql_user;
+				$config['password'] = $this->mysql_pass;
+				$config['port'] 	= $this->mysql_port;
+				$config['database'] = $this->mysql_database;
+				$config['dbdriver'] = 'mysqli';
+				$config['dbprefix'] = '';
+				$config['pconnect'] = FALSE;
+				$config['db_debug'] = (ENVIRONMENT !== 'production');
+				$config['cache_on'] = FALSE;
+				$config['cachedir'] = '';
+				$config['char_set'] = 'utf8';
+				$config['dbcollat'] = 'utf8_general_ci';
+				$config['swap_pre'] = '';
+				$config['encrypt'] = FALSE;
+				$config['compress'] = FALSE;
+				$config['stricton'] = FALSE;
+				$config['failover'] = array();
+				
+				$this->load->database($config);
+			}else{
+				$this->db->close();
+				echo 'CANNOT CONNECT TO DB';
+				die();
+			}
+			
+			
+		}
 		
 		//RESTFUL
 		$this->set_rest_value('id_client', $this->id_client);

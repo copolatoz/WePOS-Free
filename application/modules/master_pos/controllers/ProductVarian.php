@@ -42,6 +42,8 @@ class ProductVarian extends MY_Controller {
 		$is_dropdown = $this->input->post('is_dropdown');
 		$searching = $this->input->post('query');
 		$product_id = $this->input->post('product_id');
+		$show_all_text = $this->input->post('show_all_text');
+		$show_choose_text = $this->input->post('show_choose_text');
 		
 		if(!empty($is_dropdown)){
 			$params['order'] = array('a.id' => 'ASC');
@@ -58,13 +60,17 @@ class ProductVarian extends MY_Controller {
 		  		
   		$newData = array();
 		
-		if(!empty($is_dropdown)){
-			$s = array(
-				'id'	=> '',
-				'varian_name'	=> '-- NO VARIAN --'		
-			);
-			array_push($newData, $s);
+		
+		if(!empty($show_all_text)){
+			$dt = array('id' => '-1', 'varian_name' => 'Pilih Semua');
+			array_push($newData, $dt);
+		}else{
+			if(!empty($show_choose_text)){
+				$dt = array('id' => '', 'varian_name' => 'Pilih Ukuran/Porsi');
+				array_push($newData, $dt);
+			}
 		}
+		
 		
 		//GET PROMO
 		$dt_promo = array();
@@ -163,11 +169,39 @@ class ProductVarian extends MY_Controller {
 		}
 		*/
 		
+		//get option tax and service
+		$opt_var = array('include_tax','include_service',
+		'default_tax_percentage','default_service_percentage',
+		'takeaway_no_tax','takeaway_no_service','autohold_create_billing');
+		$get_opt = get_option_value($opt_var);
+		$include_tax = 0;
+		if(!empty($get_opt['include_tax'])){
+			$include_tax = $get_opt['include_tax'];
+		}
+		
+		$include_service = 0;
+		if(!empty($get_opt['include_service'])){
+			$include_service = $get_opt['include_service'];
+		}
+		
+		$default_tax_percentage = 10;
+		if(!empty($get_opt['default_tax_percentage'])){
+			$default_tax_percentage = $get_opt['default_tax_percentage'];
+		}		
+		
+		$default_service_percentage = 5;
+		if(!empty($get_opt['default_service_percentage'])){
+			$default_service_percentage = $get_opt['default_service_percentage'];
+		}	
+		
+		
 		if(!empty($get_data['data'])){
 			foreach ($get_data['data'] as $s){
 				$s['is_active_text'] = ($s['is_active'] == '1') ? '<span style="color:green;">Active</span>':'<span style="color:red;">Inactive</span>';
-				$s['product_price_show'] = 'Rp '.priceFormat($s['product_price'],2);
-				
+				$s['normal_price_show'] =  priceFormat($s['normal_price'],2);
+				$s['product_price_show'] =  priceFormat($s['product_price'],2);
+				$s['product_hpp_show'] =  priceFormat($s['product_hpp'],2);
+				$product_price = $s['product_price'];
 				//SET PROMO
 				$s['promo_tipe'] = 0; //1 product, 2 buy and get
 				$s['promo_id'] = 0;
@@ -205,6 +239,64 @@ class ProductVarian extends MY_Controller {
 					$s['product_price_show'] = '<strike>'.$s['product_price_show'].'</strike> <font color="orange">'.priceFormat($s['product_price']).'</font>';
 					
 				}	
+				
+				//TAX, SERVICE, TAKE AWAY & COMPLIMENT
+				$include_tax = $include_tax;
+				$include_service = $include_service;
+				$tax_percentage = $default_tax_percentage;
+				$service_percentage = $default_service_percentage;
+				
+				$tax_total = 0;
+				$service_total = 0;
+				$product_price_real = 0;
+				if(!empty($include_tax) OR !empty($include_service)){
+					if(!empty($include_tax) AND !empty($include_service)){
+						$all_percentage = 100 + $tax_percentage + $service_percentage;
+						$one_percent = $product_price / $all_percentage;
+						$tax_total = priceFormat($one_percent * $tax_percentage, 0, ".", "");
+						$service_total = priceFormat($one_percent * $service_percentage, 0, ".", "");
+						$product_price_real = $product_price - ($tax_total + $service_total);
+						
+						$tax_percent = $tax_percentage/100;
+						$service_percent = $service_percentage/100;
+						$tax_total = priceFormat($product_price_real * $tax_percent, 0, ".", "");
+						$service_total = priceFormat($product_price_real * $service_percent, 0, ".", "");
+					
+					}else{
+						if(!empty($include_tax)){
+							$all_percentage = 100 + $tax_percentage;
+							$one_percent = $product_price / $all_percentage;
+							$tax_total = priceFormat($one_percent * $tax_percentage, 0, ".", "");
+							$product_price_real = $product_price - ($tax_total);
+							
+							$tax_percent = $tax_percentage/100;
+							$tax_total = priceFormat($product_price_real * $tax_percent, 0, ".", "");
+							
+						}
+						
+						if(!empty($include_service)){
+							$all_percentage = 100 + $service_percentage;
+							$one_percent = $product_price / $all_percentage;
+							$service_total = priceFormat($one_percent * $service_percentage, 0, ".", "");
+							$product_price_real = $product_price - ($service_total);
+							
+							$service_percent = $service_percentage/100;
+							$service_total = priceFormat($product_price_real * $service_percent, 0, ".", "");
+							
+						}
+						
+					}
+				}else
+				{
+					$product_price_real = $product_price;
+					$tax_percent = $tax_percentage/100;
+					$service_percent = $service_percentage/100;
+					$tax_total = priceFormat($product_price* $tax_percent, 0, ".", "");
+					$service_total = priceFormat($product_price* $service_percent, 0, ".", "");
+				}
+				
+				$s['tax_price'] = $tax_total;
+				$s['service_price'] = $service_total;
 				
 				array_push($newData, $s);
 			}

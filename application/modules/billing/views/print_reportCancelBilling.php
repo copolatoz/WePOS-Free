@@ -8,8 +8,8 @@
 	</head>
 <body>
 	<?php
-		$set_width = 1000;
-		$total_cols = 9;
+		$set_width = 1130;
+		$total_cols = 10;
 	?>
 	<div class="report_area" style="width:<?php echo $set_width.'px'; ?>;">
 		<div>
@@ -29,6 +29,7 @@
 			<tr class="tbl-header">
 				<td class="first xcenter" width="50">NO</td>
 				<td class="xcenter" width="130">DATE</td>
+				<td class="xcenter" width="130">TIPE</td>
 				<td class="xcenter" width="80">BILLING NO.</td>
 				<td class="xcenter" width="110">TOTAL BILLING</td>
 				<td class="xcenter" width="90">TAX</td>
@@ -48,10 +49,16 @@
 				$grand_total = 0;
 				$grand_total_payment = array();
 				foreach($report_data as $det){
+					$tipe_cancel = 'AFTER PAYMENT';
+					if(empty($det['payment_date'])){
+						$tipe_cancel = 'BEFORE PAYMENT';
+					}
+					
 					?>
 					<tr class="tbl-data">
 						<td class="first xcenter"><?php echo $no; ?></td>
 						<td class="xcenter"><?php echo $det['billing_date']; ?></td>
+						<td class="xcenter"><?php echo $tipe_cancel; ?></td>
 						<td class="xcenter"><?php echo $det['billing_no']; ?></td>
 						<td class="xright"><?php echo $det['total_billing_show']; ?></td>
 						<td class="xright"><?php echo $det['tax_total_show']; ?></td>
@@ -71,7 +78,7 @@
 				
 				?>
 				<tr class="tbl-data">
-					<td class="first xright xbold" colspan="<?php echo 3; ?>">TOTAL</td>
+					<td class="first xright xbold" colspan="<?php echo 4; ?>">TOTAL</td>
 					<td class="xright xbold"><?php echo priceFormat($total_billing); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>

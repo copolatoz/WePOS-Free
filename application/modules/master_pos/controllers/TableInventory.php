@@ -21,18 +21,22 @@ class TableInventory extends MY_Controller {
 		
 		//is_active_text
 		$sortAlias = array(
-			'is_active_text' => 'is_active'
+			'is_active_text' => 'b.is_active',
+			'room_name' => 'c.room_name',
+			'floorplan_name' => 'd.floorplan_name'
 		);		
 		
 		// Default Parameter
 		$params = array(
-			'fields'		=> "a.*, b.table_name, b.table_no",
+			'fields'		=> "a.*, b.room_id, b.floorplan_id, b.table_name, b.table_no, b.kapasitas, c.room_name, c.room_no, d.floorplan_name",
 			'primary_key'	=> 'a.id',
 			'table' => $this->table.' as a',
 			'join'			=> array(
 									'many', 
 									array( 
-										array($this->prefix.'table as b','b.id = a.table_id','LEFT')
+										array($this->prefix.'table as b','b.id = a.table_id','LEFT'),
+										array($this->prefix.'room as c','c.id = b.room_id','LEFT'),
+										array($this->prefix.'floorplan as d','d.id = b.floorplan_id','LEFT')
 									) 
 								),
 			'where'			=> array('a.is_deleted' => 0),
@@ -41,11 +45,41 @@ class TableInventory extends MY_Controller {
 			'single'		=> false,
 			'output'		=> 'array' //array, object, json
 		);
-				
+		
+
+		//DROPDOWN & SEARCHING
+		$is_dropdown = $this->input->post('is_dropdown');
+		$searching = $this->input->post('query');
+		$show_all_text = $this->input->post('show_all_text');
+		$show_choose_text = $this->input->post('show_choose_text');
+		$keywords = $this->input->post('keywords');
+		
+		if(!empty($keywords)){
+			$searching = $keywords;
+		}
+		if(!empty($is_dropdown)){
+			$params['order'] = array('table_no' => 'ASC');
+		}
+		if(!empty($searching)){
+			$params['where'][] = "(b.table_name LIKE '%".$searching."%' OR b.table_no LIKE '%".$searching."%' OR  d.floorplan_name LIKE '%".$searching."%' OR c.room_name LIKE '%".$searching."%'  OR c.room_no LIKE '%".$searching."%' )";
+		}
+		
 		//get data -> data, totalCount
 		$get_data = $this->m->find_all($params);
 		  		
+  		 		
   		$newData = array();		
+		
+		if(!empty($show_all_text)){
+			$dt = array('id' => '-1', 'table_name' => 'Choose All Table');
+			array_push($newData, $dt);
+		}else{
+			if(!empty($show_choose_text)){
+				$dt = array('id' => '', 'table_name' => 'Choose Table');
+				array_push($newData, $dt);
+			}
+		}
+		
 		if(!empty($get_data['data'])){
 			foreach ($get_data['data'] as $s){
 				$s['is_active_text'] = ($s['is_active'] == '1') ? '<span style="color:green;">Active</span>':'<span style="color:red;">Inactive</span>';
@@ -104,8 +138,13 @@ class TableInventory extends MY_Controller {
 				if(empty($collecting_data[$dt->table_id])){
 					$collecting_data[$dt->table_id] = array();
 				}
-				$mk_tanggal = strtotime($dt->tanggal." 00:00:01");
-				$collecting_data[$dt->table_id][$mk_tanggal] = $dt->id;
+				$mk_tanggal = strtotime($dt->tanggal." 00:00:00");
+				
+				if(empty($collecting_data[$dt->table_id][$mk_tanggal])){
+					$collecting_data[$dt->table_id][$mk_tanggal] = $dt->id;
+				}else{
+					$del_collecting_data[] = $dt->id;
+				}
 			}
 		}
 		
@@ -153,6 +192,18 @@ class TableInventory extends MY_Controller {
 												'updatedby'		=>	$session_user,
 												'is_active'		=>	$is_active
 											);
+					}else{
+					
+						$getDt = $collecting_data[$tbl_id][$mk_tanggal];
+						$all_ready_update[] = array(
+												'id' 	=> 	$getDt,
+												'table_id' => 	$tbl_id,
+												'tanggal' => 	$tanggal,
+												'status' 	=> 	$status,
+												'updated'		=>	$tgl_add_update,
+												'updatedby'		=>	$session_user,
+												'is_active'		=>	$is_active
+											);
 					}
 					
 				}
@@ -177,9 +228,25 @@ class TableInventory extends MY_Controller {
 				$this->lib_trans->commit();	
 			}
 			
+			if(!empty($all_ready_update)){
+				$update_id = false;
+				$this->lib_trans->begin();
+					
+					//UPDATE BATCH
+					$update_id = $this->db->update_batch($this->table, $all_ready_update, "id");
+					
+				$this->lib_trans->commit();	
+			}
+			
 			if($insert_id)
 			{  
 				$r = array('success' => true, 'total_insert' => count($all_ready_insert)); 
+					
+				if(!empty($del_collecting_data)){
+					$del_collecting_data_sql = implode(",", $del_collecting_data);
+					$this->db->delete($this->table, "id IN (".$del_collecting_data_sql.")");
+				}
+				
 			}  
 			else
 			{  
@@ -264,6 +331,11 @@ class TableInventory extends MY_Controller {
 			if($update_id OR $insert_id)
 			{  
 				$r = array('success' => true, 'total_insert' => count($all_ready_insert), 'total_update' => count($all_ready_update));
+				if(!empty($del_collecting_data)){
+					$del_collecting_data_sql = implode(",", $del_collecting_data);
+					$this->db->delete($this->table, "id IN (".$del_collecting_data_sql.")");
+				}
+				
 			}  
 			else
 			{  

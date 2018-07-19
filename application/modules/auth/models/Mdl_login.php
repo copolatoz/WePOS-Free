@@ -7,7 +7,7 @@ class Mdl_login extends CI_Model {
 		parent::__construct();	
 	}
 
-	function submit($username, $password)
+	function submit($username, $password, $store_data = '')
 	{
 		$prefix	= config_item('db_prefix');
 		$this->db->select('id as id_user, client_id');
@@ -25,17 +25,34 @@ class Mdl_login extends CI_Model {
 		{
 			$row = $query->row();
 			$d = $this->get_client($row->client_id, $row->id_user);
+			$d->client_ip = '';
+			$d->mysql_user = '';
+			$d->mysql_pass = '';
+			$d->mysql_port = '';
+			$d->mysql_database = '';
+			$d->view_multiple_store = 0;
+
+			if(!empty($store_data)){
+				$d->client_ip = $store_data[0];
+				$d->mysql_user = $store_data[1];
+				$d->mysql_pass = $store_data[2];
+				$d->mysql_port = $store_data[3];
+				$d->mysql_database = $store_data[4];
+				$d->view_multiple_store = $store_data[5];
+			}
 		} 
 		
 		return array(
 			'count' => $c,
-			'data'	=> $d
+			'data'	=> $d,
+			'store_data'	=> $store_data
 		);
 	}
 	
 
-	function submit_pin($user_pin = '-1')
+	function submit_pin($user_pin = '-1', $store_data = '')
 	{
+		
 		$prefix	= config_item('db_prefix');
 		$this->db->select('id as id_user, client_id');
 		$this->db->from($prefix.'users');
@@ -51,11 +68,36 @@ class Mdl_login extends CI_Model {
 		{
 			$row = $query->row();
 			$d = $this->get_client($row->client_id, $row->id_user);
+			$d->client_ip = '';
+			$d->mysql_user = '';
+			$d->mysql_pass = '';
+			$d->mysql_port = '';
+			$d->mysql_database = '';
+			$d->view_multiple_store = 0;
+			
+			if(!empty($store_data)){
+				
+				$d->client_ip = $store_data[0];
+				$d->mysql_user = $store_data[1];
+				$d->mysql_pass = $store_data[2];
+				$d->mysql_port = $store_data[3];
+				$d->mysql_database = $store_data[4];
+				$d->view_multiple_store = $store_data[5];
+				
+				if($d->client_ip == '127.0.0.1'){
+					$d->client_ip = 'localhost';
+				}
+				if($d->mysql_port == ''){
+					$d->mysql_port = '3306';
+				}
+				
+			}
 		} 
 		
 		return array(
 			'count' => $c,
-			'data'	=> $d
+			'data'	=> $d,
+			'store_data'	=> $store_data
 		);
 	}
 	
@@ -101,6 +143,33 @@ class Mdl_login extends CI_Model {
 		}
 		
 		return $ret_data;
+	}
+	
+	function get_masterstore()
+	{
+		$prefix	= config_item('db_prefix');
+		$this->db->select('*');
+		$this->db->from($prefix.'clients');
+		$this->db->where('is_deleted', "0");
+		
+		$query 	= 	$this->db->get();
+		//log_message('INFO', 'QUERY: '.$this->db->last_query());
+		$c = $query->num_rows();
+		
+		$d = array();
+		if($c > 0)
+		{
+			$d = $query->result_array();
+		} 
+		
+		return $d;
+	}
+	
+	function autodelete_print_monitoring()
+	{
+		$prefix	= config_item('db_prefix2');
+		$this->db->delete($prefix.'print_monitoring', "print_date < '".date("Y-m-d")."'");
+		
 	}
 	
 }

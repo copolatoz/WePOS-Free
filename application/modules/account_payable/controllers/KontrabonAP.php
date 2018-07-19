@@ -44,6 +44,11 @@ class KontrabonAP extends MY_Controller {
 		$searching = $this->input->post('query');
 		$status = $this->input->post('status');
 		$skip_date = $this->input->post('skip_date');
+		$from_kartuHutang = $this->input->post('from_kartuHutang');
+		$kbname = $this->input->post('kbname');
+		$group_kbname = $this->input->post('group_kbname');
+		$show_all_text = $this->input->post('show_all_text');
+		$show_choose_text = $this->input->post('show_choose_text');
 		
 		//FILTER
 		$date_from = $this->input->post('date_from');
@@ -71,7 +76,7 @@ class KontrabonAP extends MY_Controller {
 			if(!empty($date_from) OR !empty($date_till)){
 			
 				if(empty($date_from)){ $date_from = date('Y-m-d'); }
-				if(empty($date_till)){ $date_till = date('Y-m-td'); }
+				if(empty($date_till)){ $date_till = date('Y-m-t'); }
 				
 				$mktime_dari = strtotime($date_from);
 				$mktime_sampai = strtotime($date_till);
@@ -92,6 +97,9 @@ class KontrabonAP extends MY_Controller {
 		}		
 		if(!empty($status)){
 			$params['where'][] = "a.kb_status = '".$status."'";
+		}	
+		if(!empty($from_kartuHutang)){
+			$params['where'][] = "a.kb_status = 'progress'";
 		}
 		
 		//$params['where'][] = "a.is_deleted = 0";
@@ -99,6 +107,20 @@ class KontrabonAP extends MY_Controller {
 		$get_data = $this->m->find_all($params);
 		
   		$newData = array();	
+		
+		if(!empty($show_all_text)){
+			$dt = array('id' => '-1', 'kb_name' => 'Semua Kontrabon');
+			array_push($newData, $dt);
+		}else{
+			if(!empty($show_choose_text)){
+				$dt = array('id' => '', 'kb_name' => 'Pilih Kontrabon');
+				array_push($newData, $dt);
+			}
+		}
+		
+		if(!empty($group_kbname)){
+			$newData = array();
+		}
 		
 		if(!empty($get_data['data'])){
 			
@@ -142,8 +164,10 @@ class KontrabonAP extends MY_Controller {
 				$s['total_bayar_show'] = 'Rp. '.priceFormat($s['total_bayar']);
 				
 				$s['kb_name_supplier'] = $s['kb_name'];
+				$s['kb_name_supplier_id'] = $s['kb_name'];
 				if(!empty($s['supplier_id'])){
 					$s['kb_name_supplier'] = $s['kb_name']." (Supplier)";
+					$s['kb_name_supplier_id'] = $s['kb_name']."_".$s['supplier_id'];
 				}
 				
 				if(empty($s['tanggal_jatuh_tempo']) OR $s['tanggal_jatuh_tempo'] == '0000-00-00'){
@@ -160,9 +184,61 @@ class KontrabonAP extends MY_Controller {
 				
 				array_push($newData, $s);
 			}
+			
+			if(!empty($group_kbname)){
+				$newData_old = $newData;
+				$group_newData = array();
+				$kb_name_supplier_id = array();
+				$no = 0;
+				
+				
+				if(!empty($show_all_text)){
+					$dtSupplier = array(
+						'no' => 0,
+						'kb_name' => 'Semua Supplier',
+						'kb_name_supplier' => 'Semua Supplier',
+						'kb_name_supplier_id' => '',
+					);
+					array_push($group_newData, $dtSupplier);
+				}else{
+					if(!empty($show_choose_text)){
+						$dtSupplier = array(
+							'no' => 0,
+							'kb_name' => 'Pilih Supplier',
+							'kb_name_supplier' => 'Pilih Supplier',
+							'kb_name_supplier_id' => '',
+						);
+						array_push($group_newData, $dtSupplier);
+					}
+				}
+				
+				//echo '<pre>';
+				//print_r($newData_old);
+				//die();
+				
+				foreach($newData_old as $dt){
+					
+					if(!in_array($dt['kb_name_supplier_id'], $kb_name_supplier_id)){
+						$kb_name_supplier_id[] = $dt['kb_name_supplier_id'];
+						
+						$no++;
+						$dtSupplier = array(
+							'no' => $no,
+							'kb_name' => $dt['kb_name'],
+							'kb_name_supplier' => $dt['kb_name_supplier'],
+							'kb_name_supplier_id' => $dt['kb_name_supplier_id'],
+						);
+						array_push($group_newData, $dtSupplier);
+					}
+					
+				}
+				
+				$newData = $group_newData;
+			}
 		}
 		
 		$get_data['data'] = $newData;
+		$get_data['totalCount'] = count($newData);
 		
       	die(json_encode($get_data));
 	}
@@ -403,10 +479,10 @@ class KontrabonAP extends MY_Controller {
 			$total_ap = count($kbDetail);
 		}
 		
-		$is_active = $this->input->post('is_active');
+		/*$is_active = $this->input->post('is_active');
 		if(empty($is_active)){
 			$is_active = 0;
-		}
+		}*/
 			
 		$r = '';
 		if($this->input->post('form_type_kontrabonAP', true) == 'add')
@@ -431,7 +507,7 @@ class KontrabonAP extends MY_Controller {
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,
-					'is_active'	=>	$is_active
+					//'is_active'	=>	$is_active
 				),
 				'table'		=>  $this->table_kontrabon
 			);	
@@ -838,7 +914,7 @@ class KontrabonAP extends MY_Controller {
 			$this->table_pelunasan_ap = $this->prefix.'pelunasan_ap';	
 			$this->db->select('id');
 			$this->db->from($this->table_pelunasan_ap);
-			$this->db->where("kb_id IN ('".$kb_id."')");
+			$this->db->where("kb_id IN ('".$kb_id."') AND is_deleted = 0");
 			$get_tot = $this->db->get();
 			if($get_tot->num_rows() > 0){
 				return true;

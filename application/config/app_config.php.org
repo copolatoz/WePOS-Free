@@ -2,8 +2,8 @@
 
 /*General Info*/
 $config['program_name']			=	'WePOS-Free';
-$config['program_version']		=	'3.42.15';
-$config['program_release']		=	'2017';
+$config['program_version']		=	'3.42.19';
+$config['program_release']		=	'2018';
 $config['program_name_short'] 	=	'WePOS-Free';
 $config['copyright']			=	$config['program_name_short'].' v'.$config['program_version'].' &copy copyright '.$config['program_release'];
 $config['client_name']			=	'WePOS-dev';

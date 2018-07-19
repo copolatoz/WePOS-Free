@@ -43,7 +43,11 @@ class MasterBank extends MY_Controller {
 		$searching = $this->input->post('query');
 		$show_all_text = $this->input->post('show_all_text');
 		$show_choose_text = $this->input->post('show_choose_text');
+		$keywords = $this->input->post('keywords');
 		
+		if(!empty($keywords)){
+			$searching = $keywords;
+		}
 		if(!empty($is_dropdown)){
 			$params['order'] = array('bank_code' => 'ASC');
 		}
@@ -105,6 +109,16 @@ class MasterBank extends MY_Controller {
 		$r = '';
 		if($this->input->post('form_type_masterBank', true) == 'add')
 		{
+			
+			//check kode
+			$this->db->from($this->table);
+			$this->db->where("bank_code = '".$bank_code."'");
+			$get_bank = $this->db->get();
+			if($get_bank->num_rows() > 0){
+				$r = array('success' => false, 'info'	=> "Kode Bank: ".$bank_code." sudah Ada!");
+				die(json_encode($r));
+			}
+			
 			$var = array(
 				'fields'	=>	array(
 					'bank_code'		=>	$bank_code,
@@ -136,6 +150,17 @@ class MasterBank extends MY_Controller {
       		
 		}else
 		if($this->input->post('form_type_masterBank', true) == 'edit'){
+			$id = $this->input->post('id', true);
+			
+			//check kode
+			$this->db->from($this->table);
+			$this->db->where("bank_code = '".$bank_code."' AND id = '".$id."'");
+			$get_bank = $this->db->get();
+			if($get_bank->num_rows() > 0){
+				$r = array('success' => false, 'info'	=> "Kode Bank: ".$bank_code." sudah Ada!");
+				die(json_encode($r));
+			}
+			
 			$var = array('fields'	=>	array(
 					'bank_code'		=>	$bank_code,
 				    'bank_name'  	=> 	$bank_name,
@@ -149,7 +174,7 @@ class MasterBank extends MY_Controller {
 			);
 			
 			//UPDATE
-			$id = $this->input->post('id', true);
+			
 			$this->lib_trans->begin();
 				$update = $this->m->save($var, $id);
 			$this->lib_trans->commit();

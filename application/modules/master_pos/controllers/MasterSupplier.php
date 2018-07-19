@@ -16,7 +16,8 @@ class MasterSupplier extends MY_Controller {
 		
 		//is_active_text
 		$sortAlias = array(
-			'is_active_text' => 'is_active'
+			'is_active_text' => 'is_active',
+			'supplier_status_text' => 'supplier_status'
 		);		
 		
 		// Default Parameter
@@ -94,6 +95,16 @@ class MasterSupplier extends MY_Controller {
 			foreach ($get_data['data'] as $s){
 				$s['is_active_text'] = ($s['is_active'] == '1') ? '<span style="color:green;">Active</span>':'<span style="color:red;">Inactive</span>';
 				
+				if($s['supplier_status'] == 'ok'){
+					$s['supplier_status_text'] = '<span style="color:green;font-weight:bold;">OK</span>';
+				}else
+				if($s['supplier_status'] == 'warning'){
+					$s['supplier_status_text'] = '<span style="color:orange;font-weight:bold;">Warning</span>';
+				}else
+				{
+					$s['supplier_status_text'] = '<span style="color:red;font-weight:bold;">Blacklist</span>';
+				}
+				
 				array_push($newData, $s);
 			}
 		}
@@ -116,6 +127,8 @@ class MasterSupplier extends MY_Controller {
 		$supplier_phone = $this->input->post('supplier_phone');
 		$supplier_fax = $this->input->post('supplier_fax');
 		$supplier_email = $this->input->post('supplier_email');
+		$supplier_status = $this->input->post('supplier_status');
+		$keterangan_blacklist = $this->input->post('keterangan_blacklist');
 		
 		if(empty($supplier_name)){
 			$r = array('success' => false);
@@ -139,6 +152,8 @@ class MasterSupplier extends MY_Controller {
 				    'supplier_phone'  	=> 	$supplier_phone,
 				    'supplier_fax'  	=> 	$supplier_fax,
 				    'supplier_email'  	=> 	$supplier_email,
+				    'supplier_status'  	=> 	$supplier_status,
+				    'keterangan_blacklist'  	=> 	$keterangan_blacklist,
 					'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
@@ -173,6 +188,8 @@ class MasterSupplier extends MY_Controller {
 				    'supplier_phone'  	=> 	$supplier_phone,
 				    'supplier_fax'  	=> 	$supplier_fax,
 				    'supplier_email'  	=> 	$supplier_email,
+				    'supplier_status'  	=> 	$supplier_status,
+				    'keterangan_blacklist'  	=> 	$keterangan_blacklist,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,
 					'is_active'		=>	$is_active

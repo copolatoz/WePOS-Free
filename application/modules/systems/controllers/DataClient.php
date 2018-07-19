@@ -175,10 +175,10 @@ class DataClient extends MY_Controller {
 		$this->table = $this->prefix.'clients';
 		
 		//Delete
-		$this->db->where("id = 1");
+		//$this->db->where("id = 1");
 		$q = $this->db->get($this->table);
 		
-		$client_name = config_item('db_prefix2');
+		$client_name = config_item('client_name');
 		
 		$data_client = array(
 			'client_code'  	=> 	'TRIAL-'.$client_name,
@@ -279,7 +279,7 @@ class DataClient extends MY_Controller {
 			
 			$this->load->library('curl');
 			$mktime_dc = strtotime(date("d-m-Y H:i:s"));
-			$client_url = 'http://wepos.id/aplikasi-pos/client-info?_dc='.$mktime_dc;
+			$client_url = 'https://wepos.id/aplikasi-pos/client-info?_dc='.$mktime_dc;
 			$client_url .= '&client_name='.urlencode($dt->client_name);
 			$client_url .= '&client_address='.urlencode($dt->client_address);
 			$client_url .= '&client_phone='.urlencode($dt->client_phone);

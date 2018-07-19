@@ -61,6 +61,7 @@ class MasterPrinter extends MY_Controller {
 			foreach ($get_data['data'] as $s){
 				$s['is_active_text'] = ($s['is_active'] == '1') ? '<span style="color:green;">Active</span>':'<span style="color:red;">Inactive</span>';
 				$s['is_print_anywhere_text'] = ($s['is_print_anywhere'] == '1') ? '<span style="color:green;">Ya</span>':'<span style="color:red;">Tidak</span>';
+				$s['print_logo_text'] = ($s['print_logo'] == '1') ? '<span style="color:green;">Ya</span>':'<span style="color:red;">Tidak</span>';
 				
 				array_push($newData, $s);
 			}
@@ -85,6 +86,8 @@ class MasterPrinter extends MY_Controller {
 		$printer_tipe = $this->input->post('printer_tipe');
 		$printer_pin = $this->input->post('printer_pin');
 		$is_print_anywhere = $this->input->post('is_print_anywhere');
+		$print_method = $this->input->post('print_method');
+		$print_logo = $this->input->post('print_logo');
 		
 		if(empty($printer_name)){
 			$r = array('success' => false, 'info' => 'Printer Name cannot empty!');
@@ -106,6 +109,16 @@ class MasterPrinter extends MY_Controller {
 			die(json_encode($r));
 		}		
 		
+		$print_method = $this->input->post('print_method');
+		if(empty($print_method)){
+			$print_method = 'ESC/POS';
+		}
+		
+		$print_logo = $this->input->post('print_logo');
+		if(empty($print_logo)){
+			$print_logo = 0;
+		}
+		
 		$is_print_anywhere = $this->input->post('is_print_anywhere');
 		if(empty($is_print_anywhere)){
 			$is_print_anywhere = 0;
@@ -125,6 +138,8 @@ class MasterPrinter extends MY_Controller {
 				    'printer_ip'  	=> 	$printer_ip,
 				    'printer_tipe'  => 	$printer_tipe,
 				    'printer_pin'  	=> 	$printer_pin,
+				    'print_method'  => 	$print_method,
+				    'print_logo'  	=> 	$print_logo,
 				    'is_print_anywhere'  	=> 	$is_print_anywhere,
 					'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
@@ -157,6 +172,8 @@ class MasterPrinter extends MY_Controller {
 				    'printer_ip'  	=> 	$printer_ip,
 				    'printer_tipe'  => 	$printer_tipe,
 				    'printer_pin'  	=> 	$printer_pin,
+				    'print_method'  => 	$print_method,
+				    'print_logo'  	=> 	$print_logo,
 				    'is_print_anywhere'  	=> 	$is_print_anywhere,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,

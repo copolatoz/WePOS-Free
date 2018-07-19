@@ -77,7 +77,7 @@ class PurchaseOrder extends MY_Controller {
 			if(!empty($date_from) OR !empty($date_till)){
 			
 				if(empty($date_from)){ $date_from = date('Y-m-d'); }
-				if(empty($date_till)){ $date_till = date('Y-m-td'); }
+				if(empty($date_till)){ $date_till = date('Y-m-t'); }
 				
 				$mktime_dari = strtotime($date_from);
 				$mktime_sampai = strtotime($date_till);
@@ -226,14 +226,19 @@ class PurchaseOrder extends MY_Controller {
 	public function use_approval_po()
 	{
 		$use_approval_po = 0;
-		$get_opt = get_option_value(array("use_approval_po"));
+		$approval_change_payment_po_done = 0;
+		$get_opt = get_option_value(array("use_approval_po","approval_change_payment_po_done"));
 		
 		$get_data = array('success' => false, 'info' => 'load failed', 'use_approval_po' => $use_approval_po);
 		if(!empty($get_opt['use_approval_po'])){
 			$use_approval_po = $get_opt['use_approval_po'];
-			$get_data = array('success' => true, 'info' => 'load success', 'use_approval_po' => $use_approval_po);
 		}
-		
+		if(!empty($get_opt['approval_change_payment_po_done'])){
+			$approval_change_payment_po_done = $get_opt['approval_change_payment_po_done'];
+
+		}
+		$get_data = array('success' => true, 'info' => 'load success', 'use_approval_po' => $use_approval_po, 'approval_change_payment_po_done' => $approval_change_payment_po_done);
+
 		die(json_encode($get_data));
 	}
 	
@@ -495,6 +500,9 @@ class PurchaseOrder extends MY_Controller {
 		$this->table = $this->prefix.'po';	
 		$this->table2 = $this->prefix.'po_detail';			
 		$this->table_receiving = $this->prefix.'receiving';			
+		
+		$this->prefix_acc = config_item('db_prefix3');
+		$this->table_account_payable = $this->prefix_acc.'account_payable';			
 		$session_user = $this->session->userdata('user_username');
 		
 		if(empty($session_user)){
@@ -709,7 +717,7 @@ class PurchaseOrder extends MY_Controller {
 			);
 			$is_closing = is_closing($var_closing);
 			if($is_closing){
-				$r = array('success' => false, 'info' => 'Purchasing & Receiving Date Been Closed!'); 
+				$r = array('success' => false, 'info' => 'Transaksi untuk Purchasing & Receiving pada tanggal: '.$date_now.' sudah ditutup'); 
 				die(json_encode($r));
 			}
 			
@@ -802,12 +810,13 @@ class PurchaseOrder extends MY_Controller {
 			
 			//CLOSING DATE
 			$var_closing = array(
-				'xdate'	=> $old_data['po_date'],
+				//'xdate'	=> $old_data['po_date'],
+				'xdate'	=> $po_date,
 				'xtipe'	=> 'purchasing'
 			);
 			$is_closing = is_closing($var_closing);
 			if($is_closing){
-				$r = array('success' => false, 'info' => 'Purchasing & Receiving Date Been Closed!'); 
+				$r = array('success' => false, 'info' => 'Transaksi untuk Purchasing & Receiving pada tanggal: '.$old_data['po_date'].' sudah ditutup'); 
 				die(json_encode($r));
 			}
 			
@@ -845,6 +854,47 @@ class PurchaseOrder extends MY_Controller {
 				if($is_status_done == false){
 					$q_det = $this->m2->poDetail($poDetail, $id);
 					$r['det_info'] = $q_det;
+				}
+				
+				if(!empty($old_data)){
+					
+					if($old_data['po_status'] == 'done'){
+						if($old_data['po_payment'] == 'credit' AND $po_payment != 'credit'){
+							$updateAP = $this->account_payable->set_account_payable_PO($id);
+							
+							if($updateAP === true || $updateAP === false){
+								$r['updatePO'] = $old_data['po_payment'].' to '.$po_payment;
+							}else
+							if($updateAP == 'kontrabon'){
+								
+								$no_kontrabon = '-';
+								$this->db->from($this->table_account_payable);
+								$this->db->where("ap_tipe = 'purchasing'");
+								$this->db->where("po_id = '".$id."'");
+								$get_ap = $this->db->get();
+								if($get_ap->num_rows() > 0){
+									
+									$data_AP = $get_ap->row();
+									$no_kontrabon = $data_AP->no_kontrabon;
+									
+								}
+								$r['success'] = false;
+								$r['info'] = 'Silahkan Cek dan Hapus Kontrabon: '.$no_kontrabon.' terkait PO: '.$old_data['po_number'];
+								$r['updatePO'] = $old_data['po_payment'].' to '.$po_payment;
+								$r['updateAP'] = $updateAP;
+								
+								$rollback_po_status = array(
+									'po_payment'	=> $old_data['po_payment']
+								);
+								$this->db->update($this->table, $rollback_po_status, "id = '".$id."'");
+								
+							}
+							
+						}else{
+							$updateAP = $this->account_payable->set_account_payable_PO($id);
+						}
+					}
+					
 				}
 				
 			}  

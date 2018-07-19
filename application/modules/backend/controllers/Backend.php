@@ -148,11 +148,20 @@ class Backend extends MY_Controller {
 		'default_tax_percentage','default_service_percentage',
 		'takeaway_no_tax','takeaway_no_service','role_id_kasir',
 		'auto_logout_time','show_multiple_print_qc', 'show_multiple_print_billing',
-		'account_payable_non_accounting','account_receivable_non_accounting','spv_access_active','receiving_select_warehouse',
-		'print_qc_then_order','supervisor_pin_mode','default_discount_payment','print_qc_order_when_payment');
+		'account_payable_non_accounting','account_receivable_non_accounting','cashflow_non_accounting',
+		'spv_access_active','receiving_select_warehouse',
+		'print_qc_then_order','supervisor_pin_mode','default_discount_payment','print_qc_order_when_payment',
+		'use_item_sku','reservation_cashier','autohold_create_billing',
+		'hide_button_invoice','hide_button_halfpayment','hide_button_mergebill','hide_button_splitbill',
+		'hide_button_logoutaplikasi','min_noncash','autobackup_on_settlement','no_hold_billing','print_preview_billing');
+		
 		$get_opt = get_option_value($opt_var);
 		if(!empty($get_opt)){
 			foreach($get_opt as $key => $dt){
+				
+				if($key == 'auto_logout_time'){
+					$dt = $dt*1000;
+				}
 				
 				if($key == 'spv_access_active'){
 					$expl_dt = explode(",", trim($dt));

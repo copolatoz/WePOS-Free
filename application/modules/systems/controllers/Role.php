@@ -40,7 +40,19 @@ class Role extends MY_Controller {
 			'single'		=> false,
 			'output'		=> 'array' //array, object, json
 		);
-				
+		
+
+		$searching = $this->input->post('query');
+		$keywords = $this->input->post('keywords');
+		if(!empty($keywords)){
+			$searching = $keywords;
+		}
+		
+		
+		if(!empty($searching)){
+			$params['where'][] = "(a.role_name LIKE '%".$searching."%')";
+		}
+		
 		//get data -> data, totalCount
 		$get_data = $this->m->find_all($params);
 		  		

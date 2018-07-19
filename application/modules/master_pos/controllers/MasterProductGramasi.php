@@ -17,6 +17,8 @@ class MasterProductGramasi extends MY_Controller {
 		
 		//product_id
 		$product_id = $this->input->post('product_id');
+		$product_varian_id = $this->input->post('product_varian_id');
+		$varian_id = $this->input->post('varian_id');
 		
 		if(empty($product_id)){
 			$r = array('success' => false);
@@ -30,7 +32,7 @@ class MasterProductGramasi extends MY_Controller {
 		
 		// Default Parameter
 		$params = array(
-			'fields'		=> 'a.*, b.item_name, b.item_price as item_price_acuan, c.item_category_name, d.unit_name',
+			'fields'		=> 'a.*, b.item_name, b.item_price as item_price_acuan, c.item_category_name, d.unit_name, e.has_varian',
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table.' as a',
 			'join'			=> array(
@@ -38,7 +40,8 @@ class MasterProductGramasi extends MY_Controller {
 									array( 
 										array($this->prefix.'items as b','b.id = a.item_id','LEFT'),
 										array($this->prefix.'item_category as c','c.id = b.category_id','LEFT'),
-										array($this->prefix.'unit as d','d.id = b.unit_id','LEFT')
+										array($this->prefix.'unit as d','d.id = b.unit_id','LEFT'),
+										array($this->prefix.'product as e','e.id = a.product_id','LEFT')
 									) 
 								),
 			'where'			=> array('a.is_deleted' => 0),
@@ -49,7 +52,13 @@ class MasterProductGramasi extends MY_Controller {
 		);		
 		
 		if(!empty($product_id)){
-			$params['where'][] = array('product_id' => $product_id);
+			$params['where'][] = array('a.product_id' => $product_id);
+		}
+		
+		if(!empty($varian_id)){
+			$params['where'][] = "(e.has_varian = 1 AND varian_id = ".$varian_id.")";
+		}else{
+			$params['where'][] = "(e.has_varian = 0 AND (varian_id IS NULL OR varian_id =0))";
 		}
 		
 		//get data -> data, totalCount
@@ -80,14 +89,41 @@ class MasterProductGramasi extends MY_Controller {
 		$item_id = $this->input->post('item_id');
 		$item_price = $this->input->post('item_price');
 		$item_qty = $this->input->post('item_qty');		
+		$varian_id = $this->input->post('varian_id');		
+		$product_varian_id = $this->input->post('product_varian_id');		
 		
 		if(empty($product_id) OR empty($product_id)){
 			$r = array('success' => false);
 			die(json_encode($r));
 		}	
+		
+		if(empty($product_varian_id)){
+			$product_varian_id = 0;
+		}	
+		
+		if(empty($varian_id)){
+			$varian_id = 0;
+		}	
 			
-		$r = '';
+		
+		$id = $this->input->post('id', true);
+			
+		$active_old_data = false;
 		if($this->input->post('form_type_masterProductGramasi', true) == 'add')
+		{
+			$this->db->select("*");
+			$this->db->from($this->table);
+			$this->db->where("product_id = ".$product_id." AND product_varian_id = ".$product_varian_id." AND varian_id = ".$varian_id." AND is_deleted = 1");
+			$dt_varian = $this->db->get();
+			if($dt_varian->num_rows() > 0){
+				$get_prod_var = $dt_varian->row();
+				$id = $get_prod_var->id;
+				$active_old_data = true;
+			}
+		}
+		
+		$r = '';
+		if($this->input->post('form_type_masterProductGramasi', true) == 'add' AND $active_old_data == false)
 		{
 			$var = array(
 				'fields'	=>	array(
@@ -95,6 +131,8 @@ class MasterProductGramasi extends MY_Controller {
 				    'item_id'  		=> 	$item_id,
 					'item_price'	=>	$item_price,
 					'item_qty'		=>	$item_qty,
+					'varian_id'			=>	$varian_id,
+					'product_varian_id'	=>	$product_varian_id,
 					'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
@@ -119,20 +157,23 @@ class MasterProductGramasi extends MY_Controller {
 			}
       		
 		}else
-		if($this->input->post('form_type_masterProductGramasi', true) == 'edit'){
+		if($this->input->post('form_type_masterProductGramasi', true) == 'edit' OR $active_old_data == true){
 			$var = array('fields'	=>	array(
 				    //'product_id'  => 	$product_id,
 				    'item_id'  		=> 	$item_id,
 					'item_price'	=>	$item_price,
+					'item_qty'		=>	$item_qty,
+					'varian_id'			=>	$varian_id,
+					'product_varian_id'	=>	$product_varian_id,
 					'updated'		=>	date('Y-m-d H:i:s'),
-					'updatedby'		=>	$session_user
+					'updatedby'		=>	$session_user,
+					'is_deleted'	=>	0,
 				),
 				'table'			=>  $this->table,
 				'primary_key'	=>  'id'
 			);
 								
 			//UPDATE
-			$id = $this->input->post('id', true);
 			$this->lib_trans->begin();
 				$update = $this->m->save($var, $id);
 			$this->lib_trans->commit();
@@ -171,7 +212,7 @@ class MasterProductGramasi extends MY_Controller {
 		$r = '';
 		if($q)  
         {  
-            $r = array('success' => true); 
+            $r = array('success' => true, 'info' => 'Delete Product Success!'); 
         }  
         else
         {  

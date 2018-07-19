@@ -10,6 +10,9 @@ class BillingCashier extends MY_Controller {
 		$this->load->model('model_billingcashier', 'm');
 		$this->load->model('model_billingcashierdetail', 'm2');
 		$this->load->model('inventory/model_stock', 'stock');
+		$this->load->model('inventory/model_usagewaste', 'usagewaste');
+		$this->load->model('account_receivable/model_account_receivable', 'account_receivable');
+		$this->load->model('cashflow/model_penerimaan_kas', 'penerimaan_kas');
 				
 	}
 
@@ -115,7 +118,7 @@ class BillingCashier extends MY_Controller {
 		
 		
 		$opt_value = array(
-			'wepos_tipe','retail_warehouse'
+			'wepos_tipe','retail_warehouse', 'autocut_stok_sales_to_usage'
 		);
 		
 		$get_opt = get_option_value($opt_value);
@@ -138,7 +141,7 @@ class BillingCashier extends MY_Controller {
 		
 		//CHECK IF BILLING IS NOT PAID
 		$this->db->select("a.id, a.created, a.order_status, a.order_qty,
-		a.product_price, a.discount_price, 
+		a.product_price, a.discount_price, a.package_item, a.free_item, a.ref_order_id,
 		b.id as billing_id, b.billing_no, b.billing_status, b.include_tax, b.include_service, 
 		b.tax_percentage, b.service_percentage, b.takeaway_no_tax, b.takeaway_no_service,
 		b.is_compliment");
@@ -157,6 +160,18 @@ class BillingCashier extends MY_Controller {
 				die();
 			}
 			
+			if($billingData->package_item == 1 AND $billingData->free_item == 1 AND !empty($billingData->ref_order_id)){
+				$r = array('success' => false, 'info' => 'This Item/Product including on Package!<br/>Please Cancel Main Item/Order Package'); 
+				echo json_encode($r);
+				die();
+			}
+			
+			if($billingData->package_item == 0 AND $billingData->free_item == 1 AND !empty($billingData->ref_order_id)){
+				$r = array('success' => false, 'info' => 'This Free Item/Product including on Promo<br/>Please Cancel Main Item/Order'); 
+				echo json_encode($r);
+				die();
+			}
+			
 			//$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' Been Paid!<br/>Cannot Cancel Order, Please Refresh List Billing');
 			//die(json_encode($r));
 		}
@@ -171,7 +186,7 @@ class BillingCashier extends MY_Controller {
 			);
 			$is_closing = is_closing($var_closing);
 			if($is_closing){
-				$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+				$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 				die(json_encode($r));
 			}
 			
@@ -193,7 +208,7 @@ class BillingCashier extends MY_Controller {
 							'is_deleted'	=> 1,
 							'cancel_order_notes'=> 'cancel order paid: '.$keterangan
 						);
-						$q = $this->db->update($this->table, $update_order, "id IN (".$sql_Id.")");
+						$q = $this->db->update($this->table, $update_order, "id IN (".$sql_Id.") OR ref_order_id IN (".$sql_Id.")");
 						$cancel_billing_detail_id = $sql_Id;
 						 
 					}else{
@@ -283,7 +298,7 @@ class BillingCashier extends MY_Controller {
 							'service_total'	=> $service_total_selisih,
 							'discount_total'=> $discount_total_selisih
 						);
-						$q = $this->db->update($this->table, $update_order, "id IN (".$sql_Id.")");
+						$q = $this->db->update($this->table, $update_order, "id IN (".$sql_Id.") OR ref_order_id IN (".$sql_Id.")");
 						
 						//$q = true; 
 						//update main billing
@@ -326,12 +341,12 @@ class BillingCashier extends MY_Controller {
 						//$this->doPrint('void_order', $billingData->id, $sql_Id);
 						if($billingData->order_status == 'done' AND !empty($cancel_billing_detail_id)){
 							
-							if($wepos_tipe != 'retail'){
+							//if($wepos_tipe != 'retail'){
 								//PRINT CANCEL ORDER TO QC/BAR/KITCHEN
 								$r = $this->doPrint('void_order', $billingData->billing_id, $cancel_billing_detail_id);
-							}else{
-								$r = array('success' => true);
-							}
+							//}else{
+							//	$r = array('success' => true);
+							//}
 							
 							//print_r($r);
 							$r['billingData'] = $billingData;
@@ -360,7 +375,7 @@ class BillingCashier extends MY_Controller {
 					'cancel_order_notes'	=> 'cancel order unpaid: '.$keterangan
 				);
 				
-				$q = $this->db->update($this->table, $update_order, "id IN (".$sql_Id.")");
+				$q = $this->db->update($this->table, $update_order, "id IN (".$sql_Id.") OR ref_order_id IN (".$sql_Id.")");
 				
 				if($q)  
 				{  
@@ -421,8 +436,26 @@ class BillingCashier extends MY_Controller {
 		);
 		$is_closing = is_closing($var_closing);
 		if($is_closing){
-			$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 			die(json_encode($r));
+		}
+		
+		//NO HOLD BILLING
+		$opt_var = array('no_hold_billing');
+		$get_opt = get_option_value($opt_var);
+		if(!empty($get_opt['no_hold_billing'])){
+			$this->db->select("b.id, b.billing_no");
+			$this->db->from($this->table." as b");
+			$this->db->where("b.billing_status = 'hold'");
+			$this->db->where("b.created >= '".date("Y-m-d 00:00:07")."'");
+			
+			$get_hold_billing = $this->db->get();
+			if($get_hold_billing->num_rows() > 0){
+				$data_hold_billing = $get_hold_billing->row();
+				$r = array('success' => false, 'info' => 'Silahkan gunakan/selesaikan billing: <b>'.$data_hold_billing->billing_no.'</b><br/>Tidak boleh ada hold/gantung billing'); 
+				die(json_encode($r));
+			}
+			
 		}
 		
 		/*$get_no_billing = $this->generate_billing_no();
@@ -637,8 +670,8 @@ class BillingCashier extends MY_Controller {
 			a.merge_id, a.merge_main_status, a.split_from_id, a.total_guest, a.lock_billing, a.qc_notes,
 			a.created, a.updated, a.takeaway_no_tax, a.takeaway_no_service, a.is_compliment, 
 			a.discount_perbilling, a.total_return, a.compliment_total_tax_service, a.is_half_payment,
-			a.sales_id, a.sales_percentage, a.sales_price, a.sales_type, a.customer_id,  
-			a.id as billing_id, a.voucher_no, a.is_sistem_tawar, a.single_rate, 
+			a.sales_id, a.sales_percentage, a.sales_price, a.sales_type, a.customer_id,  a.block_table,
+			a.id as billing_id, a.voucher_no, a.is_sistem_tawar, a.single_rate, a.is_reservation,
 			b.table_name, b.table_no, b.table_desc, b.floorplan_id, c.floorplan_name, 
 			d.payment_type_name, e.user_firstname, e.user_lastname, f.bank_name, 
 			g.billing_no as merge_billing_no, h.sales_name, h.sales_company, i.customer_name');
@@ -674,6 +707,11 @@ class BillingCashier extends MY_Controller {
 				$billingData->bank_name = '';
 			}
 			
+			$billingData->billing_no_show = $billingData->billing_no;
+			if(!empty($billingData->is_reservation)){
+				$billingData->billing_no_show = 'R'.$billingData->billing_no;
+			}
+			
 			//sales
 			//$billingData->sales_name = '';
 			if(!empty($billingData->sales_id)){
@@ -688,6 +726,12 @@ class BillingCashier extends MY_Controller {
 				}
 				
 				$billingData->sales_name = $billingData->sales_name.' / '.$billingData->sales_company;
+			}
+		
+		
+			if(empty($billingData->payment_id)){
+				$billingData->payment_id = 1;
+				$billingData->payment_type_name = 'Cash';
 			}
 		}
 		
@@ -836,7 +880,7 @@ class BillingCashier extends MY_Controller {
 		);
 		$is_closing = is_closing($var_closing);
 		if($is_closing){
-			$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 			die(json_encode($r));
 		}
 		
@@ -944,7 +988,7 @@ class BillingCashier extends MY_Controller {
 				}
 				
 				$opt_value = array(
-					'wepos_tipe','retail_warehouse'
+					'wepos_tipe','retail_warehouse','autocut_stok_sales_to_usage'
 				);
 				
 				$get_opt = get_option_value($opt_value);
@@ -959,8 +1003,15 @@ class BillingCashier extends MY_Controller {
 					$retail_warehouse = $get_opt['retail_warehouse'];
 				}
 				
+				$autocut_stok_sales_to_usage = 0;
+				if(!empty($get_opt['autocut_stok_sales_to_usage'])){
+					$autocut_stok_sales_to_usage = $get_opt['autocut_stok_sales_to_usage'];
+				}
+				
 				//stok
-				if($wepos_tipe == 'retail' AND !empty($retail_warehouse)){
+				if($autocut_stok_sales_to_usage == 1 AND !empty($retail_warehouse)){
+					
+					/*
 					$update_stok = 'rollback';
 					$return_data = $this->m2->billingDetail($billing_id, $retail_warehouse, $update_stok);
 					
@@ -971,9 +1022,10 @@ class BillingCashier extends MY_Controller {
 							'storehouse_item'	=> $return_data['update_stock']
 						);
 						
-						$updateStock = $this->stock->update_stock_rekap($post_params);
+						//$updateStock = $this->stock->update_stock_rekap($post_params);
 						
 					}
+					*/
 					
 				}
 				
@@ -1042,10 +1094,23 @@ class BillingCashier extends MY_Controller {
 					echo json_encode($r);
 					die();
 				}
+				
 			}else{
 				$r = array('success' => false, 'info' => 'Billing Id: #'.$hold_billing_id.' Not Found!');
 				echo json_encode($r);
 				die();
+			}
+			
+			//NO HOLD BILLING
+			$opt_var = array('no_hold_billing');
+			$get_opt = get_option_value($opt_var);
+			if(!empty($get_opt['no_hold_billing']) AND !empty($billingData)){
+				
+				if($billingData->billing_status == 'hold'){
+					$r = array('success' => false, 'info' => 'Silahkan gunakan/selesaikan billing: <b>'.$billingData->billing_no.'</b><br/>Tidak boleh ada hold/gantung billing'); 
+					die(json_encode($r));
+				}
+				
 			}
 		}
 		
@@ -1056,7 +1121,7 @@ class BillingCashier extends MY_Controller {
 		);
 		$is_closing = is_closing($var_closing);
 		if($is_closing){
-			$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 			die(json_encode($r));
 		}
 		
@@ -1084,8 +1149,22 @@ class BillingCashier extends MY_Controller {
 	
 	public function doHoldBilling($billing_id = ''){
 		
-		$this->table = $this->prefix.'billing';	
-		$session_user = $this->session->userdata('user_username');					
+		$this->table = $this->prefix.'billing';				
+		$this->table2 = $this->prefix.'billing_detail';				
+		$this->table_inv = $this->prefix.'table_inventory';				
+		$this->table_storehouse_users = $this->prefix.'storehouse_users';				
+		$session_user = $this->session->userdata('user_username');
+		$role_id = $this->session->userdata('role_id');
+		$id_user = $this->session->userdata('id_user');
+		
+		//STOCK
+		$this->table_usagewaste = $this->prefix.'usagewaste';		
+		$this->table_product = $this->prefix.'product';		
+		$this->table_items = $this->prefix.'items';		
+		$this->table_product_gramasi = $this->prefix.'product_gramasi';		
+						
+		$this->prefix_acc = config_item('db_prefix3');
+		$this->table_account_receivable = $this->prefix_acc.'account_receivable';	
 		
 		if(empty($session_user)){
 			$r = array('success' => false, 'info' => 'Sesi Login sudah habis, Silahkan Login ulang!');
@@ -1097,9 +1176,12 @@ class BillingCashier extends MY_Controller {
 			return false;			
 		}
 		
+		$r = array('success' => true, 'id' => $billing_id);
+		
 		
 		$opt_value = array(
-			'wepos_tipe','retail_warehouse'
+			'wepos_tipe','retail_warehouse','autocut_stok_sales_to_usage',
+			'diskon_sebelum_pajak_service','cashier_credit_ar','no_hold_billing'
 		);
 		
 		$get_opt = get_option_value($opt_value);
@@ -1113,6 +1195,21 @@ class BillingCashier extends MY_Controller {
 		if(!empty($get_opt['retail_warehouse'])){
 			$retail_warehouse = $get_opt['retail_warehouse'];
 		}
+				
+		$autocut_stok_sales_to_usage = 0;
+		if(!empty($get_opt['autocut_stok_sales_to_usage'])){
+			$autocut_stok_sales_to_usage = $get_opt['autocut_stok_sales_to_usage'];
+		}
+		
+		$diskon_sebelum_pajak_service = 0;
+		if(!empty($get_opt['diskon_sebelum_pajak_service'])){
+			$diskon_sebelum_pajak_service = $get_opt['diskon_sebelum_pajak_service'];
+		}
+		
+		$cashier_credit_ar = 0;
+		if(!empty($get_opt['cashier_credit_ar'])){
+			$cashier_credit_ar = $get_opt['cashier_credit_ar'];
+		}
 		
 		$billingData = array();
 		$this->db->select('*, id as billing_id');
@@ -1121,6 +1218,16 @@ class BillingCashier extends MY_Controller {
 		$get_last = $this->db->get();
 		if($get_last->num_rows() > 0){
 			$billingData = $get_last->row();		
+		}
+		
+		//NO HOLD BILLING
+		if(!empty($get_opt['no_hold_billing']) AND !empty($billingData)){
+			
+			if($billingData->billing_status == 'hold'){
+				$r = array('success' => false, 'info' => 'Silahkan gunakan/selesaikan billing: <b>'.$billingData->billing_no.'</b><br/>Tidak boleh ada hold/gantung billing'); 
+				die(json_encode($r));
+			}
+			
 		}
 		
 		$date_now = date('Y-m-d H:i:s');
@@ -1144,8 +1251,9 @@ class BillingCashier extends MY_Controller {
 			if($update)
 			{  
 				if($billingData->billing_status == 'paid'){
-					if($wepos_tipe == 'retail' AND !empty($retail_warehouse)){
-						$update_stok = 'rollback';
+					if($autocut_stok_sales_to_usage == 1 AND !empty($retail_warehouse)){
+						
+						/*$update_stok = 'rollback';
 						$return_data = $this->m2->billingDetail($billing_id, $retail_warehouse, $update_stok);
 						
 						if(!empty($return_data['update_stock'])){
@@ -1155,7 +1263,302 @@ class BillingCashier extends MY_Controller {
 								'storehouse_item'	=> $return_data['update_stock']
 							);
 							
-							$updateStock = $this->stock->update_stock_rekap($post_params);
+							//$updateStock = $this->stock->update_stock_rekap($post_params);
+							
+						}
+						*/
+						
+						//update 2018-01-07
+						$all_product_order = array();
+						
+						$this->db->select("a.product_id, a.order_qty, a.retur_qty, a.product_price_hpp, a.product_price, a.product_price_real, 
+						a.include_tax, a.include_service, a.tax_percentage, a.service_percentage, a.is_compliment, a.product_type, a.varian_id,
+						a.tax_total, a.service_total, a.discount_total, b.from_item, b.id_ref_item, c.unit_id");
+						$this->db->from($this->table2.' as a');
+						$this->db->join($this->table_product.' as b',"b.id = a.product_id", "LEFT");
+						$this->db->join($this->table_items.' as c',"c.id = b.id_ref_item AND b.from_item = 1", "LEFT");
+						$this->db->where('a.billing_id', $billing_id);
+						$this->db->where('a.is_deleted', 0);
+						$get_detail = $this->db->get();
+						if($get_detail->num_rows() > 0){
+							foreach($get_detail->result() as $dtRow){
+								$total_qty = $dtRow->order_qty - $dtRow->retur_qty;
+								if($total_qty < 0){
+									$total_qty = 0;
+								}
+								
+								$dt = (array) $dtRow;
+								
+								//CHECK IF INCLUDE TAX AND SERVICE ---------------------
+								$is_include = false;
+								$all_percentage = 100;
+								if($dt['include_tax'] == 1){
+									$is_include = true;
+									$all_percentage += $dt['tax_percentage'];
+								}
+								
+								if($dt['include_service'] == 1){
+									$is_include = true;		
+									$all_percentage += $dt['service_percentage'];		
+								}
+								
+								$grand_total_order = 0;
+								if(!empty($dt['is_compliment'])){
+									$dt['tax_total'] = 0;
+									$dt['service_total'] = 0;
+								}
+								
+								$include_tax = $dt['include_tax'];
+								$include_service = $dt['include_service'];
+								$tax_percentage = $dt['tax_percentage'];
+								$service_percentage = $dt['service_percentage'];
+								$tax_total = 0;
+								$service_total = 0;
+								$product_price_real = 0;
+								$total_billing_order = 0;
+								$tax_total_order = 0;
+								$service_total_order = 0;
+								
+								//cek if discount is disc billing
+								$total_discount_product = 0;
+								if($billingData->discount_perbilling == 1){
+									$get_percentage = $billingData->discount_percentage;
+									if(empty($billingData->discount_percentage) OR $billingData->discount_percentage == '0.00'){
+										$get_percentage = ($billingData->discount_total / $billingData->total_billing) * 100;
+										$get_percentage = number_format($get_percentage,0);
+									}
+									
+									$dt['discount_total'] = priceFormat(($dt['product_price_real']*($get_percentage/100)), 0, ".", "");
+									$total_discount_product = ($dt['discount_total']*$dt['order_qty']);
+									
+								}else{
+									
+									$total_discount_product = ($dt['discount_total']);
+								}
+								
+								if(!empty($include_tax) OR !empty($include_service)){
+									
+									//AUTOFIX-BUGS 1 Jan 2018
+									if((!empty($include_tax) AND empty($include_service)) OR (empty($include_tax) AND !empty($include_service))){
+										if($dt['product_price'] != ($dt['product_price_real']+$dt['tax_total']+$dt['service_total'])){
+											$dt['product_price_real'] = priceFormat(($dt['product_price']/($all_percentage/100)), 0, ".", "");
+										}
+									}
+									
+									if($diskon_sebelum_pajak_service == 1){
+										
+										$grand_total_order = ($dt['product_price_real']*$dt['order_qty']) - $dt['discount_total'];
+										
+									}else{
+										
+										$grand_total_order = ($dt['product_price_real']*$dt['order_qty']);
+										
+									}
+
+									$total_billing_order = ($dt['product_price_real']*$dt['order_qty']);
+									$tax_total_order = $dt['tax_total'];
+									$service_total_order = $dt['service_total'];
+									
+								}else
+								{
+										
+									if($diskon_sebelum_pajak_service == 1){
+										
+										$grand_total_order = ($dt['product_price']*$dt['order_qty']) - $dt['discount_total'];
+									
+									}else{
+										
+										$grand_total_order = ($dt['product_price']*$dt['order_qty']);
+									
+									}
+									
+									$total_billing_order = ($dt['product_price']*$dt['order_qty']);
+									$tax_total_order = $dt['tax_total'];
+									$service_total_order = $dt['service_total'];
+									
+								}
+								
+								
+								//$sub_total = $grand_total_order;
+								
+								//COMPLIMENT
+								if(!empty($dt['is_compliment'])){
+									$dt['service_total'] = 0;
+									$dt['tax_total'] = 0;
+								}
+								
+								$dt['product_price'] = ($total_billing_order/$dt['order_qty']);
+								//CHECK IF INCLUDE TAX AND SERVICE ---------------------
+								
+								//update 2018-02-25
+								//NO-PACKAGE
+								if($dtRow->product_type == 'item' AND !empty($dtRow->order_qty)){
+									if(empty($dtRow->varian_id)){
+										$dtRow->varian_id = 0;
+									}
+									$key_prod_varian = $dtRow->product_id.'_'.$dtRow->varian_id;
+									if(empty($all_product_order[$key_prod_varian])){
+										$all_product_order[$key_prod_varian] = array(
+											'product_id'	=> $dtRow->product_id,
+											'from_item'		=> $dtRow->from_item,
+											'id_ref_item'	=> $dtRow->id_ref_item,
+											'unit_id'		=> $dtRow->unit_id,
+											'varian_id'		=> $dtRow->varian_id,
+											'price_hpp'		=> 0,
+											'product_price'	=> 0,
+											'qty'			=> 0
+										);
+									}
+									
+									$all_product_order[$key_prod_varian]['qty'] += $total_qty;
+									$all_product_order[$key_prod_varian]['price_hpp'] += ($dtRow->product_price_hpp * $total_qty);
+									$all_product_order[$key_prod_varian]['product_price'] += $total_billing_order;
+								}
+								
+						
+							}
+						}
+						
+						//update 2018-01-12
+						//ROLLBACK STOK
+						$all_item_usage = array();
+						$all_product_gramasi = array();
+						$all_product_varian = array();
+						$all_product_qty = array();
+						//if product from_item, id_ref_item
+						if(!empty($all_product_order)){
+							foreach($all_product_order as $dt){
+								if(!empty($dt['id_ref_item'])){
+									if(empty($all_item_usage[$dt['id_ref_item']])){
+										$all_item_usage[$dt['id_ref_item']] = array(
+											'id'	=> $dt['id_ref_item'],
+											'unit_id'	=> $dt['unit_id'],
+											'item_hpp'	=> 0,
+											'item_price'=> 0,
+											'qty'		=> 0,
+										);
+									}
+									
+									
+									
+									$all_item_usage[$dt['id_ref_item']]['qty'] += $dt['qty'];
+									$all_item_usage[$dt['id_ref_item']]['item_hpp'] += $dt['price_hpp'];
+									$all_item_usage[$dt['id_ref_item']]['item_price'] += $dt['product_price'];
+									
+								}else{
+									
+									if(empty($dt['varian_id'])){
+										$dt['varian_id'] = 0;
+									}
+									
+									$key_prod_varian = $dt['product_id'].'_'.$dt['varian_id'];
+									if(!in_array($dt['product_id'], $all_product_gramasi)){
+										$all_product_gramasi[] = $dt['product_id'];
+									}
+									if(!in_array($key_prod_varian, $all_product_varian)){
+										$all_product_varian[] = $key_prod_varian;
+									}
+									
+									if(empty($all_product_qty[$key_prod_varian])){
+										$all_product_qty[$key_prod_varian] = 0;
+									}
+									
+									$all_product_qty[$key_prod_varian] += $dt['qty'];
+								}
+							}
+						}
+						
+						
+						//update 2018-01-12
+						//collection stock from gramasi
+						if(!empty($all_product_gramasi)){
+							$all_product_gramasi_sql = implode(",", $all_product_gramasi);
+							$this->db->select("a.*, b.unit_id, b.item_hpp");
+							$this->db->from($this->table_product_gramasi." as a");
+							$this->db->join($this->table_items." as b","b.id = a.item_id","LEFT");
+							$this->db->where("a.product_id IN (".$all_product_gramasi_sql.")");
+							$this->db->where('a.is_deleted', 0);
+							$get_gramasi = $this->db->get();
+							if($get_gramasi->num_rows() > 0){
+								foreach($get_gramasi->result_array() as $dtRow){
+									
+									if(empty($dtRow['varian_id'])){
+										$dtRow['varian_id'] = 0;
+									}
+									
+									$key_prod_varian = $dtRow['product_id'].'_'.$dtRow['varian_id'];
+									
+									if(in_array($key_prod_varian, $all_product_varian)){
+										$get_qty = 0;
+										if(!empty($all_product_qty[$key_prod_varian])){
+											$get_qty = $all_product_qty[$key_prod_varian];
+										}
+										
+										if(empty($all_item_usage[$dtRow['item_id']])){
+											$all_item_usage[$dtRow['item_id']] = array(
+												'id'	=> $dtRow['item_id'],
+												'unit_id'	=> $dtRow['unit_id'],
+												'item_hpp'	=> 0,
+												'item_price'=> 0,
+												'qty'		=> 0,
+											);
+										}
+										
+										//*gramasi tidak ada hpp -> asumsi = item price
+										$all_item_usage[$dtRow['item_id']]['qty'] += $dtRow['item_qty']*$get_qty;
+										$all_item_usage[$dtRow['item_id']]['item_hpp'] += ($dtRow['item_price']*$dtRow['item_qty']*$get_qty);
+										$all_item_usage[$dtRow['item_id']]['item_price'] += ($dtRow['item_price']*$dtRow['item_qty']*$get_qty);
+										
+									}
+									
+								}
+							}
+							
+						}
+						
+						//save if usage available for today
+						$date_now = date("Y-m-d");
+						$params = array(
+							'date_now'			=> $date_now,
+							'all_item_usage'	=> $all_item_usage,
+							'retail_warehouse'	=> $retail_warehouse,
+							'rollback'			=> true,
+						);
+						$ret_usage = $this->usagewaste->save_sales_usage($params);
+						
+					}
+					
+					if($billingData->payment_id == 4 AND $cashier_credit_ar == 1){
+						//payment done - progres
+						$updateAR = $this->account_receivable->set_account_receivable_Sales($billing_id, $billingData->billing_status);
+						//$updateCF = $this->penerimaan_kas->set_DP_Sales($billing_id, $billingData->billing_status);
+						
+						if($updateAR === true || $updateAR === false){
+							$r['updateSales'] = $billingData->billing_status.' to Paid';
+						}else
+						if($updateAR == 'invoice'){
+							
+							$no_invoice = '-';
+							$this->db->from($this->table_account_receivable);
+							$this->db->where("ar_tipe = 'sales'");
+							$this->db->where("ref_id = '".$billing_id."'");
+							$get_ar = $this->db->get();
+							if($get_ar->num_rows() > 0){
+								
+								$data_AR = $get_ar->row();
+								$no_invoice = $data_AR->no_invoice;
+								
+							}
+							
+							$r['success'] = false;
+							$r['info'] = 'Silahkan Cek dan Hapus Invoice: '.$no_invoice.' terkait Sales: '.$billingData->billing_no;
+							$r['updateSales'] = $billingData->billing_status.' to Paid';
+							$r['updateAR'] = $updateAR;
+							
+							$rollback_reservation_status = array(
+								'billing_status'	=> $billingData->billing_status
+							);
+							$this->db->update($this->table, $rollback_reservation_status, "id = '".$billing_id."'");
 							
 						}
 						
@@ -1164,6 +1567,12 @@ class BillingCashier extends MY_Controller {
 			
 				//SAVE TO LOG
 				$this->logBilling($billingData, 'Hold', 'Hold Billing '.$billingData->billing_no);
+				
+				if($r['success'] == false){
+					//$r = array('success' => false, 'info' => 'Sesi Login sudah habis, Silahkan Login ulang!');
+					echo json_encode($r);
+					die();
+				}
 				
 				return true;	
 			}  
@@ -1198,6 +1607,7 @@ class BillingCashier extends MY_Controller {
 		$product_price = $this->input->post('product_price');
 		$product_price_hpp = $this->input->post('product_price_hpp');
 		$product_normal_price = $this->input->post('product_normal_price');
+		$product_price_before_promo = $this->input->post('product_normal_price');
 		$product_name = $this->input->post('product_name');
 		$order_qty = $this->input->post('order_qty');
 		$order_notes = $this->input->post('order_notes');
@@ -1228,6 +1638,9 @@ class BillingCashier extends MY_Controller {
 		$buyget_item = $this->input->post('buyget_item');
 		$free_item = $this->input->post('free_item');
 		
+		$product_type = $this->input->post('product_type');
+		$package_item = $this->input->post('package_item');
+		
 		if($is_promo == 0 OR empty($promo_id)){
 			$promo_tipe = 0;
 			$promo_percentage = 0;
@@ -1245,20 +1658,51 @@ class BillingCashier extends MY_Controller {
 		
 		$form_type_orderProduct = $this->input->post('form_type_orderProduct');
 		
+		$date_now = date('Y-m-d');
+		//CLOSING DATE
+		$var_closing = array(
+			'xdate'	=> $date_now,
+			'xtipe'	=> 'sales'
+		);
+		$is_closing = is_closing($var_closing);
+		if($is_closing){
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
+			die(json_encode($r));
+		}
+		
 		if(empty($main_billing_id)){
 			
-			$date_now = date('Y-m-d');
-			//CLOSING DATE
-			$var_closing = array(
-				'xdate'	=> $date_now,
-				'xtipe'	=> 'sales'
-			);
-			$is_closing = is_closing($var_closing);
-			if($is_closing){
-				$r = array('success' => false, 'info' => 'Sales Date Been Closed!', 'billingData' => ''); 
-				die(json_encode($r));
+			//NO HOLD BILLING
+			$opt_var = array('no_hold_billing');
+			$get_opt = get_option_value($opt_var);
+			if(!empty($get_opt['no_hold_billing'])){
+				$this->db->select("b.id, b.billing_no");
+				$this->db->from($this->table." as b");
+				$this->db->where("b.billing_status = 'hold'");
+				$this->db->where("b.created >= '".date("Y-m-d 00:00:07")."'");
+				
+				$get_hold_billing = $this->db->get();
+				if($get_hold_billing->num_rows() > 0){
+					$data_hold_billing = $get_hold_billing->row();
+					$r = array('success' => false, 'info' => 'Silahkan gunakan/selesaikan billing: <b>'.$data_hold_billing->billing_no.'</b><br/>Tidak boleh ada hold/gantung billing'); 
+					die(json_encode($r));
+				}
+				
 			}
 		}
+		
+		if($form_type_orderProduct == 'add'){
+			//Check OOO Menu
+			$this->db->select("*");
+			$this->db->from($this->prefix.'ooo_menu');
+			$this->db->where("product_id = ".$product_id." AND tanggal = '".date("Y-m-d")."' AND is_deleted = 0");
+			$get_ooo = $this->db->get();
+			if($get_ooo->num_rows() > 0){
+				$dt_ooo = $get_ooo->row();
+				$r = array('success' => false, 'info' => 'Product/Menu Out Of Order!<br/>Ket: '.$dt_ooo->keterangan); 
+				die(json_encode($r));
+			}
+		}	
 		
 		//CREATE BILLING WITH USER - IF EMPTY
 		$billingData = $this->getBilling($main_billing_id);	
@@ -1286,15 +1730,15 @@ class BillingCashier extends MY_Controller {
 		}
 		
 		//CLOSING DATE
-		$var_closing = array(
+		/*$var_closing = array(
 			'xdate'	=> $billingData->created,
 			'xtipe'	=> 'sales'
 		);
 		$is_closing = is_closing($var_closing);
 		if($is_closing){
-			$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 			die(json_encode($r));
-		}
+		}*/
 		
 		//CHECK IF BILLING IS NOT PAID
 		/*
@@ -1334,6 +1778,20 @@ class BillingCashier extends MY_Controller {
 		$takeaway_no_tax = $billingData->takeaway_no_tax;
 		$takeaway_no_service = $billingData->takeaway_no_service;
 		$billing_is_compliment = $billingData->is_compliment;
+		
+		//use_tax
+		if(empty($use_tax)){
+			$tax_percentage = 0;
+			$tax_total = 0;
+			$include_tax = 0;
+		}
+		
+		//use_service
+		if(empty($use_service)){
+			$service_percentage = 0;
+			$service_total = 0;
+			$include_service = 0;
+		}
 		
 		$tax_total = 0;
 		$service_total = 0;
@@ -1489,28 +1947,33 @@ class BillingCashier extends MY_Controller {
 			
 		}
 		
+		$opt_value = array(
+			'cashier_max_pembulatan',
+			'cashier_pembulatan_keatas',
+			'pembulatan_dinamis',
+			'use_order_counter',
+			'wepos_tipe',
+			'save_order_note'
+		);
+		
+		$get_opt = get_option_value($opt_value);
+		
 		$r = '';
 		if($form_type_orderProduct == 'add')
 		{
 			
-			$opt_value = array(
-				'cashier_max_pembulatan',
-				'cashier_pembulatan_keatas',
-				'pembulatan_dinamis',
-				'use_order_counter',
-				'wepos_tipe'
-			);
-			
-			$get_opt = get_option_value($opt_value);
-			
-			$wepos_tipe = 'cafe';
-			if(!empty($get_opt['wepos_tipe'])){
-				$wepos_tipe = $get_opt['wepos_tipe'];
-			}
+			//$wepos_tipe = 'cafe';
+			//if(!empty($get_opt['wepos_tipe'])){
+			//	$wepos_tipe = $get_opt['wepos_tipe'];
+			//}
 			
 			
 			if(empty($get_opt['use_order_counter'])){
 				$get_opt['use_order_counter'] = 0;
+			}
+			
+			if(empty($get_opt['save_order_note'])){
+				$get_opt['save_order_note'] = 0;
 			}
 			
 			//GET COUNTER
@@ -1526,6 +1989,7 @@ class BillingCashier extends MY_Controller {
 				    'billing_id'  	=> 	$main_billing_id,
 				    'billing_id_before_merge'  	=> 	$billing_id_before_merge,
 					'product_id'	=>	$product_id,
+					'product_type'	=>	$product_type,
 					'category_id'	=>	$category_id,
 					'product_varian_id'	=>	$product_varian_id,
 					'varian_id'		=>	$varian_id,
@@ -1597,9 +2061,9 @@ class BillingCashier extends MY_Controller {
 				}
 			}
 		
-			if($wepos_tipe == 'retail'){
-				$var['fields']['order_status'] = 'done';
-			}
+			//if($wepos_tipe == 'retail'){
+			//	$var['fields']['order_status'] = 'done';
+			//}
 			
 			//SAVE
 			$insert_id = false;
@@ -1630,6 +2094,7 @@ class BillingCashier extends MY_Controller {
 							if($get_prod->num_rows() > 0){
 								$data_prod = $get_prod->row();
 								$category_id = $data_prod->category_id;
+								$product_type = $data_prod->product_type;
 								$product_varian_id = 0;
 								$varian_id = 0;
 								$has_varian = $data_prod->has_varian;
@@ -1644,6 +2109,7 @@ class BillingCashier extends MY_Controller {
 							'billing_id'  	=> 	$main_billing_id,
 							'billing_id_before_merge'  	=> 	$billing_id_before_merge,
 							'product_id'	=>	$buyget_item,
+							'product_type'	=>	$product_type,
 							'category_id'	=>	$category_id,
 							'product_varian_id'	=>	$product_varian_id,
 							'varian_id'		=>	$varian_id,
@@ -1690,6 +2156,78 @@ class BillingCashier extends MY_Controller {
 					}
 				}
 				
+				//update 2018-02-13
+				//check package
+				if($product_type == 'package'){
+					
+					//get product detail
+					$data_package_item = array();
+					$this->db->select("a.id, a.product_id, a.product_hpp, a.product_price, a.normal_price, 
+					a.has_varian, a.product_varian_id, a.varian_id, b.category_id, b.product_type");
+					$this->db->from($this->prefix.'product_package as a');
+					$this->db->join($this->prefix.'product as b',"b.id = a.product_id","LEFT");
+					$this->db->where("a.package_id",$product_id);
+					$this->db->where("b.product_type", 'item');
+					$get_prod = $this->db->get();
+					if($get_prod->num_rows() > 0){
+						foreach($get_prod->result() as $data_prod){
+							$product_id_package = $data_prod->product_id;
+							$product_type_package = $data_prod->product_type;
+							$category_id = $data_prod->category_id;
+							$product_varian_id = $data_prod->product_varian_id;
+							$varian_id	= $data_prod->varian_id;
+							$has_varian = $data_prod->has_varian;
+							$product_price_hpp = $data_prod->product_hpp;
+							$product_price = $data_prod->product_price;
+							$product_price_real = $data_prod->product_price;
+							$product_normal_price = $data_prod->normal_price;
+							
+							$data_package_item[] = array(
+								'billing_id'  	=> 	$main_billing_id,
+								'billing_id_before_merge'  	=> 	$billing_id_before_merge,
+								'product_id'	=>	$product_id_package,
+								'product_type'	=>	$product_type_package,
+								'category_id'	=>	$category_id,
+								'product_varian_id'	=>	$product_varian_id,
+								'varian_id'		=>	$varian_id,
+								'has_varian'	=>	$has_varian,
+								'include_tax'	=>	$include_tax,
+								'tax_percentage'	=>	$tax_percentage,
+								'tax_total'			=>	0,
+								'include_service'	=>	$include_service,
+								'service_percentage'	=>	$service_percentage,
+								'service_total'	=>	0,
+								'is_takeaway'	=>	$is_takeaway,
+								'takeaway_no_tax'	=>	$takeaway_no_tax,
+								'takeaway_no_service'	=>	$takeaway_no_service,
+								'is_compliment'	=>	$is_compliment,
+								'product_price_real'	=>	$product_price_real,
+								'product_price'	=>	$product_price,
+								'product_price_hpp'		=>	$product_price_hpp,
+								'product_normal_price'	=>	$product_normal_price,
+								'order_qty'		=>	$order_qty,
+								'order_notes'	=>	'',
+								'order_status'	=>	'order',
+								'order_counter'	=>	$order_counter,
+								'order_day_counter'	=>	$order_day_counter,
+								'created'		=>	$date_now,
+								'createdby'		=>	$session_user,
+								'updated'		=>	$date_now,
+								'updatedby'		=>	$session_user,
+								'package_item'		=>	1,
+								'free_item'			=>	1,
+								'ref_order_id'		=>	$insert_id
+							);
+						}
+						
+					}
+					
+					if(!empty($data_package_item)){
+						$this->db->insert_batch($this->table2, $data_package_item);
+					}
+				
+				}
+				
 				$r = array('success' => true, 'id' => $insert_id, 'billingData' => $billingData); 
 				
 			}  
@@ -1701,24 +2239,41 @@ class BillingCashier extends MY_Controller {
 		}else
 		if($form_type_orderProduct == 'edit'){
 			
-			$opt_value = array(
-				'cashier_max_pembulatan',
-				'cashier_pembulatan_keatas',
-				'pembulatan_dinamis',
-				'use_order_counter',
-				'wepos_tipe'
-			);
+			//$wepos_tipe = 'cafe';
+			//if(!empty($get_opt['wepos_tipe'])){
+			//	$wepos_tipe = $get_opt['wepos_tipe'];
+			//}
 			
-			$get_opt = get_option_value($opt_value);
+			//Check OOO Menu
+			$this->db->select("*");
+			$this->db->from($this->prefix.'ooo_menu');
+			$this->db->where("product_id = ".$product_id." AND tanggal = '".date("Y-m-d")."' AND is_deleted = 0");
+			$get_ooo = $this->db->get();
+			if($get_ooo->num_rows() > 0){
+				$dt_ooo = $get_ooo->row();
+				
+				$id = $this->input->post('id', true);
 			
-			$wepos_tipe = 'cafe';
-			if(!empty($get_opt['wepos_tipe'])){
-				$wepos_tipe = $get_opt['wepos_tipe'];
+				//get old detail
+				$this->db->from($this->table2);
+				$this->db->where("id = ".$id);
+				$get_old_detail = $this->db->get();
+				if($get_old_detail->num_rows() > 0){
+					$dt_old_detail = $get_old_detail->row();
+					
+					if($dt_old_detail->order_qty < $order_qty){
+						$r = array('success' => false, 'info' => 'Tidak Bisa Menambah Qty, Product/Menu Out Of Order!<br/>Ket: '.$dt_ooo->keterangan); 
+						die(json_encode($r));
+					}
+					
+				}
+				
 			}
 			
 			$var = array('fields'	=>	array(
 				    'billing_id'  	=> 	$main_billing_id,
 					'product_id'	=>	$product_id,
+					'product_type'	=>	$product_type,
 					'category_id'	=>	$category_id,
 					'product_varian_id'	=>	$product_varian_id,
 					'varian_id'		=>	$varian_id,
@@ -1760,15 +2315,16 @@ class BillingCashier extends MY_Controller {
 					'supplier_id'		=>	$supplier_id,
 					'persentase_bagi_hasil'		=>	$persentase_bagi_hasil,
 					'total_bagi_hasil'			=>	$total_bagi_hasil,
-					'grandtotal_bagi_hasil'		=>	$total_bagi_hasil*$order_qty
+					'grandtotal_bagi_hasil'		=>	$total_bagi_hasil*$order_qty,
+					'package_item'		=>	$package_item
 				),
 				'table'			=>  $this->table2,
 				'primary_key'	=>  'id'
 			);
 			
-			if($wepos_tipe == 'retail'){
-				$var['fields']['order_status'] = 'done';
-			}
+			//if($wepos_tipe == 'retail'){
+			//	$var['fields']['order_status'] = 'done';
+			//}
 			
 			if($is_buyget == 1 OR !empty($buyget_id)){
 				if($buyget_tipe == 'percentage'){
@@ -1780,7 +2336,7 @@ class BillingCashier extends MY_Controller {
 				}
 			}
 						
-			if(!empty($free_item)){
+			if(!empty($free_item) AND empty($package_item)){
 				$var['fields']['tax_total'] = 0;
 				$var['fields']['service_total'] = 0;
 				$var['fields']['discount_price'] = $product_price_real;
@@ -1850,6 +2406,29 @@ class BillingCashier extends MY_Controller {
 				$r = array('success' => false);
 			}
 		}
+			
+		if(!empty($order_notes) AND !empty($get_opt['save_order_note'])){
+			$this->db->from($this->prefix.'order_note');
+			$this->db->where("order_note_text = '".$order_notes."'");
+			$get_notes = $this->db->get();
+			if($get_notes->num_rows() > 0){
+				$update_note = array(
+					'is_deleted' => 0,
+					'updated'		=>	$date_now,
+					'updatedby'		=>	$session_user,
+				);
+				$this->db->update($this->prefix.'order_note',$update_note,"order_note_text = '".$order_notes."'");
+			}else{
+				$update_note = array(
+					'order_note_text'	 => $order_notes,
+					'created'		=>	$date_now,
+					'createdby'		=>	$session_user,
+					'updated'		=>	$date_now,
+					'updatedby'		=>	$session_user
+				);
+				$this->db->insert($this->prefix.'order_note',$update_note);
+			}
+		}
 		
 		die(json_encode(($r==null or $r=='')? array('success'=>false) : $r));
 	}
@@ -1902,8 +2481,8 @@ class BillingCashier extends MY_Controller {
 			
 			$all_detail_update = array();
 			$this->db->select("id, product_price, order_qty, 
-				is_takeaway, is_compliment, discount_price, discount_total, 
-				include_tax, include_service, tax_percentage, service_percentage, is_promo, promo_price, free_item");
+				is_takeaway, is_compliment, discount_price, discount_percentage, discount_total, 
+				include_tax, include_service, tax_percentage, service_percentage, is_promo, promo_price, free_item, package_item");
 			$this->db->from($this->table_billing_detail);
 			$this->db->where('billing_id', $billing_id);
 			$this->db->where('is_deleted = 0');
@@ -1921,6 +2500,7 @@ class BillingCashier extends MY_Controller {
 					$include_service = $dt->include_service;
 					$tax_percentage = $dt->tax_percentage;
 					$service_percentage = $dt->service_percentage;
+					$discount_percentage = $dt->discount_percentage;
 					$discount_price = $dt->discount_price;
 					$discount_total = $dt->discount_price*$order_qty;
 					//$include_tax = $billingData->include_tax;
@@ -2011,9 +2591,16 @@ class BillingCashier extends MY_Controller {
 						
 						//re-calculate tax service
 						if($diskon_sebelum_pajak_service == 1 AND !empty($discount_price) AND $dt->is_promo == 0){
-							$product_price_real_disc = $product_price_real-$discount_price;
-							$tax_total = priceFormat($product_price_real_disc * ($tax_percentage/100), 0, ".", "");
-							$service_total = priceFormat($product_price_real_disc * ($service_percentage/100), 0, ".", "");
+							//$product_price_real_disc = $product_price_real-$discount_price;
+							//$tax_total = priceFormat($product_price_real_disc * ($tax_percentage/100), 0, ".", "");
+							//$service_total = priceFormat($product_price_real_disc * ($service_percentage/100), 0, ".", "");
+						}
+						
+						//after tax
+						if($diskon_sebelum_pajak_service == 0 AND !empty($discount_price) AND $dt->is_promo == 0){
+							$product_price_real_disc = $product_price_real+$tax_total+$service_total;
+							$discount_percent = $discount_percentage/100;
+							$discount_price = priceFormat($product_price_real_disc * $discount_percent, 0, ".", "");
 						}
 						
 					}
@@ -2088,13 +2675,24 @@ class BillingCashier extends MY_Controller {
 					
 					}
 					
-					if($dt->free_item == 1){
+					if($dt->free_item == 1 AND $dt->package_item == 0){
 						$tax_percentage = 0;
 						$tax_total = 0;
 						$service_percentage = 0;
 						$service_total = 0;
 						$product_price = $dt->product_price;
 						$product_price_real = $dt->product_price;
+						//$discount_price = $product_price;
+					}
+					
+					if($dt->package_item == 1){
+						$tax_percentage = 0;
+						$tax_total = 0;
+						$service_percentage = 0;
+						$service_total = 0;
+						$product_price = 0;
+						$product_price_real = 0;
+						$dt->product_price = 0;
 						//$discount_price = $product_price;
 					}
 					
@@ -2319,14 +2917,21 @@ class BillingCashier extends MY_Controller {
 		$role_id = $this->session->userdata('role_id');
 		$id_user = $this->session->userdata('id_user');
 		
+		//STOCK
+		$this->table_usagewaste = $this->prefix.'usagewaste';		
+		$this->table_product = $this->prefix.'product';		
+		$this->table_items = $this->prefix.'items';		
+		$this->table_product_gramasi = $this->prefix.'product_gramasi';		
+		
 		if(empty($session_user)){
 			$r = array('success' => false, 'info' => 'Sesi Login sudah habis, Silahkan Login ulang!');
 			echo json_encode($r);
 			die();
 		}
 		
-		$get_opt_var = array('role_id_kasir','table_available_after_paid','include_tax','include_service,',
-		'cashier_max_pembulatan','cashier_pembulatan_keatas','pembulatan_dinamis','wepos_tipe','retail_warehouse');
+		$get_opt_var = array('role_id_kasir','table_available_after_paid','include_tax','include_service,', 
+		'diskon_sebelum_pajak_service','cashier_max_pembulatan','cashier_pembulatan_keatas','pembulatan_dinamis',
+		'wepos_tipe','retail_warehouse','autocut_stok_sales_to_usage','cashier_credit_ar','min_noncash');
 		$get_opt = get_option_value($get_opt_var);
 		
 		//IF ONLY ROLE KASIR
@@ -2341,6 +2946,16 @@ class BillingCashier extends MY_Controller {
 		$wepos_tipe = 'cafe';
 		if(!empty($get_opt['wepos_tipe'])){
 			$wepos_tipe = $get_opt['wepos_tipe'];
+		}
+				
+		$autocut_stok_sales_to_usage = 0;
+		if(!empty($get_opt['autocut_stok_sales_to_usage'])){
+			$autocut_stok_sales_to_usage = $get_opt['autocut_stok_sales_to_usage'];
+		}
+		
+		$diskon_sebelum_pajak_service = 0;
+		if(!empty($get_opt['diskon_sebelum_pajak_service'])){
+			$diskon_sebelum_pajak_service = $get_opt['diskon_sebelum_pajak_service'];
 		}
 		
 		$retail_warehouse = 0;
@@ -2362,8 +2977,8 @@ class BillingCashier extends MY_Controller {
 			}
 		}
 		
-		if(empty($retail_warehouse) AND $wepos_tipe != 'cafe'){
-			$r = array('success' => false, 'info' => 'Please set retail warehouse!');
+		if(empty($retail_warehouse) AND $autocut_stok_sales_to_usage == 1){
+			$r = array('success' => false, 'info' => 'Please set stock warehouse!');
 			echo json_encode($r);
 			die();
 		}
@@ -2398,7 +3013,7 @@ class BillingCashier extends MY_Controller {
 		$table_no = $this->input->post('table_no');
 		$total_guest = $this->input->post('total_guest');
 		
-		if($wepos_tipe != 'retail'){
+		//if($wepos_tipe != 'retail'){
 			if(empty($table_id) OR empty($table_no)){
 				$r = array('success' => false, 'info' => 'Select Table!');
 				echo json_encode($r);
@@ -2410,7 +3025,7 @@ class BillingCashier extends MY_Controller {
 				echo json_encode($r);
 				die();
 			}
-		}
+		//}
 				
 		//BILLING
 		$billingData = array();
@@ -2418,7 +3033,7 @@ class BillingCashier extends MY_Controller {
 		$billing_id = $this->input->post('billing_id');
 		$billing_no = $this->input->post('billing_no');
 		$this->db->select("b.id, b.billing_no, b.billing_status, b.created, b.include_tax, b.include_service, 
-		b.discount_perbilling, b.merge_id, b.merge_main_status,
+		b.discount_perbilling, b.merge_id, b.merge_main_status, b.block_table,
 		b.total_billing, b.grand_total");
 		$this->db->from($this->table." as b");
 		$this->db->where("b.id = ".$billing_id);
@@ -2446,7 +3061,7 @@ class BillingCashier extends MY_Controller {
 		);
 		$is_closing = is_closing($var_closing);
 		if($is_closing){
-			$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 			die(json_encode($r));
 		}
 		
@@ -2462,23 +3077,42 @@ class BillingCashier extends MY_Controller {
 		
 		$tax_percentage = $this->input->post('tax_percentage');
 		$total_ppn = $this->input->post('total_ppn');
-		$get_total += $total_ppn;
+		//$get_total += $total_ppn;
 		
 		$service_percentage = $this->input->post('service_percentage');
 		$total_service = $this->input->post('total_service');
-		$get_total += $total_service;
+		//$get_total += $include_service;
 		
 		if(empty($billingData->include_tax) OR empty($billingData->include_service)){
 			if(empty($billingData->include_tax)){
-				//$get_total += $total_ppn;
+				$get_total += $total_ppn;
 			}
 			
 			if(empty($billingData->include_service)){
-				//$get_total += $total_service;
+				$get_total += $total_service;
 			}
 		}
 		
 		$payment_id = $this->input->post('payment_id');
+		
+		//cashier_credit_ar
+		$cashier_credit_ar = 0;
+		if(!empty($get_opt['cashier_credit_ar'])){
+			$cashier_credit_ar = $get_opt['cashier_credit_ar'];
+		}
+		
+		$min_noncash = 0;
+		if(!empty($get_opt['min_noncash'])){
+			$min_noncash = $get_opt['min_noncash'];
+		}
+		
+		if($payment_id == 4 AND $cashier_credit_ar == 0){
+			$r = array('success' => false, 'info' => '<br/>Penggunaan Pembayaran: Credit - AR / Piutang tidak digunakan!');
+			echo json_encode($r);
+			die();
+		}
+		
+		
 		$bank_id = $this->input->post('bank_id');
 		$card_no = $this->input->post('card_no');
 		
@@ -2490,6 +3124,12 @@ class BillingCashier extends MY_Controller {
 		
 		//customer
 		$customer_id = $this->input->post('customer_id');
+		
+		if($cashier_credit_ar == 1 AND empty($customer_id)){
+			$r = array('success' => false, 'info' => '<br/>Pilih Customer untuk Penggunaan Pembayaran: Credit - AR / Piutang!');
+			echo json_encode($r);
+			die();
+		}
 		
 		$discount_id = $this->input->post('discount_id');
 		$discount_notes = $this->input->post('discount_notes');		
@@ -2527,6 +3167,13 @@ class BillingCashier extends MY_Controller {
 		$total_cash = $this->input->post('total_cash');
 		$total_credit = $this->input->post('total_credit');
 		
+		if(!empty($get_opt['diskon_sebelum_pajak_service'])){
+			$get_total = $grand_total;
+			//$r = array('success' => false, 'info' => 'get_total = '.$get_total);
+			//echo json_encode($r);
+			//die();
+		}
+		
 		if(!empty($is_half_payment)){
 			//paid is same as total billing
 			$total_paid = $get_total;
@@ -2539,8 +3186,15 @@ class BillingCashier extends MY_Controller {
 				$total_credit = $get_total;	
 			}	
 			
-		}		
+		}	
 
+
+		if($payment_id != 1 AND $total_credit < $min_noncash AND !empty($min_noncash)){
+			$r = array('success' => false, 'info' => '<br/>Penggunaan Non Cash Minimal: Rp. '.priceFormat($min_noncash));
+			echo json_encode($r);
+			die();
+		}		
+		
 		if(empty($total_paid) AND $discount_percentage < 100){
 			//$r = array('success' => false, 'info' => 'Total Paid Cannot Empty!');
 			//echo json_encode($r);
@@ -2594,15 +3248,22 @@ class BillingCashier extends MY_Controller {
 			die();
 		}
 		
+		//update 2018-01-07
+		$all_product_order = array();
+		
 		//calc detail
 		$total_tax = 0;
 		$total_service = 0;
 		$total_discount = 0;
 		$total_hpp = 0;
-		$this->db->select("order_qty, retur_qty, product_price_hpp, tax_total, service_total, discount_total");
-		$this->db->from($this->table2);
-		$this->db->where('billing_id', $billing_id);
-		$this->db->where('is_deleted', 0);
+		$this->db->select("a.product_id, a.order_qty, a.retur_qty, a.product_price_hpp, a.product_price, a.product_price_real, 
+		a.include_tax, a.include_service, a.tax_percentage, a.service_percentage, a.is_compliment, a.product_type, a.varian_id,
+		a.tax_total, a.service_total, a.discount_total, b.from_item, b.id_ref_item, c.unit_id");
+		$this->db->from($this->table2.' as a');
+		$this->db->join($this->table_product.' as b',"b.id = a.product_id", "LEFT");
+		$this->db->join($this->table_items.' as c',"c.id = b.id_ref_item AND b.from_item = 1", "LEFT");
+		$this->db->where('a.billing_id', $billing_id);
+		$this->db->where('a.is_deleted', 0);
 		$get_detail = $this->db->get();
 		if($get_detail->num_rows() > 0){
 			foreach($get_detail->result() as $dtRow){
@@ -2615,7 +3276,140 @@ class BillingCashier extends MY_Controller {
 				$total_tax += $dtRow->tax_total;
 				$total_service += $dtRow->service_total;
 				$total_discount += $dtRow->discount_total;
-		
+				
+				$dt = (array) $dtRow;
+				
+				//CHECK IF INCLUDE TAX AND SERVICE ---------------------
+				$is_include = false;
+				$all_percentage = 100;
+				if($dt['include_tax'] == 1){
+					$is_include = true;
+					$all_percentage += $dt['tax_percentage'];
+				}
+				
+				if($dt['include_service'] == 1){
+					$is_include = true;		
+					$all_percentage += $dt['service_percentage'];		
+				}
+				
+				$grand_total_order = 0;
+				if(!empty($dt['is_compliment'])){
+					$dt['tax_total'] = 0;
+					$dt['service_total'] = 0;
+				}
+				
+				$include_tax = $dt['include_tax'];
+				$include_service = $dt['include_service'];
+				$tax_percentage = $dt['tax_percentage'];
+				$service_percentage = $dt['service_percentage'];
+				$tax_total = 0;
+				$service_total = 0;
+				$product_price_real = 0;
+				$total_billing_order = 0;
+				$tax_total_order = 0;
+				$service_total_order = 0;
+				
+				//cek if discount is disc billing
+				$total_discount_product = 0;
+				if($billingData->discount_perbilling == 1){
+					$get_percentage = $billingData->discount_percentage;
+					if(empty($billingData->discount_percentage) OR $billingData->discount_percentage == '0.00'){
+						$get_percentage = ($billingData->discount_total / $billingData->total_billing) * 100;
+						$get_percentage = number_format($get_percentage,0);
+					}
+					
+					$dt['discount_total'] = priceFormat(($dt['product_price_real']*($get_percentage/100)), 0, ".", "");
+					$total_discount_product = ($dt['discount_total']*$dt['order_qty']);
+					
+				}else{
+					
+					$total_discount_product = ($dt['discount_total']);
+				}
+				
+				if(!empty($include_tax) OR !empty($include_service)){
+					
+					//AUTOFIX-BUGS 1 Jan 2018
+					if((!empty($include_tax) AND empty($include_service)) OR (empty($include_tax) AND !empty($include_service))){
+						if($dt['product_price'] != ($dt['product_price_real']+$dt['tax_total']+$dt['service_total'])){
+							$dt['product_price_real'] = priceFormat(($dt['product_price']/($all_percentage/100)), 0, ".", "");
+						}
+					}
+					
+					if($diskon_sebelum_pajak_service == 1){
+						
+						$grand_total_order = ($dt['product_price_real']*$dt['order_qty']) - $dt['discount_total'];
+						
+					}else{
+						
+						$grand_total_order = ($dt['product_price_real']*$dt['order_qty']);
+						
+					}
+
+					$total_billing_order = ($dt['product_price_real']*$dt['order_qty']);
+					$tax_total_order = $dt['tax_total'];
+					$service_total_order = $dt['service_total'];
+					
+				}else
+				{
+						
+					if($diskon_sebelum_pajak_service == 1){
+						
+						$grand_total_order = ($dt['product_price']*$dt['order_qty']) - $dt['discount_total'];
+					
+					}else{
+						
+						$grand_total_order = ($dt['product_price']*$dt['order_qty']);
+					
+					}
+					
+					$total_billing_order = ($dt['product_price']*$dt['order_qty']);
+					$tax_total_order = $dt['tax_total'];
+					$service_total_order = $dt['service_total'];
+					
+				}
+				
+				
+				//$sub_total = $grand_total_order;
+				
+				//COMPLIMENT
+				if(!empty($dt['is_compliment'])){
+					$dt['service_total'] = 0;
+					$dt['tax_total'] = 0;
+				}
+				
+				if(empty($dt['order_qty'])){
+					$dt['product_price'] = $total_billing_order;
+				}else{
+					$dt['product_price'] = ($total_billing_order/$dt['order_qty']);
+				}
+				
+				//CHECK IF INCLUDE TAX AND SERVICE ---------------------
+				
+				//update 2018-02-25
+				//NO-PACKAGE
+				if($dtRow->product_type == 'item' AND !empty($dtRow->order_qty)){
+					if(empty($dtRow->varian_id)){
+						$dtRow->varian_id = 0;
+					}
+					$key_prod_varian = $dtRow->product_id.'_'.$dtRow->varian_id;
+					if(empty($all_product_order[$key_prod_varian])){
+						$all_product_order[$key_prod_varian] = array(
+							'product_id'	=> $dtRow->product_id,
+							'from_item'		=> $dtRow->from_item,
+							'id_ref_item'	=> $dtRow->id_ref_item,
+							'unit_id'		=> $dtRow->unit_id,
+							'varian_id'		=> $dtRow->varian_id,
+							'price_hpp'		=> 0,
+							'product_price'	=> 0,
+							'qty'			=> 0
+						);
+					}
+					
+					$all_product_order[$key_prod_varian]['qty'] += $total_qty;
+					$all_product_order[$key_prod_varian]['price_hpp'] += ($dtRow->product_price_hpp * $total_qty);
+					$all_product_order[$key_prod_varian]['product_price'] += $total_billing_order;
+				}
+				
 			}
 		}
 		
@@ -2623,7 +3417,7 @@ class BillingCashier extends MY_Controller {
 			$total_discount = $discount_total;
 		}
 		
-		$date_now = date('Y-m-d H:i:s');
+		$datetime_now = date('Y-m-d H:i:s');
 			
 		$r = '';
 		$var = array('fields'	=>	array(
@@ -2653,7 +3447,7 @@ class BillingCashier extends MY_Controller {
 				///'discount_price'	=>	$discount_price,
 				//'discount_total'	=>	$total_discount,
 				'billing_status'	=>	'paid',
-				'payment_date'		=>	$date_now,
+				'payment_date'		=>	$datetime_now,
 				'single_rate'		=>	$single_rate,
 				'is_compliment'		=>	$is_compliment,
 				'is_half_payment'	=>	$is_half_payment,
@@ -2661,7 +3455,7 @@ class BillingCashier extends MY_Controller {
 				'total_credit'		=>	$total_credit,
 				'grand_total'		=>	$grand_total,
 				'total_return'		=>	$total_return,
-				'updated'		=>	$date_now,
+				'updated'		=>	$datetime_now,
 				'updatedby'		=>	$session_user
 			),
 			'table'			=>  $this->table,
@@ -2680,7 +3474,7 @@ class BillingCashier extends MY_Controller {
 		$this->lib_trans->begin();
 			$update = $this->m->save($var, $billing_id);
 		$this->lib_trans->commit();
-		
+		$update = true;
 		if($update)
 		{  
 			$r = array('success' => true, 'id' => $billing_id);
@@ -2700,7 +3494,7 @@ class BillingCashier extends MY_Controller {
 				//UPDATE BILLING
 				$this->db->update($this->table, $data_merge, "merge_id = ".$billingData->merge_id." AND id != ".$billing_id);
 				
-				if($wepos_tipe != 'retail'){
+				//if($wepos_tipe != 'retail'){
 					//get all table
 					$this->db->select("table_id");
 					$this->db->from($this->table);
@@ -2715,14 +3509,17 @@ class BillingCashier extends MY_Controller {
 							}
 						}
 					}
-				}
+				//}
 				
 				
 			}
 			
 			//$get_opt = get_option_value(array('table_available_after_paid'));
 			
-			if(!empty($get_opt['table_available_after_paid']) AND $wepos_tipe != 'retail'){
+			$date_now = date("Y-m-d");
+				
+			//if(!empty($get_opt['table_available_after_paid']) AND $wepos_tipe != 'retail'){
+			if(!empty($get_opt['table_available_after_paid'])){
 				
 				$dt_update = array(
 					'status'	=> 'available',
@@ -2731,17 +3528,128 @@ class BillingCashier extends MY_Controller {
 				
 				$all_table_id_txt = implode(",", $all_table_id);
 				
-				$data_now = date("Y-m-d");
-				$update = $this->db->update($this->table_inv, $dt_update, "tanggal = '".$data_now."' AND table_id IN (".$all_table_id_txt.")");
+				$update = $this->db->update($this->table_inv, $dt_update, "tanggal = '".$date_now."' AND (table_id IN (".$all_table_id_txt.") OR billing_no = '".$billingData->billing_no."')");
+				
+				if(!empty($billingData->billing_status)){
+					
+				}
+				
 			}
 			
-			if($wepos_tipe == 'retail' AND !empty($retail_warehouse)){
+			//update 2018-01-07
+			if($autocut_stok_sales_to_usage == 1 AND !empty($retail_warehouse)){
+				
+				$r['autocut_stok_sales_to_usage'] = $autocut_stok_sales_to_usage;
+				$r['retail_warehouse'] = $retail_warehouse;
+				
+				$all_item_usage = array();
+				$all_product_gramasi = array();
+				$all_product_varian = array();
+				$all_product_qty = array();
+				//if product from_item, id_ref_item
+				if(!empty($all_product_order)){
+					foreach($all_product_order as $dt){
+						if(!empty($dt['id_ref_item'])){
+							if(empty($all_item_usage[$dt['id_ref_item']])){
+								$all_item_usage[$dt['id_ref_item']] = array(
+									'id'	=> $dt['id_ref_item'],
+									'unit_id'	=> $dt['unit_id'],
+									'item_hpp'	=> 0,
+									'item_price'=> 0,
+									'qty'		=> 0,
+								);
+							}
+							
+							$all_item_usage[$dt['id_ref_item']]['qty'] += $dt['qty'];
+							$all_item_usage[$dt['id_ref_item']]['item_hpp'] += $dt['price_hpp'];
+							$all_item_usage[$dt['id_ref_item']]['item_price'] += $dt['product_price'];
+							//$all_item_usage[$dt['id_ref_item']]['item_price'] += $dt['qty']*$dt['product_price'];
+							
+						}else{
+							
+							if(empty($dt['varian_id'])){
+								$dt['varian_id'] = 0;
+							}
+							
+							$key_prod_varian = $dt['product_id'].'_'.$dt['varian_id'];
+							if(!in_array($dt['product_id'], $all_product_gramasi)){
+								$all_product_gramasi[] = $dt['product_id'];
+							}
+							if(!in_array($key_prod_varian, $all_product_varian)){
+								$all_product_varian[] = $key_prod_varian;
+							}
+							
+							if(empty($all_product_qty[$key_prod_varian])){
+								$all_product_qty[$key_prod_varian] = 0;
+							}
+							
+							$all_product_qty[$key_prod_varian] += $dt['qty'];
+							
+						}
+					}
+				}
+				
+				
+				//update 2018-01-12
+				//collection stock from gramasi
+				if(!empty($all_product_gramasi)){
+					$all_product_gramasi_sql = implode(",", $all_product_gramasi);
+					$this->db->select("a.*, b.unit_id, b.item_hpp");
+					$this->db->from($this->table_product_gramasi." as a");
+					$this->db->join($this->table_items." as b","b.id = a.item_id","LEFT");
+					$this->db->where("a.product_id IN (".$all_product_gramasi_sql.")");
+					$this->db->where('a.is_deleted', 0);
+					$get_gramasi = $this->db->get();
+					if($get_gramasi->num_rows() > 0){
+						foreach($get_gramasi->result_array() as $dtRow){
+							
+							if(empty($dtRow['varian_id'])){
+								$dtRow['varian_id'] = 0;
+							}
+							
+							$key_prod_varian = $dtRow['product_id'].'_'.$dtRow['varian_id'];
+							
+							if(in_array($key_prod_varian, $all_product_varian)){
+								$get_qty = 0;
+								if(!empty($all_product_qty[$key_prod_varian])){
+									$get_qty = $all_product_qty[$key_prod_varian];
+								}
+							
+								if(empty($all_item_usage[$dtRow['item_id']])){
+									$all_item_usage[$dtRow['item_id']] = array(
+										'id'	=> $dtRow['item_id'],
+										'unit_id'	=> $dtRow['unit_id'],
+										'item_hpp'	=> 0,
+										'item_price'=> 0,
+										'qty'		=> 0,
+									);
+								}
+								//*gramasi tidak ada hpp -> asumsi = item price
+								$all_item_usage[$dtRow['item_id']]['qty'] += $dtRow['item_qty']*$get_qty;
+								$all_item_usage[$dtRow['item_id']]['item_hpp'] += ($dtRow['item_price']*$dtRow['item_qty']*$get_qty);
+								$all_item_usage[$dtRow['item_id']]['item_price'] += ($dtRow['item_price']*$dtRow['item_qty']*$get_qty);
+							}
+							
+						}
+					}
+					
+				}
+				
+				$date_now = date("Y-m-d");
+				$params = array(
+					'date_now'			=> $date_now,
+					'all_item_usage'	=> $all_item_usage,
+					'retail_warehouse'	=> $retail_warehouse,
+					'rollback'			=> false,
+				);
+				$ret_usage = $this->usagewaste->save_sales_usage($params);
 				
 				//$getItemData = $this->m2->getItem($billing_id, $retail_warehouse);
 				//$getItemData['tipe'] = 'edit';
 				//$getStock = $this->stock->get_item_stock($getItemData, date("Y-m-d"));
 				//$validStock = $this->stock->validStock($getItemData, $getStock);
 				
+				/*
 				$r['info'] = 'Update Stok';
 				$update_stok = 'update';
 				
@@ -2752,11 +3660,20 @@ class BillingCashier extends MY_Controller {
 					'storehouse_item'	=> $return_data['update_stock']
 				);
 				
-				$updateStock = $this->stock->update_stock_rekap($post_params);
-				
+				//$updateStock = $this->stock->update_stock_rekap($post_params);
+				*/
 				
 			}else{
 				//FORCE UPDATE STOK -> GRAMASI
+			}
+			
+			//update 2018-02-25
+			//Credit - AR
+			if($payment_id == 4 AND $cashier_credit_ar == 1){
+				//payment progress - done
+				$updateAR = $this->account_receivable->set_account_receivable_Sales($billing_id);
+				
+				//$updateCF = $this->penerimaan_kas->set_DP_Sales($id);
 			}
 			
 			//SAVE TO LOG
@@ -2771,10 +3688,11 @@ class BillingCashier extends MY_Controller {
 	}
 	
 	public function doPrint($is_void = '', $void_id = 0, $order_detail_id = ''){
-		header('Content-Type: text/plain; charset=utf-8');
+		//header('Content-Type: text/plain; charset=utf-8');
 		
 		$this->table = $this->prefix.'billing';
 		$this->table2 = $this->prefix.'billing_detail';
+		$this->billing_detail_timer = $this->prefix.'billing_detail_timer';
 		$this->table_print_monitoring = $this->prefix.'print_monitoring';
 		$session_user = $this->session->userdata('user_username');
 		$id_user = $this->session->userdata('id_user');
@@ -2790,9 +3708,15 @@ class BillingCashier extends MY_Controller {
 		$is_html = $this->input->get_post('is_html', true);	
 		$print_type = $this->input->get_post('print_type', true);	
 		$printer_id = $this->input->get_post('printer_id', true);
+		$initialize_printing = $this->input->get_post('initialize', true);
+		$bill_preview = $this->input->get_post('bill_preview', true);
 		
 		$printer_tipe = $this->input->get_post('printer_tipe', true);	
 		$do_print = $this->input->get_post('do_print', true);	
+		
+		if(!empty($initialize_printing)){
+			die();
+		}
 		
 		if(empty($print_type)){
 			$print_type = 0;
@@ -2812,50 +3736,40 @@ class BillingCashier extends MY_Controller {
 			'printer_ip_cashierReceipt_default',
 			'printer_pin_cashierReceipt_default',
 			'printer_tipe_cashierReceipt_default',
-			'printer_ip_cashierReceipt_'.$ip_addr,
-			'printer_pin_cashierReceipt_'.$ip_addr,
-			'printer_tipe_cashierReceipt_'.$ip_addr,
-			//'printer_type_cashier',
+			'printer_id_cashierReceipt_default',
+			'printer_id_cashierReceipt_'.$ip_addr,
 			
 			'qcReceipt_layout',
 			'printer_ip_qcReceipt_default',
 			'printer_pin_qcReceipt_default',
 			'printer_tipe_qcReceipt_default',
+			'printer_id_qcReceipt_default',
 			'do_print_qcReceipt_'.$ip_addr,
-			'printer_ip_qcReceipt_'.$ip_addr,
-			'printer_pin_qcReceipt_'.$ip_addr,
-			'printer_tipe_qcReceipt_'.$ip_addr,
-			//'printer_type_qc',
+			'printer_id_qcReceipt_'.$ip_addr,
 			
 			'kitchenReceipt_layout',
 			'printer_ip_kitchenReceipt_default',
 			'printer_pin_kitchenReceipt_default',
 			'printer_tipe_kitchenReceipt_default',
+			'printer_id_kitchenReceipt_default',
 			'do_print_kitchenReceipt_'.$ip_addr,
-			'printer_ip_kitchenReceipt_'.$ip_addr,
-			'printer_pin_kitchenReceipt_'.$ip_addr,
-			'printer_tipe_kitchenReceipt_'.$ip_addr,
-			//'printer_type_kitchen',
+			'printer_id_kitchenReceipt_'.$ip_addr,
 			
 			'barReceipt_layout',
 			'printer_ip_barReceipt_default',
 			'printer_pin_barReceipt_default',
 			'printer_tipe_barReceipt_default',
+			'printer_id_barReceipt_default',
 			'do_print_barReceipt_'.$ip_addr,
-			'printer_ip_barReceipt_'.$ip_addr,
-			'printer_pin_barReceipt_'.$ip_addr,
-			'printer_tipe_barReceipt_'.$ip_addr,
-			//'printer_type_bar',
+			'printer_id_barReceipt_'.$ip_addr,
 			
 			'otherReceipt_layout',
 			'printer_ip_otherReceipt_default',
 			'printer_pin_otherReceipt_default',
 			'printer_tipe_otherReceipt_default',
+			'printer_id_otherReceipt_default',
 			'do_print_otherReceipt_'.$ip_addr,
-			'printer_ip_otherReceipt_'.$ip_addr,
-			'printer_pin_otherReceipt_'.$ip_addr,
-			'printer_tipe_otherReceipt_'.$ip_addr,
-			//'printer_type_other',
+			'printer_id_otherReceipt_'.$ip_addr,
 			
 			'print_order_peritem_kitchen',
 			'print_order_peritem_bar',
@@ -2864,121 +3778,212 @@ class BillingCashier extends MY_Controller {
 			'printMonitoring_qc',
 			'printMonitoring_kitchen',
 			'printMonitoring_bar',
-			'printMonitoring_other'
+			'printMonitoring_other',
+			
+			'order_timer'
 			
 		);
 		$get_opt = get_option_value($opt_value);
 		
-		//Cashier Printer ----------------------
-		$printer_ip_cashierReceipt = "\\\\".$ip_addr."\\".$get_opt['printer_ip_cashierReceipt_default'];
-		if(!empty($get_opt['printer_ip_cashierReceipt_'.$ip_addr])){
-			$printer_ip_cashierReceipt = $get_opt['printer_ip_cashierReceipt_'.$ip_addr];			
-			if(strstr($printer_ip_cashierReceipt, '\\')){
-				$printer_ip_cashierReceipt = "\\\\".$printer_ip_cashierReceipt;
-			}			
-		}		
-		
+		//DATA PRINTER & SETUP -- update 2018-01-24
 		$cashierReceipt_layout = $get_opt['cashierReceipt_layout'];
 		if(!empty($print_type)){
 			$cashierReceipt_layout = $get_opt['cashierReceipt_invoice_layout'];
 		}
 		$cashierReceipt_layout_footer = $get_opt['cashierReceipt_layout_footer'];
-		//---------------------- Cashier Printer
-		
-		//QC PRINTER ----------------------
-		if(!empty($get_opt['do_print_qcReceipt_'.$ip_addr])){
-			$print_qcReceipt = $get_opt['do_print_qcReceipt_'.$ip_addr];
-		}else{
-			$print_qcReceipt = '';
-		}
-		
-		$printer_ip_qcReceipt = "\\\\".$ip_addr."\\".$get_opt['printer_ip_qcReceipt_default'];
-		if(!empty($get_opt['printer_ip_qcReceipt_'.$ip_addr])){
-			$printer_ip_qcReceipt = $get_opt['printer_ip_qcReceipt_'.$ip_addr];			
-			if(strstr($printer_ip_qcReceipt, '\\')){
-				$printer_ip_qcReceipt = "\\\\".$printer_ip_qcReceipt;
-			}			
-		}		
 		
 		$qcReceipt_layout = $get_opt['qcReceipt_layout'];
-		//---------------------- QC PRINTER
+		$kitchenReceipt_layout = $get_opt['kitchenReceipt_layout'];
+		$barReceipt_layout = $get_opt['barReceipt_layout'];
+		$otherReceipt_layout = $get_opt['otherReceipt_layout'];
 		
-		//Kitchen PRINTER ----------------------
+		$print_qcReceipt = '';
+		$print_kitchenReceipt = '';
+		$print_barReceipt = '';
+		$print_otherReceipt = '';
+		
+		if(!empty($get_opt['do_print_qcReceipt_'.$ip_addr])){
+			$print_qcReceipt = $get_opt['do_print_qcReceipt_'.$ip_addr];
+		}
+		
 		if(!empty($get_opt['do_print_kitchenReceipt_'.$ip_addr])){
 			$print_kitchenReceipt = $get_opt['do_print_kitchenReceipt_'.$ip_addr];
-		}else{
-			$print_kitchenReceipt = '';
 		}
-		$printer_ip_kitchenReceipt = "\\\\".$ip_addr."\\".$get_opt['printer_ip_kitchenReceipt_default'];
-		if(!empty($get_opt['printer_ip_kitchenReceipt_'.$ip_addr])){
-			$printer_ip_kitchenReceipt = $get_opt['printer_ip_kitchenReceipt_'.$ip_addr];			
-			if(strstr($printer_ip_kitchenReceipt, '\\')){
-				$printer_ip_kitchenReceipt = "\\\\".$printer_ip_kitchenReceipt;
-			}			
-		}		
 		
-		$kitchenReceipt_layout = $get_opt['kitchenReceipt_layout'];
-		//---------------------- Kitchen PRINTER
-		
-		//Bar PRINTER ----------------------
 		if(!empty($get_opt['do_print_barReceipt_'.$ip_addr])){
 			$print_barReceipt = $get_opt['do_print_barReceipt_'.$ip_addr];
-		}else{
-			$print_barReceipt = '';
 		}
-		$printer_ip_barReceipt = "\\\\".$ip_addr."\\".$get_opt['printer_ip_barReceipt_default'];
-		if(!empty($get_opt['printer_ip_barReceipt_'.$ip_addr])){
-			$printer_ip_barReceipt = $get_opt['printer_ip_barReceipt_'.$ip_addr];			
-			if(strstr($printer_ip_barReceipt, '\\')){
-				$printer_ip_barReceipt = "\\\\".$printer_ip_barReceipt;
-			}			
-		}		
 		
-		$barReceipt_layout = $get_opt['barReceipt_layout'];
-		//---------------------- Bar PRINTER
-		
-		//other PRINTER ----------------------
 		if(!empty($get_opt['do_print_otherReceipt_'.$ip_addr])){
 			$print_otherReceipt = $get_opt['do_print_otherReceipt_'.$ip_addr];
-		}else{
-			$print_otherReceipt = '';
 		}
-		$printer_ip_otherReceipt = "\\\\".$ip_addr."\\".$get_opt['printer_ip_otherReceipt_default'];
-		if(!empty($get_opt['printer_ip_otherReceipt_'.$ip_addr])){
-			$printer_ip_otherReceipt = $get_opt['printer_ip_otherReceipt_'.$ip_addr];			
-			if(strstr($printer_ip_otherReceipt, '\\')){
-				$printer_ip_otherReceipt = "\\\\".$printer_ip_otherReceipt;
-			}			
+		
+		
+		
+		//Cashier Printer ---------------------- update -- 2018-01-24
+		$all_printer_id = array();
+		
+		//cashierReceipt
+		$printer_id_cashierReceipt = $get_opt['printer_id_cashierReceipt_default'];
+		if(!empty($get_opt['printer_id_cashierReceipt_'.$ip_addr])){
+			$printer_id_cashierReceipt = $get_opt['printer_id_cashierReceipt_'.$ip_addr];
+		}
+		
+		if(!in_array($printer_id_cashierReceipt, $all_printer_id)){
+			$all_printer_id[] = $printer_id_cashierReceipt;
+		}
+		
+		//qcReceipt
+		$printer_id_qcReceipt = $get_opt['printer_id_qcReceipt_default'];
+		if(!empty($get_opt['printer_id_qcReceipt_'.$ip_addr])){
+			$printer_id_qcReceipt = $get_opt['printer_id_qcReceipt_'.$ip_addr];
+		}
+		
+		if(!in_array($printer_id_qcReceipt, $all_printer_id)){
+			$all_printer_id[] = $printer_id_qcReceipt;
+		}
+		
+		//kitchenReceipt
+		$printer_id_kitchenReceipt = $get_opt['printer_id_kitchenReceipt_default'];
+		if(!empty($get_opt['printer_id_kitchenReceipt_'.$ip_addr])){
+			$printer_id_kitchenReceipt = $get_opt['printer_id_kitchenReceipt_'.$ip_addr];
+		}
+		
+		if(!in_array($printer_id_kitchenReceipt, $all_printer_id)){
+			$all_printer_id[] = $printer_id_kitchenReceipt;
+		}
+		
+		//barReceipt
+		$printer_id_barReceipt = $get_opt['printer_id_barReceipt_default'];
+		if(!empty($get_opt['printer_id_barReceipt_'.$ip_addr])){
+			$printer_id_barReceipt = $get_opt['printer_id_barReceipt_'.$ip_addr];
+		}
+		
+		if(!in_array($printer_id_barReceipt, $all_printer_id)){
+			$all_printer_id[] = $printer_id_barReceipt;
+		}
+		
+		//otherReceipt
+		$printer_id_otherReceipt = $get_opt['printer_id_otherReceipt_default'];
+		if(!empty($get_opt['printer_id_otherReceipt_'.$ip_addr])){
+			$printer_id_otherReceipt = $get_opt['printer_id_otherReceipt_'.$ip_addr];
+		}
+		
+		if(!in_array($printer_id_otherReceipt, $all_printer_id)){
+			$all_printer_id[] = $printer_id_otherReceipt;
+		}
+		
+		
+		$data_printer = array();
+		if(!empty($all_printer_id)){
+			$all_printer_id_sql = implode(",", $all_printer_id);
+			$this->db->from($this->prefix.'printer');		
+			$this->db->where("id IN (".$all_printer_id_sql.")");		
+			$get_all_printer = $this->db->get();
+
+			$data_printer = array();
+			if($get_all_printer->num_rows() > 0){
+				foreach($get_all_printer->result_array() as $dt){
+					$data_printer[$dt['id']] = $dt;
+				}
+			}
+		}
+		
+		if(empty($data_printer)){
+			echo 'Printer Tidak Ditemukan!';
+			die();
+		}
+		
+		//IP PRINTER --- update 2018-01-24
+		$printer_ip_cashierReceipt = $data_printer[$printer_id_cashierReceipt]['printer_ip'];			
+		if(strstr($printer_ip_cashierReceipt, '\\')){
+			$printer_ip_cashierReceipt = "\\\\".$printer_ip_cashierReceipt;
+		}
+		
+		$printer_ip_qcReceipt = $data_printer[$printer_id_qcReceipt]['printer_ip'];			
+		if(strstr($printer_ip_qcReceipt, '\\')){
+			$printer_ip_qcReceipt = "\\\\".$printer_ip_qcReceipt;
+		}	
+		
+		$printer_ip_kitchenReceipt = $data_printer[$printer_id_kitchenReceipt]['printer_ip'];			
+		if(strstr($printer_ip_kitchenReceipt, '\\')){
+			$printer_ip_kitchenReceipt = "\\\\".$printer_ip_kitchenReceipt;
 		}		
 		
-		$otherReceipt_layout = $get_opt['otherReceipt_layout'];
-		//---------------------- Bar PRINTER
+		$printer_ip_barReceipt = $data_printer[$printer_id_barReceipt]['printer_ip'];			
+		if(strstr($printer_ip_barReceipt, '\\')){
+			$printer_ip_barReceipt = "\\\\".$printer_ip_barReceipt;
+		}			
 		
-		/*CONFIG TEXT PRINT*/
-		$printer_pin_cashierReceipt = '42 CHAR';
-		if(!empty($get_opt['printer_pin_cashierReceipt_'.$ip_addr])){
-			$printer_pin_cashierReceipt = $get_opt['printer_pin_cashierReceipt_'.$ip_addr];
+		$printer_ip_otherReceipt = $data_printer[$printer_id_otherReceipt]['printer_ip'];			
+		if(strstr($printer_ip_otherReceipt, '\\')){
+			$printer_ip_otherReceipt = "\\\\".$printer_ip_otherReceipt;
+		}	
+
+		//PIN PRINTER --- update 2018-01-24
+		$printer_pin_cashierReceipt = $get_opt['printer_pin_cashierReceipt_default'];
+		if(!empty($data_printer[$printer_id_cashierReceipt]['printer_pin'])){
+			$printer_pin_cashierReceipt = $data_printer[$printer_id_cashierReceipt]['printer_pin'];
 		}
 		
-		$printer_pin_qcReceipt = '42 CHAR';
-		if(!empty($get_opt['printer_pin_qcReceipt_'.$ip_addr])){
-			$printer_pin_qcReceipt = $get_opt['printer_pin_qcReceipt_'.$ip_addr];
+		$printer_pin_qcReceipt = $get_opt['printer_pin_qcReceipt_default'];
+		if(!empty($data_printer[$printer_id_cashierReceipt]['printer_pin'])){
+			$printer_pin_qcReceipt = $data_printer[$printer_id_qcReceipt]['printer_pin'];
 		}
 		
-		$printer_pin_kitchenReceipt = '42 CHAR';
-		if(!empty($get_opt['printer_pin_kitchenReceipt_'.$ip_addr])){
-			$printer_pin_kitchenReceipt = $get_opt['printer_pin_kitchenReceipt_'.$ip_addr];
+		$printer_pin_kitchenReceipt = $get_opt['printer_pin_kitchenReceipt_default'];
+		if(!empty($data_printer[$printer_id_cashierReceipt]['printer_pin'])){
+			$printer_pin_kitchenReceipt = $data_printer[$printer_id_kitchenReceipt]['printer_pin'];
 		}
 		
-		$printer_pin_barReceipt = '42 CHAR';
-		if(!empty($get_opt['printer_pin_barReceipt_'.$ip_addr])){
-			$printer_pin_barReceipt = $get_opt['printer_pin_barReceipt_'.$ip_addr];
+		$printer_pin_barReceipt = $get_opt['printer_pin_barReceipt_default'];
+		if(!empty($data_printer[$printer_id_cashierReceipt]['printer_pin'])){
+			$printer_pin_barReceipt = $data_printer[$printer_id_barReceipt]['printer_pin'];
 		}
 		
-		$printer_pin_otherReceipt = '42 CHAR';
-		if(!empty($get_opt['printer_pin_otherReceipt_'.$ip_addr])){
-			$printer_pin_otherReceipt = $get_opt['printer_pin_otherReceipt_'.$ip_addr];
+		$printer_pin_otherReceipt = $get_opt['printer_pin_otherReceipt_default'];
+		if(!empty($data_printer[$printer_id_cashierReceipt]['printer_pin'])){
+			$printer_pin_otherReceipt = $data_printer[$printer_id_otherReceipt]['printer_pin'];
 		}
+		
+		$printer_pin_cashierReceipt = trim(str_replace("CHAR", "", $printer_pin_cashierReceipt));
+		$printer_pin_qcReceipt = trim(str_replace("CHAR", "", $printer_pin_qcReceipt));
+		$printer_pin_kitchenReceipt = trim(str_replace("CHAR", "", $printer_pin_kitchenReceipt));
+		$printer_pin_barReceipt = trim(str_replace("CHAR", "", $printer_pin_barReceipt));
+		$printer_pin_otherReceipt = trim(str_replace("CHAR", "", $printer_pin_otherReceipt));
+		
+		//TIPE PRINTER --- update 2018-01-24
+		$printer_type_cashier = $get_opt['printer_tipe_cashierReceipt_default'];
+		if(!empty($data_printer[$printer_id_cashierReceipt]['printer_tipe'])){
+			$printer_type_cashier = $data_printer[$printer_id_cashierReceipt]['printer_tipe'];
+		}
+		
+		$printer_type_qc = $get_opt['printer_tipe_qcReceipt_default'];
+		if(!empty($data_printer[$printer_id_qcReceipt]['printer_tipe'])){
+			$printer_type_qc = $data_printer[$printer_id_qcReceipt]['printer_tipe'];
+		}
+		
+		$printer_type_kitchen = $get_opt['printer_tipe_kitchenReceipt_default'];
+		if(!empty($data_printer[$printer_id_kitchenReceipt]['printer_tipe'])){
+			$printer_type_kitchen = $data_printer[$printer_id_kitchenReceipt]['printer_tipe'];
+		}
+		
+		$printer_type_bar = $get_opt['printer_tipe_barReceipt_default'];
+		if(!empty($data_printer[$printer_id_barReceipt]['printer_tipe'])){
+			$printer_type_bar = $data_printer[$printer_id_barReceipt]['printer_tipe'];
+		}
+		
+		$printer_type_other = $get_opt['printer_tipe_otherReceipt_default'];
+		if(!empty($data_printer[$printer_id_otherReceipt]['printer_tipe'])){
+			$printer_type_other = $data_printer[$printer_id_otherReceipt]['printer_tipe'];
+		}
+		
+		
+		$no_limit_text = false;
+		if($data_printer[$printer_id_cashierReceipt]['print_method'] == 'ESC/POS'){
+			//$no_limit_text = false;
+		}
+		
 		
 		//printMonitoring
 		$printMonitoring_qc = 0;
@@ -3028,6 +4033,12 @@ class BillingCashier extends MY_Controller {
 			$printer_pin_kitchenReceipt = $print_anywhere->printer_pin;
 			$printer_pin_barReceipt = $print_anywhere->printer_pin;
 			$printer_pin_otherReceipt = $print_anywhere->printer_pin;
+			
+			$printer_type_cashier = $print_anywhere->printer_tipe;
+			$printer_type_qc = $print_anywhere->printer_tipe;
+			$printer_type_kitchen = $print_anywhere->printer_tipe;
+			$printer_type_bar = $print_anywhere->printer_tipe;
+			$printer_type_other = $print_anywhere->printer_tipe;
 		}
 		
 		//die($printer_ip_qcReceipt);
@@ -3070,9 +4081,10 @@ class BillingCashier extends MY_Controller {
 					$this->db->where('a.is_deleted', 0);
 				}
 				$this->db->where("a.billing_id = ".$id);
+				$this->db->where("a.order_qty > 0");
 				
 				if(!empty($order_detail_id)){
-					$this->db->where("a.id IN (".$order_detail_id.")");
+					$this->db->where("(a.id IN (".$order_detail_id.") OR a.ref_order_id IN (".$order_detail_id."))");
 				}
 				
 				
@@ -3092,6 +4104,9 @@ class BillingCashier extends MY_Controller {
 				$order_data_bar_update = array();	
 				$order_data_other_update = array();	
 				
+				$order_data_package = array();	
+				$order_data_free_buyget = array();	
+				
 				$subtotal = 0;
 				$tax_total = 0;
 				$service_total = 0;
@@ -3099,6 +4114,45 @@ class BillingCashier extends MY_Controller {
 				$total = 0;
 				
 				$order_qc_id = array();
+				$all_update_id_order = array();
+				
+				//update 2018-01-24
+				//trim prod name
+				$max_text = 18; //44
+				$max_number_1 = 9;
+				$max_number_2 = 13;
+				$max_number_3 = 14;
+				
+				if($printer_pin_cashierReceipt == 32){
+					$max_text -= 7;
+					$max_number_1 = 7;
+					$max_number_2 = 9;
+					$max_number_3 = 14;
+				}
+				if($printer_pin_cashierReceipt == 40){
+					$max_text -= 4;
+					$max_number_1 = 7;
+					$max_number_2 = 11;
+					$max_number_3 = 14;
+				}
+				if($printer_pin_cashierReceipt == 42){
+					$max_text -= 3;
+					$max_number_1 = 9;
+					$max_number_2 = 13;
+					$max_number_3 = 14;
+				}
+				if($printer_pin_cashierReceipt == 46){
+					$max_text += 2;
+					$max_number_1 = 9;
+					$max_number_2 = 13;
+					$max_number_3 = 14;
+				}
+				if($printer_pin_cashierReceipt == 48){
+					$max_text += 4;
+					$max_number_1 = 9;
+					$max_number_2 = 13;
+					$max_number_3 = 14;
+				}
 				
 				if($get_detail->num_rows() > 0){
 	
@@ -3107,9 +4161,33 @@ class BillingCashier extends MY_Controller {
 					//die();
 					
 					$no = 1;
+					$skip_no = 0;
 					foreach($get_detail->result() as $bil_det){
 
 						$allow_QC = false;
+						
+						if($bil_det->product_type == 'package'){
+							if(empty($order_data_package[$bil_det->id])){
+								$order_data_package[$bil_det->id] = $bil_det;
+							}
+						}
+						
+						if($bil_det->is_buyget == 1){
+							if(empty($order_data_free_buyget[$bil_det->id])){
+								$order_data_free_buyget[$bil_det->id] = $bil_det;
+							}
+						}
+						
+						if($no > 1){
+							if(($no+$skip_no) <= $get_detail->num_rows()){
+								//update 2018-02-14
+								if($bil_det->package_item == 0){
+									$order_data .= "\n";
+									$order_data2 .= "\n";
+								}
+							}
+						}
+						
 						
 						//SET ORDER DONE
 						if(!in_array($bil_det->order_status, array('done','cancel'))){
@@ -3180,16 +4258,16 @@ class BillingCashier extends MY_Controller {
 						if(!empty($bil_det->discount_id) AND $bil_det->discount_perbilling == 0){
 							if(!empty($bil_det->discount_percentage)){
 								//DISCOUNT %
-								$diskon_name = '    disc '.priceFormat($bil_det->discount_percentage, 2, ".", "").'%';
+								$diskon_name = ' Disc '.priceFormat($bil_det->discount_percentage, 2, ".", "").'%';
 								
 								if($bil_det->free_item == 1){
-									$diskon_name = '    FREE';
+									$diskon_name = ' Disc/Free';
 								}
 								
 							}else{
 								if(!empty($bil_det->discount_price)){
 									//DISCOUNT PRICE
-									$diskon_name = '    disc '.priceFormat($bil_det->discount_price);
+									$diskon_name = ' Disc '.priceFormat($bil_det->discount_price);
 								}
 							}
 						}
@@ -3198,12 +4276,12 @@ class BillingCashier extends MY_Controller {
 						if(!empty($bil_det->promo_id) AND $bil_det->discount_perbilling == 0){
 							if(!empty($bil_det->promo_percentage)){
 								//promo %
-								$diskon_name = '    promo '.priceFormat($bil_det->promo_percentage, 2, ".", "").'%';
+								$diskon_name = ' Promo '.priceFormat($bil_det->promo_percentage, 2, ".", "").'%';
 								$diskon_name .= ', @'.priceFormat($bil_det->promo_price);
 							}else{
 								if(!empty($bil_det->promo_price)){
 									//promo PRICE
-									$diskon_name = '    promo '.priceFormat($bil_det->promo_price*$bil_det->order_qty);
+									$diskon_name = ' Promo '.priceFormat($bil_det->promo_price*$bil_det->order_qty);
 								}
 							}
 						}
@@ -3215,7 +4293,7 @@ class BillingCashier extends MY_Controller {
 						
 						$compliment_name = '';
 						if(!empty($bil_det->is_compliment)){
-							$compliment_name = " - COMPLIMENT";
+							$compliment_name = " /COMPLIMENT";
 						}
 						
 						//PROMO
@@ -3227,29 +4305,24 @@ class BillingCashier extends MY_Controller {
 							$bil_det->discount_total = $bil_det->promo_price*$bil_det->order_qty;
 						}
 						
-						$order_total = $bil_det->order_qty * $bil_det->product_price;
-						
-						//trim prod name
-						$max_text = 18;
-						
-						if($printer_pin_cashierReceipt == '32 CHAR'){
-							$max_text -= 7;
-						}
-						if($printer_pin_cashierReceipt == '40 CHAR'){
-							$max_text -= 2;
-						}
-						if($printer_pin_cashierReceipt == '48 CHAR'){
-							$max_text += 6;
-						}
 						
 						$all_text_array = array();
-						$product_name = $bil_det->product_name.$promo_name.$product_chinese_name.$varian_name.$diskon_name.$takeaway_name.$compliment_name;
-
+						//$product_name = $bil_det->product_name.$promo_name.$product_chinese_name.$varian_name.$diskon_name.$takeaway_name.$compliment_name;
+						$product_name = $bil_det->product_name.$promo_name.$product_chinese_name.$varian_name.$takeaway_name.$compliment_name;
 						
+						
+						////update 2018-02-14 PACKAGE Item
+						if($bil_det->package_item == 1 AND ($print_type == 1 OR $print_type == 0)){
+							$bil_det->product_price = 0;
+							$bil_det->product_name = '';
+							$product_name = '';
+						}
+						
+						$order_total = $bil_det->order_qty * $bil_det->product_price;
 						
 						//echo $product_name.' = '.strlen($product_name).'<br/>';
 						
-						if(strlen($product_name) > $max_text){
+						if(strlen($product_name) >= $max_text AND $no_limit_text == false){
 							//skip on last space
 							$explTxt = explode(" ",$product_name);
 							
@@ -3297,38 +4370,56 @@ class BillingCashier extends MY_Controller {
 							}
 						}
 												
-						$product_price_show = printer_command_align_right('@'.$bil_det->product_price, 7);
-						//$product_price_show = printer_command_align_right('@'.priceFormat($bil_det->product_price), 7);
+						//'@'.priceFormat($bil_det->product_price)
+						$product_price_show = printer_command_align_right(priceFormat($bil_det->product_price), $max_number_1);
+						//$product_price_show = printer_command_align_right('@'.priceFormat($bil_det->product_price), $max_number_1);
 						//$order_total_show = printer_command_align_right(priceFormat($order_total), 10);
-						$order_total_show = printer_command_align_right($order_total, 9);
+						$order_total_show = printer_command_align_right(priceFormat($order_total), $max_number_2);
 						
-						if($printer_pin_cashierReceipt == '32 CHAR'){
-							$product_price_show = printer_command_align_right('@'.$bil_det->product_price, 6);
-							$order_total_show = printer_command_align_right($order_total, 8);
+						if(in_array($printer_pin_cashierReceipt, array(32,40)) AND $no_limit_text == false){
+							//'@'.$bil_det->product_price
+							$product_price_show = printer_command_align_right($bil_det->product_price, $max_number_1);
+							$order_total_show = printer_command_align_right($order_total, $max_number_2);
 						}
 						
-						$order_data .= "[align=0]".$bil_det->order_qty."[tab]".$product_name."[tab]".$product_price_show."[tab]".$order_total_show;
-						$order_data2 .= "[align=0]".$bil_det->order_qty."[tab]".$product_name."[tab] [tab]".$order_total_show;
-
+						//update 2018-02-14
+						if($bil_det->package_item == 0){
+							$order_data .= "[align=0]".$bil_det->order_qty."[tab]".$product_name."[tab]".$product_price_show."[tab]".$order_total_show;
+							$order_data2 .= "[align=0]".$bil_det->order_qty."[tab]".$product_name."[tab] [tab]".$order_total_show;
+						}
 						
-
-
+						$product_name_package = '';
+						if(!empty($order_data_package[$bil_det->ref_order_id])){
+							$product_name_package = $order_data_package[$bil_det->ref_order_id]->product_name.' / ';
+						}
+						$product_name_free_buyget = '';
+						if(!empty($order_data_free_buyget[$bil_det->ref_order_id])){
+							$product_name_free_buyget = ' (Free)';
+						}
 						
 						//not substr $bil_det->product_name for kitchen and bar
-						if($bil_det->product_group == 'food'){
+						if($bil_det->product_group == 'food' AND $bil_det->product_type == 'item'){
 							
 							//khusus cancel order
 							if($is_void_order){
+								
 								if(empty($order_data_kitchen[$bil_det->id])){
 									$order_data_kitchen[$bil_det->id] = '';
-									$order_data_kitchen[$bil_det->id] .= "[size=2]CANCEL ORDER[tab] \n[size=0]";
 								}
-								$order_data_kitchen[$bil_det->id] .= $bil_det->order_qty."[tab]".$bil_det->product_name.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
+								
+								if(empty($cancel_order_kitchen_text)){
+									$cancel_order_kitchen_text = "[size=2]CANCEL ORDER[tab] \n[size=0]";
+									$order_data_kitchen[$bil_det->id] .= "[size=2]CANCEL ORDER[tab] \n[size=0]";
+								}else{
+									$order_data_kitchen[$bil_det->id] .= "[size=0]";
+								}
+								
+								$order_data_kitchen[$bil_det->id] .= $bil_det->order_qty."[tab]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
 								
 								//PER-ITEM KITCHEN
 								$order_data_kitchen_peritem_format = "[size=2][align=1]CANCEL ORDER\n";
-								$order_data_kitchen_peritem_format .= "[size=2][align=1]".$bil_det->product_name.$product_chinese_name."\n";
-								$order_data_kitchen_peritem_format .= "".$bil_det->order_qty." X ".$varian_name_2."\n";
+								$order_data_kitchen_peritem_format .= "[size=2][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
+								$order_data_kitchen_peritem_format .= "[size=2][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
 								$order_data_kitchen_peritem_format .= "[size=1][align=1]".$takeaway_name.$order_notes."\n";
 								$order_data_kitchen_peritem[$bil_det->id] = $order_data_kitchen_peritem_format;
 								$order_data_kitchen_update[] = $bil_det->id;
@@ -3339,11 +4430,11 @@ class BillingCashier extends MY_Controller {
 									//if(empty($order_data_kitchen)){
 									//	$order_data_kitchen .= "KITCHEN[tab] \n";
 									//}
-									$order_data_kitchen[$bil_det->id] = $bil_det->order_qty."[tab]".$bil_det->product_name.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
+									$order_data_kitchen[$bil_det->id] = $bil_det->order_qty."[tab]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
 									
 									//PER-ITEM KITCHEN
-									$order_data_kitchen_peritem_format = "[size=2][align=1]".$bil_det->product_name.$product_chinese_name."\n";
-									$order_data_kitchen_peritem_format .= "".$bil_det->order_qty." X ".$varian_name_2."\n";
+									$order_data_kitchen_peritem_format = "[size=2][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
+									$order_data_kitchen_peritem_format .= "[size=2][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
 									$order_data_kitchen_peritem_format .= "[size=1][align=1]".$takeaway_name.$order_notes."\n";
 									$order_data_kitchen_peritem[$bil_det->id] = $order_data_kitchen_peritem_format;
 									
@@ -3352,20 +4443,29 @@ class BillingCashier extends MY_Controller {
 							
 							
 						}else
-						if($bil_det->product_group == 'beverage'){
+						if($bil_det->product_group == 'beverage' AND $bil_det->product_type == 'item'){
 							
 							//khusus cancel order
 							if($is_void_order){
+								
 								if(empty($order_data_bar[$bil_det->id])){
 									$order_data_bar[$bil_det->id] = '';
-									$order_data_bar[$bil_det->id] .= "[size=2]CANCEL ORDER[tab] \n[size=0]";
+									
 								}
-								$order_data_bar[$bil_det->id] .= $bil_det->order_qty."[tab]".$bil_det->product_name.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
+								
+								if(empty($cancel_order_bar_text)){
+									$cancel_order_bar_text = "[size=2]CANCEL ORDER[tab] \n[size=0]";
+									$order_data_bar[$bil_det->id] .= "[size=2]CANCEL ORDER[tab] \n[size=0]";
+								}else{
+									$order_data_bar[$bil_det->id] .= "[size=0]";
+								}
+								
+								$order_data_bar[$bil_det->id] .= $bil_det->order_qty."[tab]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
 								
 								//PER-ITEM BAR
 								$order_data_bar_peritem_format = "[size=2][align=1]CANCEL ORDER\n";
-								$order_data_bar_peritem_format .= "[size=2][align=1]".$bil_det->product_name.$product_chinese_name."\n";
-								$order_data_bar_peritem_format .= "".$bil_det->order_qty." X ".$varian_name_2."\n";
+								$order_data_bar_peritem_format .= "[size=2][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
+								$order_data_bar_peritem_format .= "[size=2][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
 								$order_data_bar_peritem_format .= "[size=1][align=1]".$takeaway_name.$order_notes."\n";
 								$order_data_bar_peritem[$bil_det->id] = $order_data_bar_peritem_format;
 								$order_data_bar_update[] = $bil_det->id;
@@ -3376,11 +4476,11 @@ class BillingCashier extends MY_Controller {
 									//if(empty($order_data_bar)){
 									//	$order_data_bar .= "BAR[tab] \n";
 									//}
-									$order_data_bar[$bil_det->id] = $bil_det->order_qty."[tab]".$bil_det->product_name.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
+									$order_data_bar[$bil_det->id] = $bil_det->order_qty."[tab]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
 									
 									//PER-ITEM BAR
-									$order_data_bar_peritem_format = "[size=2][align=1]".$bil_det->product_name.$product_chinese_name."\n";
-									$order_data_bar_peritem_format .= "".$bil_det->order_qty." X ".$varian_name_2."\n";
+									$order_data_bar_peritem_format = "[size=2][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
+									$order_data_bar_peritem_format .= "[size=2][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
 									$order_data_bar_peritem_format .= "[size=1][align=1]".$takeaway_name.$order_notes."\n";
 									$order_data_bar_peritem[$bil_det->id] = $order_data_bar_peritem_format;
 									
@@ -3388,36 +4488,45 @@ class BillingCashier extends MY_Controller {
 							}
 							
 							
-						}else{
-							
-							if($is_void_order){
-								if(empty($order_data_other[$bil_det->id])){
-									$order_data_other[$bil_det->id] = '';
-									$order_data_other[$bil_det->id] .= "[size=2]CANCEL ORDER[tab] \n[size=0]";
-								}
-								$order_data_other[$bil_det->id] .= $bil_det->order_qty."[tab]".$bil_det->product_name.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
+						}else
+						{
+							if($bil_det->product_type == 'item'){
+								if($is_void_order){
+									if(empty($order_data_other[$bil_det->id])){
+										$order_data_other[$bil_det->id] = '';
+									}
 								
-								//PER-ITEM OTHER
-								$order_data_other_peritem_format = "[size=2][align=1]CANCEL ORDER\n";
-								$order_data_other_peritem_format .= "[size=2][align=1]".$bil_det->product_name.$product_chinese_name."\n";
-								$order_data_other_peritem_format .= "".$bil_det->order_qty." X ".$varian_name_2."\n";
-								$order_data_other_peritem_format .= "[size=1][align=1]".$takeaway_name.$order_notes."\n";
-								$order_data_other_peritem[$bil_det->id] = $order_data_other_peritem_format;
-								
-							}else{
-								if((!empty($order_data_other_update) AND in_array($bil_det->id, $order_data_other_update)) OR $allow_QC == true){
+									if(empty($cancel_order_other_text)){
+										$cancel_order_other_text = "[size=2]CANCEL ORDER[tab] \n[size=0]";
+										$order_data_other[$bil_det->id] .= "[size=2]CANCEL ORDER[tab] \n[size=0]";
+									}else{
+										$order_data_other[$bil_det->id] .= "[size=0]";
+									}
 									
-									//if(empty($order_data_other)){
-									//	$order_data_other .= "OTHER[tab] \n";
-									//}
-									$order_data_other[$bil_det->id] = $bil_det->order_qty."[tab]".$bil_det->product_name.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
+									$order_data_other[$bil_det->id] .= $bil_det->order_qty."[tab]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
 									
 									//PER-ITEM OTHER
-									$order_data_other_peritem_format = "[size=2][align=1]".$bil_det->product_name.$product_chinese_name."\n";
-									$order_data_other_peritem_format .= "".$bil_det->order_qty." X ".$varian_name_2."\n";
+									$order_data_other_peritem_format = "[size=2][align=1]CANCEL ORDER\n";
+									$order_data_other_peritem_format .= "[size=2][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
+									$order_data_other_peritem_format .= "[size=2][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
 									$order_data_other_peritem_format .= "[size=1][align=1]".$takeaway_name.$order_notes."\n";
 									$order_data_other_peritem[$bil_det->id] = $order_data_other_peritem_format;
 									
+								}else{
+									if((!empty($order_data_other_update) AND in_array($bil_det->id, $order_data_other_update)) OR $allow_QC == true){
+										
+										//if(empty($order_data_other)){
+										//	$order_data_other .= "OTHER[tab] \n";
+										//}
+										$order_data_other[$bil_det->id] = $bil_det->order_qty."[tab]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
+										
+										//PER-ITEM OTHER
+										$order_data_other_peritem_format = "[size=2][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
+										$order_data_other_peritem_format .= "[size=2][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
+										$order_data_other_peritem_format .= "[size=1][align=1]".$takeaway_name.$order_notes."\n";
+										$order_data_other_peritem[$bil_det->id] = $order_data_other_peritem_format;
+										
+									}
 								}
 							}
 							
@@ -3430,6 +4539,7 @@ class BillingCashier extends MY_Controller {
 						foreach($all_text_array as $no_dt => $product_name_extend){
 						
 							if($no_dt > 0){
+								
 								$order_data .= "\n"; 
 								$order_data .= "[align=0][tab]".$product_name_extend."[tab] [tab]";
 								
@@ -3452,21 +4562,21 @@ class BillingCashier extends MY_Controller {
 								$bil_det->discount_total = $order_total;
 							}
 							
-							$discount_total_print = printer_command_align_right($bil_det->discount_total, 9);
+							$discount_total_print = printer_command_align_right(priceFormat($bil_det->discount_total*-1), $max_number_2);
 						
-							if($printer_pin_cashierReceipt == '32 CHAR'){
-								$discount_total_print = printer_command_align_right($bil_det->discount_total, 8);
+							if(in_array($printer_pin_cashierReceipt, array(32,40))){
+								$discount_total_print = printer_command_align_right(($bil_det->discount_total*-1), $max_number_2);
 							}
 
 							if($bil_det->is_promo == 1 AND !empty($bil_det->promo_id)){
 								
-								$order_data .= "\n"."[align=0] [tab]".$diskon_name."[tab] [tab]".$discount_total_print*-1;
-								$order_data2 .= "\n"."[align=0] [tab]".$diskon_name."[tab] [tab]".$discount_total_print*-1;
+								$order_data .= "\n"."[align=0] [tab]".$diskon_name."[tab] [tab]".$discount_total_print;
+								$order_data2 .= "\n"."[align=0] [tab]".$diskon_name."[tab] [tab]".$discount_total_print;
 
 							}else{
 								
-								$order_data .= "\n"."[align=0] [tab]".$diskon_name."[tab] [tab]".$discount_total_print*-1;
-								$order_data2 .= "\n"."[align=0] [tab]".$diskon_name."[tab] [tab]".$discount_total_print*-1;
+								$order_data .= "\n"."[align=0] [tab]".$diskon_name."[tab] [tab]".$discount_total_print;
+								$order_data2 .= "\n"."[align=0] [tab]".$diskon_name."[tab] [tab]".$discount_total_print;
 								
 							}
 						}
@@ -3474,17 +4584,26 @@ class BillingCashier extends MY_Controller {
 						//echo '<pre>';
 						//print_r($all_text_array);
 				
-						if($no < $get_detail->num_rows()){
-							$order_data .= "\n";
-							$order_data2 .= "\n";
-						}
+						/*if(($no+$skip_no) < $get_detail->num_rows()){
+							//update 2018-02-14
+							if($bil_det->package_item == 0){
+								$order_data .= "[$no]\n";
+								$order_data2 .= "[$no]\n";
+							}
+						}*/
 						
 						$subtotal += $order_total;
 						$tax_total += $bil_det->tax_total;
 						$service_total += $bil_det->service_total;
 						$discount_total += $bil_det->discount_total;
 						//$total += $subtotal;
-						$no++;
+						
+						if($bil_det->package_item == 0){
+							$no++;
+						}else{
+							$skip_no++;
+						}
+						
 					}				
 				}
 				
@@ -3555,8 +4674,6 @@ class BillingCashier extends MY_Controller {
 					$pembulatan_show = "(".$pembulatan_show.")";
 				}
 				
-
-
 				//$grand_total = $total + $total_pembulatan;
 				
 				
@@ -3567,29 +4684,29 @@ class BillingCashier extends MY_Controller {
 				$return = $billingData->total_return;
 				$compliment_total = $billingData->compliment_total_tax_service;
 								
-				$subtotal_show = printer_command_align_right(priceFormat($subtotal), 11);
-				$total_show = printer_command_align_right(priceFormat($total), 11);
-				$tax_total_show = printer_command_align_right(priceFormat($tax_total), 11);
-				$service_total_show = printer_command_align_right(priceFormat($service_total), 11);
-				$pembulatan_show = printer_command_align_right($pembulatan_show, 11);
-				$grand_total_show = printer_command_align_right(priceFormat($grand_total), 11);
-				$cash_show = printer_command_align_right(priceFormat($cash), 11);
-				$return_show = printer_command_align_right(priceFormat($return), 11);
-				$compliment_total_show = printer_command_align_right(priceFormat($compliment_total), 11);
+				$subtotal_show = printer_command_align_right(priceFormat($subtotal), $max_number_3);
+				$total_show = printer_command_align_right(priceFormat($total), $max_number_3);
+				$tax_total_show = printer_command_align_right(priceFormat($tax_total), $max_number_3);
+				$service_total_show = printer_command_align_right(priceFormat($service_total), $max_number_3);
+				$pembulatan_show = printer_command_align_right($pembulatan_show, $max_number_3);
+				$grand_total_show = printer_command_align_right(priceFormat($grand_total), $max_number_3);
+				$cash_show = printer_command_align_right(priceFormat($cash), $max_number_3);
+				$return_show = printer_command_align_right(priceFormat($return), $max_number_3);
+				$compliment_total_show = printer_command_align_right(priceFormat($compliment_total), $max_number_3);
 				
 				//PENGURANG-------------
 				$discount_total_show = 0;
 				if($discount_total > 0){
 					$discount_total_show = '('.priceFormat($discount_total).')';
 				}
-				$discount_total_show = printer_command_align_right($discount_total_show, 11);
+				$discount_total_show = printer_command_align_right($discount_total_show, $max_number_3);
 				
 				$total_dp_show = 0;
 				if($total_dp > 0){
 					$total_dp_show = '('.priceFormat($total_dp).')';
 					//$total_dp_show = "\n[tab]DP[tab]".$total_dp_show;
 				}
-				$total_dp_show = printer_command_align_right($total_dp_show, 11);
+				$total_dp_show = printer_command_align_right($total_dp_show, $max_number_3);
 				
 				
 				$payment_type_show = '-';
@@ -3600,19 +4717,21 @@ class BillingCashier extends MY_Controller {
 				$is_half_payment = $billingData->is_half_payment;
 				if(!empty($is_half_payment)){
 					
-					$total_cash_show = printer_command_align_right(priceFormat($billingData->total_cash), 11);
-					$total_credit_show = printer_command_align_right(priceFormat($billingData->total_credit), 11);
+					$total_cash_show = printer_command_align_right(priceFormat($billingData->total_cash), $max_number_3);
+					$total_credit_show = printer_command_align_right(priceFormat($billingData->total_credit), $max_number_3);
 					$half_payment_show = 'Cash[tab]'.$total_cash_show."\n";
 					$half_payment_show .= '[tab]'.$payment_type_show.'[tab]'.$total_credit_show;
 					$payment_type_show = $half_payment_show;
 					
 				}
 				
+				$table_no_receipt = printer_command_align_right($billingData->table_no, 15);
+				
 				$print_attr = array(
 					"{date}"	=> date("d/m/Y"),
 					"{date_time}"	=> date("d/m/Y H:i"),
 					"{user}"	=> $session_user,
-					"{table_no}"	=> $billingData->table_no,
+					"{table_no}"	=> $table_no_receipt,
 					"{billing_no}"	=> $billingData->billing_no,
 					"{order_data}"	=> $order_data,
 					"{order_data2}"	=> $order_data2,
@@ -3657,25 +4776,7 @@ class BillingCashier extends MY_Controller {
 				$print_content_cashierReceipt = strtr($cashierReceipt_layout, $print_attr);
 				$print_content_cashierReceipt_monitoring = strtr($cashierReceipt_layout, $print_attr);
 				
-				//TYPE PRINTER
-				$printer_type_cashier = '';
-				$printer_tipe_cashierReceipt_default = '';
-				if(!empty($get_opt['printer_tipe_cashierReceipt_default'])){
-					$printer_tipe_cashierReceipt_default = $get_opt['printer_tipe_cashierReceipt_default'];
-				}
-				if(!empty($get_opt['printer_tipe_cashierReceipt_'.$ip_addr])){
-					$printer_type_cashier = $get_opt['printer_tipe_cashierReceipt_'.$ip_addr];
-				}
-				
-				if(empty($printer_type_cashier)){
-					$printer_type_cashier = $printer_tipe_cashierReceipt_default;
-				}
-				
-				if(!empty($print_anywhere)){
-					$printer_type_cashier = $print_anywhere->printer_tipe;
-				}
-				
-				$print_content_cashierReceipt = replace_to_printer_command($print_content_cashierReceipt, $printer_type_cashier, $printer_pin_cashierReceipt);
+				$print_content = replace_to_printer_command($print_content_cashierReceipt, $printer_type_cashier, $printer_pin_cashierReceipt);
 				
 				//echo $printer_type_cashier." ".$printer_pin_cashierReceipt;
 				//print_r($print_content_cashierReceipt);
@@ -3687,7 +4788,7 @@ class BillingCashier extends MY_Controller {
 				$r = array('success' => false, 'info' => '', 'print' => array());
 									
 				if($print_type == 1 OR $print_type == 0 OR $print_type == 99){
-					$r['print'][] = $print_content_cashierReceipt;
+					$r['print'][] = $print_content;
 					//DIRECT PRINT USING PHP - CASHIER PRINTER				
 					$is_print_error = false;
 					
@@ -3708,47 +4809,59 @@ class BillingCashier extends MY_Controller {
 					);
 					$this->db->insert($this->table_print_monitoring, $data_printMonitoring);
 					
-					header('Content-Type: text/plain; charset=utf-8');
-					try {
-						$ph = printer_open($printer_ip_cashierReceipt);
-					} catch (Exception $e) {
-						$ph = false;
+					if(!empty($bill_preview)){
+						$data_printer[$printer_id_cashierReceipt]['print_method'] = 'BROWSER';
 					}
 					
-					//$ph = @printer_open($printer_ip_cashierReceipt);
-					
-					if($ph)
-					{	
-						printer_start_doc($ph, "CASHIER RECEIPT - PAYMENT");
-						printer_start_page($ph);
-						printer_set_option($ph, PRINTER_MODE, "RAW");
-						printer_write($ph, $print_content_cashierReceipt);
-						printer_end_page($ph);
-						printer_end_doc($ph);
-						printer_close($ph);
-						$r['success'] = true;
+					if($data_printer[$printer_id_cashierReceipt]['print_method'] == 'ESC/POS'){
+						try {
+							$ph = printer_open($printer_ip_cashierReceipt);
+						} catch (Exception $e) {
+							$ph = false;
+						}
 						
+						//$ph = @printer_open($printer_ip_cashierReceipt);
+						
+						if($ph)
+						{	
+							printer_start_doc($ph, "CASHIER RECEIPT - PAYMENT");
+							printer_start_page($ph);
+							printer_set_option($ph, PRINTER_MODE, "RAW");
+							printer_write($ph, $print_content);
+							printer_end_page($ph);
+							printer_end_doc($ph);
+							printer_close($ph);
+							$r['success'] = true;
+							
+						}else{
+							$is_print_error = true;
+						}
+						
+						if($is_print_error){					
+							$r['info'] .= 'Communication with Printer Cashier Failed!<br/>';
+							echo $r['info'];
+							die();
+						}
+					}
+					
+					if(!empty($bill_preview)){
+						printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt,'noprint');
 					}else{
-						$is_print_error = true;
+						printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt, 'print', 1);
 					}
 					
-					//DEV
-					/* $r['success'] = false;
-					$r['info'] = $print_content_cashierReceipt; */
-						
 					
-					if($is_print_error){					
-						$r['info'] .= 'Communication with Printer Cashier Failed!<br/>';
-					}	
-					
-					
+					die();
 				}
 				
 				if($print_type == 2 OR $print_type == -234){
 					
+					//if(empty($print_qcReceipt) AND $printMonitoring_qc == 0){
 					if(empty($print_qcReceipt)){
 						$r['info'] = 'IP: '.$ip_addr.' cant print to '.$printer_ip_qcReceipt;
-						echo json_encode($r);
+						//echo json_encode($r);
+						//die();
+						echo $r['info'];
 						die();
 					}
 					
@@ -3783,6 +4896,11 @@ class BillingCashier extends MY_Controller {
 								}
 							}
 							
+							$order_qc_notes = '';
+							if(!empty($billingData->qc_notes)){
+								$order_qc_notes = 'Notes: '.$billingData->qc_notes;
+							}
+							
 							$is_print_error = false;
 							$print_attr = array(
 								"{date}"	=> date("d/m/Y"),
@@ -3792,45 +4910,16 @@ class BillingCashier extends MY_Controller {
 								"{order_data_kitchen}"	=> $order_data_kitchen_qc,
 								"{order_data_bar}"	=> $order_data_bar_qc,
 								"{order_data_other}"	=> $order_data_other_qc,
-								"{guest}"	=> $billingData->total_guest,
-								"{qc_notes}"	=> $billingData->qc_notes
+								"{guest}"		=> $billingData->total_guest,
+								"{qc_notes}"	=> $order_qc_notes
 							);
 							
 							$print_content_qcReceipt = strtr($qcReceipt_layout, $print_attr);	
 							$print_content_qcReceipt_monitoring = $print_content_qcReceipt;	
 							
-							//TYPE PRINTER
-							$printer_type_qc = '';
-							$printer_tipe_qcReceipt_default = '';
-							if(!empty($get_opt['printer_tipe_qcReceipt_default'])){
-								$printer_tipe_qcReceipt_default = $get_opt['printer_tipe_qcReceipt_default'];
-							}
-							if(!empty($get_opt['printer_tipe_qcReceipt_'.$ip_addr])){
-								$printer_type_qc = $get_opt['printer_tipe_qcReceipt_'.$ip_addr];
-							}
+							$print_content = replace_to_printer_command($print_content_qcReceipt, $printer_type_qc, $printer_pin_qcReceipt);
 							
-							if(empty($printer_type_qc)){
-								$printer_type_qc = $printer_tipe_qcReceipt_default;
-							}
-				
-							if(!empty($print_anywhere)){
-								$printer_type_qc = $print_anywhere->printer_tipe;
-							}
-							
-							$print_content_qcReceipt = replace_to_printer_command($print_content_qcReceipt, $printer_type_qc, $printer_pin_qcReceipt);
-							
-							$r['print'][] = $print_content_qcReceipt;
-							//DIRECT PRINT USING PHP - QC PRINTER
-							
-							//TESTER
-							/*$r['success'] = true;
-							$r['info'] = 'Semua Cancel Order Kitchen dan Bar Sudah diPrint<br/>';
-							
-							if(!empty($is_void) AND !empty($void_id)){
-								return $r;
-							}
-							echo json_encode($r);
-							die();*/
+							$r['print'][] = $print_content;
 							
 							//echo $print_content_qcReceipt;
 							//die();
@@ -3866,68 +4955,97 @@ class BillingCashier extends MY_Controller {
 								$this->db->insert($this->table_print_monitoring, $data_printMonitoring);
 								
 							}else{
-								try {
-									$ph = printer_open($printer_ip_qcReceipt);
-								} catch (Exception $e) {
-									$ph = false;
-								}
 								
-								$ph = @printer_open($printer_ip_qcReceipt);
-								if($ph)
-								{
+								if($data_printer[$printer_id_qcReceipt]['print_method'] == 'ESC/POS'){
 									
-									printer_start_doc($ph, "QC RECEIPT FROM CASHIER");
-									printer_start_page($ph);
-									printer_set_option($ph, PRINTER_MODE, "RAW");
-									printer_write($ph, $print_content_qcReceipt);
-									printer_end_page($ph);
-									printer_end_doc($ph);
-									printer_close($ph);
-									
-									$r['success'] = true;
-									
-									//update status qc
-									if(!empty($order_qc_id)){
-										$order_qc_id_txt = implode(",", $order_qc_id);
-										$data_update = array(
-											'print_qc' => 1
-										);
-										$this->db->update($this->table2, $data_update, "id IN (".$order_qc_id_txt.")");
+									try {
+										$ph = printer_open($printer_ip_qcReceipt);
+									} catch (Exception $e) {
+										$ph = false;
 									}
 									
+									//$ph = @printer_open($printer_ip_qcReceipt);
+									if($ph)
+									{
+										
+										printer_start_doc($ph, "QC RECEIPT FROM CASHIER");
+										printer_start_page($ph);
+										printer_set_option($ph, PRINTER_MODE, "RAW");
+										printer_write($ph, $print_content);
+										printer_end_page($ph);
+										printer_end_doc($ph);
+										printer_close($ph);
+										
+										$r['success'] = true;
+										
+										//update status qc
+										if(!empty($order_qc_id)){
+											$order_qc_id_txt = implode(",", $order_qc_id);
+											$data_update = array(
+												'print_qc' => 1
+											);
+											$this->db->update($this->table2, $data_update, "id IN (".$order_qc_id_txt.")");
+										}
+										
+										
+									}else{
+										$is_print_error = true;
+									}
 									
-								}else{
-									$is_print_error = true;
+									if($is_print_error){					
+										$r['info'] .= 'Communication with Printer Cashier Failed!<br/>';
+										
+										if($is_void_order == 0){
+											echo $r['info'];
+											die();
+										}
+									}
 								}
+								
+										
+								printing_process($data_printer[$printer_id_qcReceipt], $print_content_qcReceipt, 'print');
+								
+								if($is_void_order == 0){
+									die();
+								}
+								
 							}
 							
-							
-							
-							//DEV SHOW PRINT
-							/* 
-							$r['success'] = false;
-							$r['info'] = $print_content_qcReceipt;
-										 */				
-							
-							if($is_print_error){
-								$r['info'] .= 'Communication with Printer QC Failed!<br/>';
+							if($is_print_error){					
+								$r['info'] .= 'Communication with Printer Cashier Failed!<br/>';
+								if($is_void_order == 0){
+									echo $r['info'];
+									die();
+								}
 							}
 
 						}else{
-							$r['info'] .= 'Semua Order Kitchen dan Bar utk QC Sudah diPrint<br/>';
+							
+							if($is_void_order == 0){
+								$r['info'] .= 'Semua Order Kitchen dan Bar utk QC Sudah diPrint<br/>';
+								echo $r['info'];
+								die();
+							}
 						}
 					
 					}else{
-						$r['info'] .= 'Belum ada order';
+						
+						if($is_void_order == 0){
+							$r['info'] .= 'Belum ada order';
+							echo $r['info'];
+							die();
+						}
 					}
 				}
 				
 				if($print_type == 3 OR $print_type == -234){
 					//KITCHEN PRINTER ---------------
 					
+					//if(empty($print_kitchenReceipt) AND $printMonitoring_kitchen == 0){
 					if(empty($print_kitchenReceipt)){
 						$r['info'] = 'IP: '.$ip_addr.' cant print to '.$printer_ip_kitchenReceipt;
-						echo json_encode($r);
+						//echo json_encode($r);
+						echo $r['info'];
 						die();
 					}
 					
@@ -3936,48 +5054,15 @@ class BillingCashier extends MY_Controller {
 					){
 						$is_print_error = false;
 						
-						//TYPE PRINTER
-						$printer_type_kitchen = '';
-						$printer_tipe_kitchenReceipt_default = '';
-						if(!empty($get_opt['printer_tipe_kitchenReceipt_default'])){
-							$printer_tipe_kitchenReceipt_default = $get_opt['printer_tipe_kitchenReceipt_default'];
-						}
-						if(!empty($get_opt['printer_tipe_kitchenReceipt_'.$ip_addr])){
-							$printer_type_kitchen = $get_opt['printer_tipe_kitchenReceipt_'.$ip_addr];
-						}
-						
-						if(empty($printer_type_kitchen)){
-							$printer_type_kitchen = $printer_tipe_kitchenReceipt_default;
-						}
-				
-						if(!empty($print_anywhere)){
-							$printer_type_kitchen = $print_anywhere->printer_tipe;
-						}
-						
-						/*
-						$order_data_kitchen = str_replace("KITCHEN[tab]","[tab]",$order_data_kitchen);
-						
-						$print_attr = array(
-							"{date}"	=> date("d/m/Y"),
-							"{date_time}"	=> date("d/m/Y H:i"),
-							"{user}"	=> $session_user,
-							"{table_no}"	=> $billingData->table_no,
-							"{order_data}"	=> $order_data_kitchen
-						);
-						
-						$print_content_kitchenReceipt = strtr($kitchenReceipt_layout, $print_attr);	
-						$print_content_kitchenReceipt_monitoring = $print_content_kitchenReceipt;
-						
-						$print_content_kitchenReceipt = replace_to_printer_command($print_content_kitchenReceipt, $printer_type_kitchen, $printer_pin_kitchenReceipt);
-						
-						$r['print'][] = $print_content_kitchenReceipt;
-						*/
-						
-						//DIRECT PRINT USING PHP - QC PRINTER
-						
-						
 						//echo $print_content_kitchenReceipt;
 						//die();
+						
+						if(!empty($get_opt['print_order_peritem_kitchen']) AND $printMonitoring_kitchen == 0){
+							$r['info'] = 'Print Order Kitchen Per-Item Hanya Bisa Berjalan pada Fitur Print Monitoring (Print to DB)';
+							printing_process_error($r['info']);
+							die();
+						}
+						
 						
 						//$printMonitoring_kitchen
 						if($printMonitoring_kitchen == 1){
@@ -3998,6 +5083,14 @@ class BillingCashier extends MY_Controller {
 											if(!in_array($idO, $update_id_order) AND $print_type != -234){
 												$update_id_order[] = $idO;
 											}
+											if(!in_array($idO, $all_update_id_order) AND $print_type != -234){
+												$all_update_id_order[] = $idO;
+											}
+											
+											$order_qc_notes = '';
+											if(!empty($billingData->qc_notes)){
+												$order_qc_notes = 'Notes: '.$billingData->qc_notes;
+											}
 											
 											$print_attr = array(
 												"{date}"	=> date("d/m/Y"),
@@ -4005,8 +5098,8 @@ class BillingCashier extends MY_Controller {
 												"{user}"	=> $session_user,
 												"{table_no}"	=> $billingData->table_no,
 												"{order_data}"	=> $order_data_kitchen_peritem[$idO],
-												"{guest}"=> $billingData->total_guest,
-												"{qc_notes}"	=> $billingData->qc_notes
+												"{guest}"		=> $billingData->total_guest,
+												"{qc_notes}"	=> $order_qc_notes
 											);
 											
 											$print_content_kitchenReceipt = strtr($kitchenReceipt_layout, $print_attr);	
@@ -4058,6 +5151,9 @@ class BillingCashier extends MY_Controller {
 											if(!in_array($idO, $update_id_order) AND $print_type != -234){
 												$update_id_order[] = $idO;
 											}
+											if(!in_array($idO, $all_update_id_order) AND $print_type != -234){
+												$all_update_id_order[] = $idO;
+											}
 											
 											$order_data_kitchen_Receipt .= $order_data_kitchen[$idO];
 										
@@ -4067,14 +5163,19 @@ class BillingCashier extends MY_Controller {
 									
 									$order_data_kitchen_Receipt = str_replace("KITCHEN[tab]","[tab]",$order_data_kitchen_Receipt);
 									
+									$order_qc_notes = '';
+									if(!empty($billingData->qc_notes)){
+										$order_qc_notes = 'Notes: '.$billingData->qc_notes;
+									}
+											
 									$print_attr = array(
 										"{date}"	=> date("d/m/Y"),
 										"{date_time}"	=> date("d/m/Y H:i"),
 										"{user}"	=> $session_user,
 										"{table_no}"	=> $billingData->table_no,
 										"{order_data}"	=> $order_data_kitchen_Receipt,
-										"{guest}"=> $billingData->total_guest,
-										"{qc_notes}"	=> $billingData->qc_notes
+										"{guest}"		=> $billingData->total_guest,
+										"{qc_notes}"	=> $order_qc_notes
 									);
 									
 									$print_content_kitchenReceipt = strtr($kitchenReceipt_layout, $print_attr);	
@@ -4115,185 +5216,253 @@ class BillingCashier extends MY_Controller {
 							$r['success'] = true;
 							$this->db->insert_batch($this->table_print_monitoring, $data_printMonitoring);
 							
+
 						}else{
 							
-							try {
-								$ph = printer_open($printer_ip_kitchenReceipt);
-							} catch (Exception $e) {
-								$ph = false;
-							}
+							$data_print_kitchen_peritem_html = '';
+							$data_print_kitchen_peritem_escpos = array();
 							
-							//$ph = @printer_open($printer_ip_kitchenReceipt);
-							if($ph)
-							{
-								//print_order_peritem_kitchen
-								if(!empty($get_opt['print_order_peritem_kitchen'])){
+							//print_order_peritem_kitchen
+							if(!empty($get_opt['print_order_peritem_kitchen'])){
+								
+								if(!empty($order_data_kitchen_update)){
 									
-									if(!empty($order_data_kitchen_update)){
+									$update_id_order = array();
+									foreach($order_data_kitchen_update as $idO){
 										
-										$update_id_order = array();
-										foreach($order_data_kitchen_update as $idO){
+										if(!empty($order_data_kitchen_peritem[$idO])){
 											
-											if(!empty($order_data_kitchen_peritem[$idO])){
-												
-												
-												if(!in_array($idO, $update_id_order) AND $print_type != -234){
-													$update_id_order[] = $idO;
-												}
-												
-												$print_attr = array(
-													"{date}"	=> date("d/m/Y"),
-													"{date_time}"	=> date("d/m/Y H:i"),
-													"{user}"	=> $session_user,
-													"{table_no}"	=> $billingData->table_no,
-													"{order_data}"	=> $order_data_kitchen_peritem[$idO],
-													"{guest}"=> $billingData->total_guest,
-													"{qc_notes}"	=> $billingData->qc_notes
-												);
-												
-												$print_content_kitchenReceipt = strtr($kitchenReceipt_layout, $print_attr);	
-												$print_content_kitchenReceipt = replace_to_printer_command($print_content_kitchenReceipt, $printer_type_kitchen, $printer_pin_kitchenReceipt);
-												
-												//$ph = @printer_open($printer_ip_kitchenReceipt);
-												printer_start_doc($ph, "KITCHEN RECEIPT FROM CASHIER");
-												printer_start_page($ph);
-												printer_set_option($ph, PRINTER_MODE, "RAW");
-												printer_write($ph, $print_content_kitchenReceipt);
-												printer_end_page($ph);
-												printer_end_doc($ph);
-												
-												//echo $print_content_kitchenReceipt;
-												//die();
+											if(!in_array($idO, $update_id_order) AND $print_type != -234){
+												$update_id_order[] = $idO;
 											}
 											
+											if(!in_array($idO, $all_update_id_order) AND $print_type != -234){
+												$all_update_id_order[] = $idO;
+											}
 											
-										}
-										
-										
-										printer_start_doc($ph, "KITCHEN RECEIPT FROM CASHIER");
-										printer_start_page($ph);
-										printer_set_option($ph, PRINTER_MODE, "RAW");
-										printer_write($ph, "\n");
-										printer_end_page($ph);
-										printer_end_doc($ph);
-										printer_close($ph);
-										
-										if(!empty($update_id_order)){
-
-											$order_data_kitchen_update_txt = implode(",", $update_id_order);
-											$data_update = array(
-												'order_status' => 'done'
+											$order_qc_notes = '';
+											if(!empty($billingData->qc_notes)){
+												$order_qc_notes = 'Notes: '.$billingData->qc_notes;
+											}
+											
+											$print_attr = array(
+												"{date}"	=> date("d/m/Y"),
+												"{date_time}"	=> date("d/m/Y H:i"),
+												"{user}"	=> $session_user,
+												"{table_no}"	=> $billingData->table_no,
+												"{order_data}"	=> $order_data_kitchen_peritem[$idO],
+												"{guest}"		=> $billingData->total_guest,
+												"{qc_notes}"	=> $order_qc_notes
 											);
-											$this->db->update($this->table2, $data_update, "id IN (".$order_data_kitchen_update_txt.")");
+											
+											$print_content_kitchenReceipt = strtr($kitchenReceipt_layout, $print_attr);	
+											$print_content = replace_to_printer_command($print_content_kitchenReceipt, $printer_type_kitchen, $printer_pin_kitchenReceipt);
+											
+											if(empty($data_print_kitchen_peritem_html)){
+												$data_print_kitchen_peritem_html = $print_content_kitchenReceipt;
+											}else{
+												$data_print_kitchen_peritem_html .= '<p style="page-break-before: always">';
+												$data_print_kitchen_peritem_html .= "\n";
+												$data_print_kitchen_peritem_html .= $print_content_kitchenReceipt;
+											}
+											
+											$data_print_kitchen_peritem_escpos[] = $print_content;
+											
+											/*
+											printer_start_doc($ph, "KITCHEN RECEIPT FROM CASHIER");
+											printer_start_page($ph);
+											printer_set_option($ph, PRINTER_MODE, "RAW");
+											printer_write($ph, $print_content_kitchenReceipt);
+											printer_end_page($ph);
+											printer_end_doc($ph);
+											*/
 											
 										}
+										
+										
 									}
 									
-								}else{
 									
-									if(!empty($order_data_kitchen_update)){
+									/*printer_start_doc($ph, "KITCHEN RECEIPT FROM CASHIER");
+									printer_start_page($ph);
+									printer_set_option($ph, PRINTER_MODE, "RAW");
+									printer_write($ph, "\n");
+									printer_end_page($ph);
+									printer_end_doc($ph);
+									printer_close($ph);*/
 									
-										$update_id_order = array();
-										$order_data_kitchen_Receipt = '';
-										foreach($order_data_kitchen_update as $idO){
-											
-											if(!empty($order_data_kitchen[$idO])){
-												
-												if(!in_array($idO, $update_id_order) AND $print_type != -234){
-													$update_id_order[] = $idO;
-												}
-												
-												$order_data_kitchen_Receipt .= $order_data_kitchen[$idO];
-											
-											}
-										}
-										
-										
-										$order_data_kitchen_Receipt = str_replace("KITCHEN[tab]","[tab]",$order_data_kitchen_Receipt);
-										
-										$print_attr = array(
-											"{date}"	=> date("d/m/Y"),
-											"{date_time}"	=> date("d/m/Y H:i"),
-											"{user}"	=> $session_user,
-											"{table_no}"	=> $billingData->table_no,
-											"{order_data}"	=> $order_data_kitchen_Receipt,
-											"{guest}"=> $billingData->total_guest,
-											"{qc_notes}"	=> $billingData->qc_notes
+									if(!empty($update_id_order)){
+
+										$order_data_kitchen_update_txt = implode(",", $update_id_order);
+										$data_update = array(
+											'order_status' => 'done'
 										);
-										
-										$print_content_kitchenReceipt = strtr($kitchenReceipt_layout, $print_attr);	
-										$print_content_kitchenReceipt_monitoring = $print_content_kitchenReceipt;
-										
-										$print_content_kitchenReceipt = replace_to_printer_command($print_content_kitchenReceipt, $printer_type_kitchen, $printer_pin_kitchenReceipt);
-										
-										$r['print'][] = $print_content_kitchenReceipt;
-										
-										printer_start_doc($ph, "KITCHEN RECEIPT FROM CASHIER");
-										printer_start_page($ph);
-										printer_set_option($ph, PRINTER_MODE, "RAW");
-										printer_write($ph, $print_content_kitchenReceipt);
-										printer_end_page($ph);
-										printer_end_doc($ph);
-										printer_close($ph);
-										
-
-										if(!empty($update_id_order)){
-
-											$order_data_kitchen_update_txt = implode(",", $update_id_order);
-											$data_update = array(
-												'order_status' => 'done'
-											);
-											$this->db->update($this->table2, $data_update, "id IN (".$order_data_kitchen_update_txt.")");
-											
-										}
+										$this->db->update($this->table2, $data_update, "id IN (".$order_data_kitchen_update_txt.")");
 										
 									}
+								}
+								
+							}else{
+								
+								if(!empty($order_data_kitchen_update)){
+								
+									$update_id_order = array();
+									$order_data_kitchen_Receipt = '';
+									foreach($order_data_kitchen_update as $idO){
+										
+										if(!empty($order_data_kitchen[$idO])){
+											
+											if(!in_array($idO, $update_id_order) AND $print_type != -234){
+												$update_id_order[] = $idO;
+											}
+											
+											if(!in_array($idO, $all_update_id_order) AND $print_type != -234){
+												$all_update_id_order[] = $idO;
+											}
+											
+											$order_data_kitchen_Receipt .= $order_data_kitchen[$idO];
+										
+										}
+									}
 									
+									
+									$order_data_kitchen_Receipt = str_replace("KITCHEN[tab]","[tab]",$order_data_kitchen_Receipt);
+									
+									$order_qc_notes = '';
+									if(!empty($billingData->qc_notes)){
+										$order_qc_notes = 'Notes: '.$billingData->qc_notes;
+									}
+									
+									$print_attr = array(
+										"{date}"	=> date("d/m/Y"),
+										"{date_time}"	=> date("d/m/Y H:i"),
+										"{user}"	=> $session_user,
+										"{table_no}"	=> $billingData->table_no,
+										"{order_data}"	=> $order_data_kitchen_Receipt,
+										"{guest}"		=> $billingData->total_guest,
+										"{qc_notes}"	=> $order_qc_notes
+									);
+									
+									$print_content_kitchenReceipt = strtr($kitchenReceipt_layout, $print_attr);	
+									$print_content_kitchenReceipt_monitoring = $print_content_kitchenReceipt;
+									
+									$print_content = replace_to_printer_command($print_content_kitchenReceipt, $printer_type_kitchen, $printer_pin_kitchenReceipt);
+									
+									$r['print'][] = $print_content;
+									
+									/*printer_start_doc($ph, "KITCHEN RECEIPT FROM CASHIER");
+									printer_start_page($ph);
+									printer_set_option($ph, PRINTER_MODE, "RAW");
+									printer_write($ph, $print_content_kitchenReceipt);
+									printer_end_page($ph);
+									printer_end_doc($ph);
+									printer_close($ph);*/
+									
+									$data_print_kitchen_peritem_html = $print_content_kitchenReceipt;
+									$data_print_kitchen_peritem_escpos = $print_content;
+									
+
+									if(!empty($update_id_order)){
+
+										$order_data_kitchen_update_txt = implode(",", $update_id_order);
+										$data_update = array(
+											'order_status' => 'done'
+										);
+										$this->db->update($this->table2, $data_update, "id IN (".$order_data_kitchen_update_txt.")");
+										
+									}
 									
 								}
 								
-								$r['success'] = true;
-							}else{
-								$is_print_error = true;
+								
+							}
+							
+							if($data_printer[$printer_id_kitchenReceipt]['print_method'] == 'ESC/POS'){
+								try {
+									$ph = printer_open($printer_ip_kitchenReceipt);
+								} catch (Exception $e) {
+									$ph = false;
+								}
+								
+								//$ph = @printer_open($printer_ip_kitchenReceipt);
+								if($ph)
+								{
+									if(!empty($get_opt['print_order_peritem_kitchen'])){
+										
+										foreach($data_print_kitchen_peritem_escpos as $print_content){
+											printer_start_doc($ph, "KITCHEN RECEIPT FROM ".$printer_ip_kitchenReceipt);
+											printer_start_page($ph);
+											printer_set_option($ph, PRINTER_MODE, "RAW");
+											printer_write($ph, $print_content);
+											printer_end_page($ph);
+											printer_end_doc($ph);
+										}
+										
+										
+									}else{
+										printer_start_doc($ph, "KITCHEN RECEIPT FROM ".$printer_ip_kitchenReceipt);
+										printer_start_page($ph);
+										printer_set_option($ph, PRINTER_MODE, "RAW");
+										printer_write($ph, $data_print_kitchen_peritem_escpos);
+										printer_end_page($ph);
+										printer_end_doc($ph);
+										printer_close($ph);
+									}
+									
+									$r['success'] = true;
+								}else{
+									$is_print_error = true;
+								}
+								
+							}
+							
+							printing_process($data_printer[$printer_id_kitchenReceipt], $data_print_kitchen_peritem_html, 'print');
+							
+							if($is_void_order == 0){
+								//die();
 							}
 						}
 						
-						//DEV SHOW PRINT
-						/* 
-						$r['success'] = true;
-						if(!empty($order_data_kitchen_update)){
-
-							$order_data_kitchen_update_txt = implode(",", $order_data_kitchen_update);
-							$data_update = array(
-								'order_status' => 'done'
-							);
-							$this->db->update($this->table2, $data_update, "id IN (".$order_data_kitchen_update_txt.")");
-							
-							$r['success'] = false;
-							$r['info'] = $print_content_kitchenReceipt;
-						}
-						 */
 						
 						if($is_print_error){					
-							$r['info'] .= 'Communication with Printer Kitchen Failed!<br/>';
-						}	
+							$r['info'] .= 'Communication with Printer Cashier Failed!<br/>';
+							if($is_void_order == 0){
+								printing_process_error($r['info']);
+								die();
+							}
+						}
+						
 					}else{
 						
 						if(empty($order_data_kitchen) AND !empty($order_data_kitchen_update)){
-							$r['info'] .= 'Semua Order Kitchen Sudah diPrint<br/>';
+							
+							if($is_void_order == 0){
+								$r['info'] .= 'Semua Order Kitchen Sudah diPrint<br/>';
+								printing_process_error($r['info']);
+								die();
+							}
 						}else{
-							$r['info'] .= 'Belum ada order Kitchen';
+							
+							//printing_process_error($r['info']);
+							if($is_void_order == 0){
+								$r['info'] .= 'Belum ada order Kitchen';
+								die();
+							}
 						}
 					}
+					
+					
 				}
 				
 				
 				if($print_type == 4 OR $print_type == -234){
 					//BAR PRINTER ---------------
 					
+					//if(empty($print_barReceipt) AND $printMonitoring_bar == 0){
 					if(empty($print_barReceipt)){
 						$r['info'] = 'IP: '.$ip_addr.' cant print to '.$printer_ip_barReceipt;
-						echo json_encode($r);
+						//echo json_encode($r);
+						printing_process_error($r['info']);
 						die();
 					}
 					
@@ -4302,43 +5471,12 @@ class BillingCashier extends MY_Controller {
 					){
 						$is_print_error = false;			
 						
-						//TYPE PRINTER
-						$printer_type_bar = '';
-						$printer_tipe_barReceipt_default = '';
-						if(!empty($get_opt['printer_tipe_barReceipt_default'])){
-							$printer_tipe_barReceipt_default = $get_opt['printer_tipe_barReceipt_default'];
+						
+						if(!empty($get_opt['print_order_peritem_bar']) AND $printMonitoring_bar == 0){
+							$r['info'] = 'Print Order Bar Per-Item Hanya Bisa Berjalan pada Fitur Print Monitoring (Print to DB)';
+							printing_process_error($r['info']);
+							die();
 						}
-						if(!empty($get_opt['printer_tipe_barReceipt_'.$ip_addr])){
-							$printer_type_bar = $get_opt['printer_tipe_barReceipt_'.$ip_addr];
-						}
-						
-						if(empty($printer_type_bar)){
-							$printer_type_bar = $printer_tipe_barReceipt_default;
-						}		
-				
-						if(!empty($print_anywhere)){
-							$printer_type_bar = $print_anywhere->printer_tipe;
-						}					
-						
-						/*
-						$order_data_bar = str_replace("BAR[tab]","[tab]",$order_data_bar);
-						
-						$print_attr = array(
-							"{date}"	=> date("d/m/Y"),
-							"{date_time}"	=> date("d/m/Y H:i"),
-							"{user}"	=> $session_user,
-							"{table_no}"	=> $billingData->table_no,
-							"{order_data}"	=> $order_data_bar
-						);
-						
-						$print_content_barReceipt = strtr($barReceipt_layout, $print_attr);			
-						$print_content_barReceipt_monitoring = $print_content_barReceipt;
-						$print_content_barReceipt = replace_to_printer_command($print_content_barReceipt, $printer_type_bar, $printer_pin_barReceipt);
-						
-						$r['print'][] = $print_content_barReceipt;
-						*/
-						
-						//DIRECT PRINT USING PHP - QC PRINTER
 						
 						//$printMonitoring_bar
 						if($printMonitoring_bar == 1){
@@ -4355,9 +5493,17 @@ class BillingCashier extends MY_Controller {
 										
 										if(!empty($order_data_bar_peritem[$idO])){
 											
-											
 											if(!in_array($idO, $update_id_order) AND $print_type != -234){
 												$update_id_order[] = $idO;
+											}
+											
+											if(!in_array($idO, $all_update_id_order) AND $print_type != -234){
+												$all_update_id_order[] = $idO;
+											}
+											
+											$order_qc_notes = '';
+											if(!empty($billingData->qc_notes)){
+												$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 											}
 											
 											$print_attr = array(
@@ -4366,8 +5512,8 @@ class BillingCashier extends MY_Controller {
 												"{user}"	=> $session_user,
 												"{table_no}"	=> $billingData->table_no,
 												"{order_data}"	=> $order_data_bar_peritem[$idO],
-												"{guest}"=> $billingData->total_guest,
-												"{qc_notes}"	=> $billingData->qc_notes
+												"{guest}"		=> $billingData->total_guest,
+												"{qc_notes}"	=> $order_qc_notes
 											);
 											
 											$print_content_barReceipt = strtr($barReceipt_layout, $print_attr);	
@@ -4419,6 +5565,10 @@ class BillingCashier extends MY_Controller {
 												$update_id_order[] = $idO;
 											}
 											
+											if(!in_array($idO, $all_update_id_order) AND $print_type != -234){
+												$all_update_id_order[] = $idO;
+											}
+											
 											$order_data_bar_Receipt .= $order_data_bar[$idO];
 										
 										}
@@ -4427,14 +5577,19 @@ class BillingCashier extends MY_Controller {
 									
 									$order_data_bar_Receipt = str_replace("BAR[tab]","[tab]",$order_data_bar_Receipt);
 									
+									$order_qc_notes = '';
+									if(!empty($billingData->qc_notes)){
+										$order_qc_notes = 'Notes: '.$billingData->qc_notes;
+									}
+									
 									$print_attr = array(
 										"{date}"	=> date("d/m/Y"),
 										"{date_time}"	=> date("d/m/Y H:i"),
 										"{user}"	=> $session_user,
 										"{table_no}"	=> $billingData->table_no,
 										"{order_data}"	=> $order_data_bar_Receipt,
-										"{guest}"=> $billingData->total_guest,
-										"{qc_notes}"	=> $billingData->qc_notes
+										"{guest}"		=> $billingData->total_guest,
+										"{qc_notes}"	=> $order_qc_notes
 									);
 									
 									$print_content_barReceipt = strtr($barReceipt_layout, $print_attr);			
@@ -4477,170 +5632,234 @@ class BillingCashier extends MY_Controller {
 							
 						}else{
 							
-							try {
-								$ph = printer_open($printer_ip_barReceipt);
-							} catch (Exception $e) {
-								$ph = false;
-							}
-							
-							//$ph = @printer_open($printer_ip_barReceipt);
-							if($ph)
-							{
-								
-								//print_order_peritem_bar
-								if(!empty($get_opt['print_order_peritem_bar'])){
-									
-									if(!empty($order_data_bar_update)){
+							$data_print_bar_peritem_escpos = array();
+							$data_print_bar_peritem_html = '';
 										
-										$update_id_order = array();
-										foreach($order_data_bar_update as $idO){
+							//print_order_peritem_bar
+							if(!empty($get_opt['print_order_peritem_bar'])){
+								
+								if(!empty($order_data_bar_update)){
+									
+									$update_id_order = array();
+									foreach($order_data_bar_update as $idO){
+										
+										if(!empty($order_data_bar_peritem[$idO])){
 											
-											if(!empty($order_data_bar_peritem[$idO])){
-												
-												
-												if(!in_array($idO, $update_id_order) AND $print_type != -234){
-													$update_id_order[] = $idO;
-												}
-												
-												$print_attr = array(
-													"{date}"	=> date("d/m/Y"),
-													"{date_time}"	=> date("d/m/Y H:i"),
-													"{user}"	=> $session_user,
-													"{table_no}"	=> $billingData->table_no,
-													"{order_data}"	=> $order_data_bar_peritem[$idO],
-													"{guest}"=> $billingData->total_guest,
-													"{qc_notes}"	=> $billingData->qc_notes
-												);
-												
-												$print_content_barReceipt = strtr($barReceipt_layout, $print_attr);	
-												$print_content_barReceipt = replace_to_printer_command($print_content_barReceipt, $printer_type_bar, $printer_pin_barReceipt);
-												
-												//$ph = @printer_open($printer_ip_barReceipt);
-												printer_start_doc($ph, "BAR RECEIPT FROM ORDER");
-												printer_start_page($ph);
-												printer_set_option($ph, PRINTER_MODE, "RAW");
-												printer_write($ph, $print_content_barReceipt);
-												printer_end_page($ph);
-												printer_end_doc($ph);
-												
-												//echo $print_content_barReceipt;
-												//die();
+											if(!in_array($idO, $update_id_order) AND $print_type != -234){
+												$update_id_order[] = $idO;
 											}
 											
+											if(!in_array($idO, $all_update_id_order) AND $print_type != -234){
+												$all_update_id_order[] = $idO;
+											}
 											
-										}
-										
-										
-										printer_start_doc($ph, "BAR RECEIPT FROM ORDER");
-										printer_start_page($ph);
-										printer_set_option($ph, PRINTER_MODE, "RAW");
-										printer_write($ph, "\n");
-										printer_end_page($ph);
-										printer_end_doc($ph);
-										printer_close($ph);
-										
-										if(!empty($update_id_order)){
-
-											$order_data_bar_update_txt = implode(",", $update_id_order);
-											$data_update = array(
-												'order_status' => 'done'
+											$order_qc_notes = '';
+											if(!empty($billingData->qc_notes)){
+												$order_qc_notes = 'Notes: '.$billingData->qc_notes;
+											}
+											
+											$print_attr = array(
+												"{date}"	=> date("d/m/Y"),
+												"{date_time}"	=> date("d/m/Y H:i"),
+												"{user}"	=> $session_user,
+												"{table_no}"	=> $billingData->table_no,
+												"{order_data}"	=> $order_data_bar_peritem[$idO],
+												"{guest}"		=> $billingData->total_guest,
+												"{qc_notes}"	=> $order_qc_notes
 											);
-											$this->db->update($this->table2, $data_update, "id IN (".$order_data_bar_update_txt.")");
+											
+											$print_content_barReceipt = strtr($barReceipt_layout, $print_attr);	
+											$print_content = replace_to_printer_command($print_content_barReceipt, $printer_type_bar, $printer_pin_barReceipt);
+											
+											if(empty($data_print_bar_peritem_html)){
+												$data_print_bar_peritem_html = $print_content_barReceipt;
+											}else{
+												$data_print_bar_peritem_html .= '<div style="page-break-before: always;"></div>';
+												$data_print_bar_peritem_html .= $print_content_barReceipt;
+											}
+											
+											$data_print_bar_peritem_escpos[] = $print_content;
+											
+											/*printer_start_doc($ph, "BAR RECEIPT FROM ORDER");
+											printer_start_page($ph);
+											printer_set_option($ph, PRINTER_MODE, "RAW");
+											printer_write($ph, $print_content_barReceipt);
+											printer_end_page($ph);
+											printer_end_doc($ph);
+											*/
 											
 										}
+										
+										
 									}
 									
-								}else{
+									/*
+									printer_start_doc($ph, "BAR RECEIPT FROM ORDER");
+									printer_start_page($ph);
+									printer_set_option($ph, PRINTER_MODE, "RAW");
+									printer_write($ph, "\n");
+									printer_end_page($ph);
+									printer_end_doc($ph);
+									printer_close($ph);
+									*/
 									
-									if(!empty($order_data_bar_update)){
-									
-										$update_id_order = array();
-										$order_data_bar_Receipt = '';
-										foreach($order_data_bar_update as $idO){
-											
-											if(!empty($order_data_bar[$idO])){
-												
-												if(!in_array($idO, $update_id_order) AND $print_type != -234){
-													$update_id_order[] = $idO;
-												}
-												
-												$order_data_bar_Receipt .= $order_data_bar[$idO];
-											
-											}
-										}
-										
-										
-										$order_data_bar_Receipt = str_replace("BAR[tab]","[tab]",$order_data_bar_Receipt);
-										
-										$print_attr = array(
-											"{date}"	=> date("d/m/Y"),
-											"{date_time}"	=> date("d/m/Y H:i"),
-											"{user}"	=> $session_user,
-											"{table_no}"	=> $billingData->table_no,
-											"{order_data}"	=> $order_data_bar_Receipt,
-											"{guest}"=> $billingData->total_guest,
-											"{qc_notes}"	=> $billingData->qc_notes
-										);
-										
-										$print_content_barReceipt = strtr($barReceipt_layout, $print_attr);			
-										$print_content_barReceipt_monitoring = $print_content_barReceipt;
-										$print_content_barReceipt = replace_to_printer_command($print_content_barReceipt, $printer_type_bar, $printer_pin_barReceipt);
-										
-										$r['print'][] = $print_content_barReceipt;
-										
-										printer_start_doc($ph, "BAR RECEIPT FROM ORDER");
-										printer_start_page($ph);
-										printer_set_option($ph, PRINTER_MODE, "RAW");
-										printer_write($ph, $print_content_barReceipt);
-										printer_end_page($ph);
-										printer_end_doc($ph);
-										printer_close($ph);
-										
-										
-										if(!empty($update_id_order)){
+									if(!empty($update_id_order)){
 
-											$order_data_bar_update_txt = implode(",", $update_id_order);
-											$data_update = array(
-												'order_status' => 'done'
-											);
-											$this->db->update($this->table2, $data_update, "id IN (".$order_data_bar_update_txt.")");
-											
-										}
+										$order_data_bar_update_txt = implode(",", $update_id_order);
+										$data_update = array(
+											'order_status' => 'done'
+										);
+										$this->db->update($this->table2, $data_update, "id IN (".$order_data_bar_update_txt.")");
 										
 									}
 								}
 								
-								$r['success'] = true;
 							}else{
-								$is_print_error = true;
-							}					
-							 
-						}
-						
-						//DEV SHOW PRINT
-						/* 
-						$r['success'] = true;
-						if(!empty($order_data_bar_update)){
-							$order_data_bar_update_txt = implode(",", $order_data_bar_update);
-							$data_update = array(
-								'order_status' => 'done'
-							);
-							$this->db->update($this->table2, $data_update, "id IN (".$order_data_bar_update_txt.")");
+								
+								if(!empty($order_data_bar_update)){
+								
+									$update_id_order = array();
+									$order_data_bar_Receipt = '';
+									foreach($order_data_bar_update as $idO){
+										
+										if(!empty($order_data_bar[$idO])){
+											
+											if(!in_array($idO, $update_id_order) AND $print_type != -234){
+												$update_id_order[] = $idO;
+											}
+											
+											if(!in_array($idO, $all_update_id_order) AND $print_type != -234){
+												$all_update_id_order[] = $idO;
+											}
+											
+											$order_data_bar_Receipt .= $order_data_bar[$idO];
+										
+										}
+									}
+									
+									
+									$order_data_bar_Receipt = str_replace("BAR[tab]","[tab]",$order_data_bar_Receipt);
+									
+									$order_qc_notes = '';
+									if(!empty($billingData->qc_notes)){
+										$order_qc_notes = 'Notes: '.$billingData->qc_notes;
+									}
+									
+									$print_attr = array(
+										"{date}"	=> date("d/m/Y"),
+										"{date_time}"	=> date("d/m/Y H:i"),
+										"{user}"	=> $session_user,
+										"{table_no}"	=> $billingData->table_no,
+										"{order_data}"	=> $order_data_bar_Receipt,
+										"{guest}"		=> $billingData->total_guest,
+										"{qc_notes}"	=> $order_qc_notes
+									);
+									
+									$print_content_barReceipt = strtr($barReceipt_layout, $print_attr);			
+									$print_content_barReceipt_monitoring = $print_content_barReceipt;
+									$print_content = replace_to_printer_command($print_content_barReceipt, $printer_type_bar, $printer_pin_barReceipt);
+									
+									$r['print'][] = $print_content;
+									
+									/*printer_start_doc($ph, "BAR RECEIPT FROM ORDER");
+									printer_start_page($ph);
+									printer_set_option($ph, PRINTER_MODE, "RAW");
+									printer_write($ph, $print_content_barReceipt);
+									printer_end_page($ph);
+									printer_end_doc($ph);
+									printer_close($ph);*/
+									
+									$data_print_bar_peritem_html = $print_content_barReceipt;
+									$data_print_bar_peritem_escpos = $print_content;
+									
+									
+									if(!empty($update_id_order)){
+
+										$order_data_bar_update_txt = implode(",", $update_id_order);
+										$data_update = array(
+											'order_status' => 'done'
+										);
+										$this->db->update($this->table2, $data_update, "id IN (".$order_data_bar_update_txt.")");
+										
+									}
+									
+								}
+							}
+								
+								
+							if($data_printer[$printer_id_barReceipt]['print_method'] == 'ESC/POS'){
+								
+								try {
+									$ph = printer_open($printer_ip_barReceipt);
+								} catch (Exception $e) {
+									$ph = false;
+								}
+								
+								//$ph = @printer_open($printer_ip_barReceipt);
+								if($ph)
+								{
+									if(!empty($get_opt['print_order_peritem_bar'])){
+										
+										foreach($data_print_bar_peritem_escpos as $print_content){
+											printer_start_doc($ph, "BAR RECEIPT FROM ".$printer_ip_barReceipt);
+											printer_start_page($ph);
+											printer_set_option($ph, PRINTER_MODE, "RAW");
+											printer_write($ph, $print_content);
+											printer_end_page($ph);
+											printer_end_doc($ph);
+										}
+										
+										
+									}else{
+										printer_start_doc($ph, "BAR RECEIPT FROM ".$printer_ip_barReceipt);
+										printer_start_page($ph);
+										printer_set_option($ph, PRINTER_MODE, "RAW");
+										printer_write($ph, $data_print_bar_peritem_escpos);
+										printer_end_page($ph);
+										printer_end_doc($ph);
+										printer_close($ph);
+									}
+									
+									$r['success'] = true;
+								}else{
+									$is_print_error = true;
+								}
+								
+							}
 							
-							$r['success'] = false;
-							$r['info'] = $print_content_barReceipt;
+							printing_process($data_printer[$printer_id_barReceipt], $data_print_bar_peritem_html, 'print');
+							
+							if($is_void_order == 0){
+								//die();
+							}
+							
+							
 						}
-						  */
 						
 						if($is_print_error){					
 							$r['info'] .= 'Communication with Printer Bar Failed!<br/>';
+							if($is_void_order == 0){
+								printing_process_error($r['info']);
+								die();
+							}
 						}	
+						
 					}else{
 						
 						if(empty($order_data_bar) AND !empty($order_data_bar_update)){
-							$r['info'] .= 'Semua Order Bar Sudah diPrint<br/>';
+							
+							if($is_void_order == 0){
+								$r['info'] .= 'Semua Order Bar Sudah diPrint<br/>';
+								printing_process_error($r['info']);
+								die();
+							}
 						}else{
-							$r['info'] .= 'Belum ada order Bar';
+							
+							//printing_process_error($r['info']);
+							if($is_void_order == 0){
+								$r['info'] .= 'Belum ada order Bar';
+								die();
+							}
 						}
 					}
 				}
@@ -4648,9 +5867,11 @@ class BillingCashier extends MY_Controller {
 				if($print_type == 5 OR $print_type == -234){
 					//OTHER PRINTER ---------------
 					
+					//if(empty($print_otherReceipt) AND $printMonitoring_other == 0){
 					if(empty($print_otherReceipt)){
 						$r['info'] = 'IP: '.$ip_addr.' cant print to '.$printer_ip_otherReceipt;
-						echo json_encode($r);
+						//echo json_encode($r);
+						printing_process_error($r['info']);
 						die();
 					}
 					
@@ -4659,42 +5880,12 @@ class BillingCashier extends MY_Controller {
 					){
 						$is_print_error = false;			
 						
-						//TYPE PRINTER
-						$printer_type_other = '';
-						$printer_tipe_otherReceipt_default = '';
-						if(!empty($get_opt['printer_tipe_otherReceipt_default'])){
-							$printer_tipe_otherReceipt_default = $get_opt['printer_tipe_otherReceipt_default'];
+						
+						if(!empty($get_opt['print_order_peritem_other']) AND $printMonitoring_other == 0){
+							$r['info'] = 'Print Order Other/Lainnya Per-Item Hanya Bisa Berjalan pada Fitur Print Monitoring (Print to DB)';
+							printing_process_error($r['info']);
+							die();
 						}
-						if(!empty($get_opt['printer_tipe_otherReceipt_'.$ip_addr])){
-							$printer_type_other = $get_opt['printer_tipe_otherReceipt_'.$ip_addr];
-						}
-						
-						if(empty($printer_type_other)){
-							$printer_type_other = $printer_tipe_otherReceipt_default;
-						}		
-				
-						if(!empty($print_anywhere)){
-							$printer_type_other = $print_anywhere->printer_tipe;
-						}												
-						
-						/*
-						$order_data_other = str_replace("OTHER[tab]","[tab]",$order_data_other);
-						
-						$print_attr = array(
-							"{date}"	=> date("d/m/Y"),
-							"{date_time}"	=> date("d/m/Y H:i"),
-							"{user}"	=> $session_user,
-							"{table_no}"	=> $billingData->table_no,
-							"{order_data}"	=> $order_data_other
-						);
-						
-						$print_content_otherReceipt = strtr($otherReceipt_layout, $print_attr);	
-						$print_content_otherReceipt_monitoring = $print_content_otherReceipt;
-						$print_content_otherReceipt = replace_to_printer_command($print_content_otherReceipt, $printer_type_other, $printer_pin_otherReceipt);
-						
-						$r['print'][] = $print_content_otherReceipt;
-						//DIRECT PRINT USING PHP - other PRINTER
-						*/
 						
 						//$printMonitoring_other
 						if($printMonitoring_other == 1){
@@ -4711,9 +5902,17 @@ class BillingCashier extends MY_Controller {
 										
 										if(!empty($order_data_other_peritem[$idO])){
 											
-											
 											if(!in_array($idO, $update_id_order)){
 												$update_id_order[] = $idO;
+											}
+											
+											if(!in_array($idO, $all_update_id_order)){
+												$all_update_id_order[] = $idO;
+											}
+											
+											$order_qc_notes = '';
+											if(!empty($billingData->qc_notes)){
+												$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 											}
 											
 											$print_attr = array(
@@ -4722,8 +5921,8 @@ class BillingCashier extends MY_Controller {
 												"{user}"	=> $session_user,
 												"{table_no}"	=> $billingData->table_no,
 												"{order_data}"	=> $order_data_other_peritem[$idO],
-												"{guest}"=> $billingData->total_guest,
-												"{qc_notes}"	=> $billingData->qc_notes
+												"{guest}"		=> $billingData->total_guest,
+												"{qc_notes}"	=> $order_qc_notes
 											);
 											
 											$print_content_otherReceipt = strtr($otherReceipt_layout, $print_attr);	
@@ -4776,6 +5975,10 @@ class BillingCashier extends MY_Controller {
 												$update_id_order[] = $idO;
 											}
 											
+											if(!in_array($idO, $all_update_id_order) AND $print_type != -234){
+												$all_update_id_order[] = $idO;
+											}
+											
 											$order_data_other_Receipt .= $order_data_other[$idO];
 										
 										}
@@ -4784,14 +5987,19 @@ class BillingCashier extends MY_Controller {
 									
 									$order_data_other_Receipt = str_replace("OTHER[tab]","[tab]",$order_data_other_Receipt);
 									
+									$order_qc_notes = '';
+									if(!empty($billingData->qc_notes)){
+										$order_qc_notes = 'Notes: '.$billingData->qc_notes;
+									}
+									
 									$print_attr = array(
 										"{date}"	=> date("d/m/Y"),
 										"{date_time}"	=> date("d/m/Y H:i"),
 										"{user}"	=> $session_user,
 										"{table_no}"	=> $billingData->table_no,
 										"{order_data}"	=> $order_data_other_Receipt,
-										"{guest}"=> $billingData->total_guest,
-										"{qc_notes}"	=> $billingData->qc_notes
+										"{guest}"		=> $billingData->total_guest,
+										"{qc_notes}"	=> $order_qc_notes
 									);
 									
 									$print_content_otherReceipt = strtr($otherReceipt_layout, $print_attr);	
@@ -4836,177 +6044,353 @@ class BillingCashier extends MY_Controller {
 							
 						}else{
 								
-							try {
-								$ph = printer_open($printer_ip_otherReceipt);
-							} catch (Exception $e) {
-								$ph = false;
-							}
-							
-							//$ph = @printer_open($printer_ip_otherReceipt);
-							if($ph)
-							{
-								
-								//print_order_peritem_other
-								if(!empty($get_opt['print_order_peritem_other'])){
+							$data_print_other_peritem_escpos = array();
+							$data_print_other_peritem_html = '';
 									
-									if(!empty($order_data_other_update)){
+							//print_order_peritem_other
+							if(!empty($get_opt['print_order_peritem_other'])){
+								
+								if(!empty($order_data_other_update)){
+									
+									$update_id_order = array();
+									foreach($order_data_other_update as $idO){
 										
-										$update_id_order = array();
-										foreach($order_data_other_update as $idO){
+										if(!empty($order_data_other_peritem[$idO])){
 											
-											if(!empty($order_data_other_peritem[$idO])){
-												
-												
-												if(!in_array($idO, $update_id_order)){
-													$update_id_order[] = $idO;
-												}
-												
-												$print_attr = array(
-													"{date}"	=> date("d/m/Y"),
-													"{date_time}"	=> date("d/m/Y H:i"),
-													"{user}"	=> $session_user,
-													"{table_no}"	=> $billingData->table_no,
-													"{order_data}"	=> $order_data_other_peritem[$idO],
-													"{guest}"=> $billingData->total_guest,
-													"{qc_notes}"	=> $billingData->qc_notes
-												);
-												
-												$print_content_otherReceipt = strtr($otherReceipt_layout, $print_attr);	
-												$print_content_otherReceipt = replace_to_printer_command($print_content_otherReceipt, $printer_type_other, $printer_pin_otherReceipt);
-												
-												//$ph = @printer_open($printer_ip_otherReceipt);
-												printer_start_doc($ph, "OTHER RECEIPT FROM ORDER");
-												printer_start_page($ph);
-												printer_set_option($ph, PRINTER_MODE, "RAW");
-												printer_write($ph, $print_content_otherReceipt);
-												printer_end_page($ph);
-												printer_end_doc($ph);
-												
-												//echo $print_content_barReceipt;
-												//die();
+											if(!in_array($idO, $update_id_order)){
+												$update_id_order[] = $idO;
 											}
 											
+											if(!in_array($idO, $all_update_id_order)){
+												$all_update_id_order[] = $idO;
+											}
 											
-										}
-										
-										
-										printer_start_doc($ph, "OTHER RECEIPT FROM ORDER");
-										printer_start_page($ph);
-										printer_set_option($ph, PRINTER_MODE, "RAW");
-										printer_write($ph, "\n");
-										printer_end_page($ph);
-										printer_end_doc($ph);
-										printer_close($ph);
-										
-										if(!empty($update_id_order)){
-
-											$order_data_other_update_txt = implode(",", $update_id_order);
-											$data_update = array(
-												'order_status' => 'done'
+											$order_qc_notes = '';
+											if(!empty($billingData->qc_notes)){
+												$order_qc_notes = 'Notes: '.$billingData->qc_notes;
+											}
+											
+											$print_attr = array(
+												"{date}"	=> date("d/m/Y"),
+												"{date_time}"	=> date("d/m/Y H:i"),
+												"{user}"	=> $session_user,
+												"{table_no}"	=> $billingData->table_no,
+												"{order_data}"	=> $order_data_other_peritem[$idO],
+												"{guest}"		=> $billingData->total_guest,
+												"{qc_notes}"	=> $order_qc_notes
 											);
-											$this->db->update($this->table2, $data_update, "id IN (".$order_data_other_update_txt.")");
+											
+											$print_content_otherReceipt = strtr($otherReceipt_layout, $print_attr);	
+											$print_content = replace_to_printer_command($print_content_otherReceipt, $printer_type_other, $printer_pin_otherReceipt);
+											
+											if(empty($data_print_other_peritem_html)){
+												$data_print_other_peritem_html = $print_content_otherReceipt;
+											}else{
+												$data_print_other_peritem_html .= '<div style="page-break-before: always;"></div>';
+												$data_print_other_peritem_html .= $print_content_otherReceipt;
+											}
+											
+											$data_print_other_peritem_escpos[] = $print_content;
+											
+											
+											/*
+											printer_start_doc($ph, "OTHER RECEIPT FROM ORDER");
+											printer_start_page($ph);
+											printer_set_option($ph, PRINTER_MODE, "RAW");
+											printer_write($ph, $print_content_otherReceipt);
+											printer_end_page($ph);
+											printer_end_doc($ph);
+											*/
 											
 										}
+										
+										
 									}
 									
-								}else{
+									/*
+									printer_start_doc($ph, "OTHER RECEIPT FROM ORDER");
+									printer_start_page($ph);
+									printer_set_option($ph, PRINTER_MODE, "RAW");
+									printer_write($ph, "\n");
+									printer_end_page($ph);
+									printer_end_doc($ph);
+									printer_close($ph);
+									*/
 									
-									if(!empty($order_data_other_update)){
-								
-										$update_id_order = array();
-										$order_data_other_Receipt = '';
-										foreach($order_data_other_update as $idO){
-											
-											if(!empty($order_data_other[$idO])){
-												
-												if(!in_array($idO, $update_id_order) AND $print_type != -234){
-													$update_id_order[] = $idO;
-												}
-												
-												$order_data_other_Receipt .= $order_data_other[$idO];
-											
-											}
-										}
-										
-										
-										$order_data_other_Receipt = str_replace("OTHER[tab]","[tab]",$order_data_other_Receipt);
-										
-										$print_attr = array(
-											"{date}"	=> date("d/m/Y"),
-											"{date_time}"	=> date("d/m/Y H:i"),
-											"{user}"	=> $session_user,
-											"{table_no}"	=> $billingData->table_no,
-											"{order_data}"	=> $order_data_other_Receipt,
-											"{guest}"=> $billingData->total_guest,
-											"{qc_notes}"	=> $billingData->qc_notes
+									if(!empty($update_id_order)){
+
+										$order_data_other_update_txt = implode(",", $update_id_order);
+										$data_update = array(
+											'order_status' => 'done'
 										);
-										
-										$print_content_otherReceipt = strtr($otherReceipt_layout, $print_attr);	
-										$print_content_otherReceipt_monitoring = $print_content_otherReceipt;
-										$print_content_otherReceipt = replace_to_printer_command($print_content_otherReceipt, $printer_type_other, $printer_pin_otherReceipt);
-										
-										$r['print'][] = $print_content_otherReceipt;
-										
-										printer_start_doc($ph, "OTHER RECEIPT FROM ORDER");
-										printer_start_page($ph);
-										printer_set_option($ph, PRINTER_MODE, "RAW");
-										printer_write($ph, $print_content_otherReceipt);
-										printer_end_page($ph);
-										printer_end_doc($ph);
-										printer_close($ph);
-										
-										if(!empty($update_id_order)){
-
-											$order_data_bar_update_txt = implode(",", $update_id_order);
-											$data_update = array(
-												'order_status' => 'done'
-											);
-											$this->db->update($this->table2, $data_update, "id IN (".$order_data_bar_update_txt.")");
-											
-										}
+										$this->db->update($this->table2, $data_update, "id IN (".$order_data_other_update_txt.")");
 										
 									}
-									
-									
-								
 								}
 								
-								$r['success'] = true;
 							}else{
-								$is_print_error = true;
-							}					
+								
+								if(!empty($order_data_other_update)){
+							
+									$update_id_order = array();
+									$order_data_other_Receipt = '';
+									foreach($order_data_other_update as $idO){
+										
+										if(!empty($order_data_other[$idO])){
+											
+											if(!in_array($idO, $update_id_order) AND $print_type != -234){
+												$update_id_order[] = $idO;
+											}
+											
+											if(!in_array($idO, $all_update_id_order) AND $print_type != -234){
+												$all_update_id_order[] = $idO;
+											}
+											
+											$order_data_other_Receipt .= $order_data_other[$idO];
+										
+										}
+									}
+									
+									
+									$order_data_other_Receipt = str_replace("OTHER[tab]","[tab]",$order_data_other_Receipt);
+							
+									$order_qc_notes = '';
+									if(!empty($billingData->qc_notes)){
+										$order_qc_notes = 'Notes: '.$billingData->qc_notes;
+									}
+									
+									$print_attr = array(
+										"{date}"	=> date("d/m/Y"),
+										"{date_time}"	=> date("d/m/Y H:i"),
+										"{user}"	=> $session_user,
+										"{table_no}"	=> $billingData->table_no,
+										"{order_data}"	=> $order_data_other_Receipt,
+										"{guest}"		=> $billingData->total_guest,
+										"{qc_notes}"	=> $order_qc_notes
+									);
+									
+									$print_content_otherReceipt = strtr($otherReceipt_layout, $print_attr);	
+									$print_content_otherReceipt_monitoring = $print_content_otherReceipt;
+									$print_content = replace_to_printer_command($print_content_otherReceipt, $printer_type_other, $printer_pin_otherReceipt);
+									
+									$r['print'][] = $print_content;
+									
+									/*
+									printer_start_doc($ph, "OTHER RECEIPT FROM ORDER");
+									printer_start_page($ph);
+									printer_set_option($ph, PRINTER_MODE, "RAW");
+									printer_write($ph, $print_content_otherReceipt);
+									printer_end_page($ph);
+									printer_end_doc($ph);
+									printer_close($ph);
+									*/
+									
+									$data_print_other_peritem_html = $print_content_otherReceipt;
+									$data_print_other_peritem_escpos = $print_content;
+									
+									if(!empty($update_id_order)){
+
+										$order_data_bar_update_txt = implode(",", $update_id_order);
+										$data_update = array(
+											'order_status' => 'done'
+										);
+										$this->db->update($this->table2, $data_update, "id IN (".$order_data_bar_update_txt.")");
+										
+									}
+									
+								}
+								
+							}
+
+								
+								
+							if($data_printer[$printer_id_otherReceipt]['print_method'] == 'ESC/POS'){
+								
+								try {
+									$ph = printer_open($printer_ip_otherReceipt);
+								} catch (Exception $e) {
+									$ph = false;
+								}
+								
+								//$ph = @printer_open($printer_ip_otherReceipt);
+								if($ph)
+								{
+									if(!empty($get_opt['print_order_peritem_other'])){
+										
+										foreach($data_print_other_peritem_escpos as $print_content){
+											printer_start_doc($ph, "OTHER RECEIPT FROM ".$printer_ip_otherReceipt);
+											printer_start_page($ph);
+											printer_set_option($ph, PRINTER_MODE, "RAW");
+											printer_write($ph, $print_content);
+											printer_end_page($ph);
+											printer_end_doc($ph);
+										}
+										
+										
+									}else{
+										printer_start_doc($ph, "OTHER RECEIPT FROM ".$printer_ip_otherReceipt);
+										printer_start_page($ph);
+										printer_set_option($ph, PRINTER_MODE, "RAW");
+										printer_write($ph, $data_print_other_peritem_escpos);
+										printer_end_page($ph);
+										printer_end_doc($ph);
+										printer_close($ph);
+									}
+									
+									$r['success'] = true;
+								}else{
+									$is_print_error = true;
+								}
+								
+							}
+							
+							printing_process($data_printer[$printer_id_otherReceipt], $data_print_other_peritem_html, 'print');
+							
+							if($is_void_order == 0){
+								//die();
+							}
+							
 						 
 						}
 						
-						//DEV SHOW PRINT
-						/* 
-						$r['success'] = true;
-						if(!empty($order_data_bar_update)){
-							$order_data_bar_update_txt = implode(",", $order_data_bar_update);
-							$data_update = array(
-								'order_status' => 'done'
-							);
-							$this->db->update($this->table2, $data_update, "id IN (".$order_data_bar_update_txt.")");
-							
-							$r['success'] = false;
-							$r['info'] = $print_content_barReceipt;
-						}
-						  */
-						
 						if($is_print_error){					
 							$r['info'] .= 'Communication with Printer Other Failed!<br/>';
+							
+							if($is_void_order == 0){
+								printing_process_error($r['info']);
+								die();
+							}
+							
 						}	
+						
 					}else{
 						
 						if(empty($order_data_other) AND !empty($order_data_other_update)){
-							$r['info'] .= 'Semua Order Other Sudah diPrint<br/>';
+							
+							
+							if($is_void_order == 0){
+								$r['info'] .= 'Semua Order Other Sudah diPrint<br/>';
+								printing_process_error($r['info']);
+								die();
+							}
+							
 						}else{
-							$r['info'] .= 'Belum ada order Other';
+							
+							//printing_process_error($r['info']);
+							if($is_void_order == 0){
+								$r['info'] .= 'Belum ada order Other';
+								die();
+							}
 						}
 					}
 				}
 				
+				//AFTER PRINT - SET STATUS
+				//SET ITEM PACKAGE
+				if($print_type == 3 OR $print_type == 4 OR $print_type == 5 OR $print_type == -234){
+					if(!empty($order_data_package)){
+						$all_package_id = array();
+						foreach($order_data_package as $idPack => $dtPack){
+							if(!in_array($idPack, $all_package_id)){
+								$all_package_id[] = $idPack;
+							}
+						}
+					}
+					
+					if(!empty($all_package_id)){
+						$package_not_done = array();
+						$all_package_id_sql = implode(",", $all_package_id);
+						$this->db->select("id, ref_order_id, package_item, order_status");
+						$this->db->from($this->table2);
+						$this->db->where("ref_order_id IN (".$all_package_id_sql.")");
+						$this->db->where("package_item = 1");
+						$this->db->where("order_status != 'done'");
+						$this->db->where("is_deleted = 0");
+						$get_item_package = $this->db->get();
+						if($get_item_package->num_rows() > 0){
+							foreach($get_item_package->result() as $dtItem){
+								if(!in_array($dtItem->ref_order_id, $package_not_done)){
+									$package_not_done[] = $dtItem->ref_order_id;
+								}
+							}
+						}
+						
+						$package_is_done = array();
+						foreach($all_package_id as $idPack){
+							if(!in_array($idPack, $package_not_done)){
+								$package_is_done[] = $idPack;
+							}
+						}
+						
+						
+						if(!empty($package_not_done)){
+
+							$package_not_done_sql = implode(",", $package_not_done);
+							$data_update = array(
+								'order_status' => 'order'
+							);
+							$this->db->update($this->table2, $data_update, "id IN (".$package_not_done_sql.")");
+							
+						}
+						
+						if(!empty($package_is_done)){
+
+							$package_is_done_sql = implode(",", $package_is_done);
+							$data_update = array(
+								'order_status' => 'done'
+							);
+							$this->db->update($this->table2, $data_update, "id IN (".$package_is_done_sql.")");
+							
+						}
+					}
+					
+				}
 				
+				$r['order_timer'] = $get_opt['order_timer'];
+				$r['all_update_id_order'] = $all_update_id_order;
+				//SAVE ORDER TIMER		
+				if(!empty($get_opt['order_timer']) AND !empty($all_update_id_order)){
+					//check on timer
+					$order_data_kitchen_update_txt = implode(",", $all_update_id_order);
+					$this->db->select("id, bild_id");
+					$this->db->from($this->billing_detail_timer);
+					$this->db->where("bild_id IN (".$order_data_kitchen_update_txt.")");
+					$get_det = $this->db->get();
+					$available_timer = array();
+					if($get_det->num_rows() > 0){
+						foreach($get_det->result() as $dt){
+							if(!in_array($dt->bild_id, $available_timer)){
+								$available_timer[] = $dt->bild_id;
+							}
+						}
+					}
+					
+					$new_det_timer = array();
+					foreach($all_update_id_order as $bild_id){
+						if(!in_array($bild_id, $available_timer)){
+							$new_det_timer[] = array(
+								'bild_id'		=> $bild_id,
+								'order_start'	=> date("Y-m-d H:i:s"),
+								'order_done'	=> NULL,
+								'order_time'	=> 0,
+								'done_by'		=> '',
+								'created'		=>	date('Y-m-d H:i:s'),
+								'createdby'		=>	$session_user,
+								'updated'		=>	date('Y-m-d H:i:s'),
+								'updatedby'		=>	$session_user
+							);
+						}
+					}
+					
+					if(!empty($new_det_timer)){
+						$this->db->insert_batch($this->billing_detail_timer, $new_det_timer);
+					}
+					
+				}
+				
+				if($is_void_order == 0){
+					die();
+				}
 				
 			}else{
 				$r = array('success' => false, 'info' => 'Load Detail Failed, data not found!');
@@ -5049,30 +6433,38 @@ class BillingCashier extends MY_Controller {
 		
 		$cutting_only = $this->input->post('cutting_only', true);
 		
-		$get_opt = get_option_value(array('printer_ip_'.$printSetting.'_default',
-		'printer_ip_'.$printSetting.'_'.$ip_addr,
-		'printer_tipe_'.$printSetting.'_default',
-		'printer_tipe_'.$printSetting.'_'.$ip_addr));
+		$get_opt = get_option_value(array(
+			'printer_id_'.$printSetting.'_default',
+			'printer_id_'.$printSetting.'_'.$ip_addr
+		));
 		
-		if($get_opt == false){
-			$r = array('success' => false, 'info' => 'IP: '.$ip_addr.' cant print to '.$printer_device.'!', 'ip_addr' => $ip_addr, 'printer_ip' => $printer_device);
+		//ID Printer ----------------------
+		$printer_id_test = $get_opt['printer_id_'.$printSetting.'_default'];
+		if(!empty($get_opt['printer_id_'.$printSetting.'_'.$ip_addr])){
+			$printer_id_test = $get_opt['printer_id_'.$printSetting.'_'.$ip_addr];
+		}
+
+		//GET PRINTER DATA
+		$this->db->from($this->prefix.'printer');		
+		$this->db->where("id", $printer_id_test);		
+		$get_printer = $this->db->get();
+
+		$data_printer = array();
+		if($get_printer->num_rows() > 0){
+			$data_printer = $get_printer->row_array();
+		}else{
+			$r = array('success' => false, 'info' => 'IP: '.$ip_addr.' cant print '.$printSetting, 'ip_addr' => $ip_addr);
 			echo json_encode($r);
 			die();
-		}
-		
-		$printer_device = "\\\\".$ip_addr."\\".$get_opt['printer_ip_'.$printSetting.'_default'];
-		if(!empty($get_opt['printer_ip_'.$printSetting.'_'.$ip_addr])){
-			$printer_device = $get_opt['printer_ip_'.$printSetting.'_'.$ip_addr];
-			
-			if(strstr($printer_device, '\\')){
-				$printer_device = "\\\\".$printer_device;
-			}
 		}	
 		
-		$printer_tipe = $get_opt['printer_tipe_'.$printSetting.'_default'];
-		if(!empty($get_opt['printer_tipe_'.$printSetting.'_'.$ip_addr])){
-			$printer_tipe = $get_opt['printer_tipe_'.$printSetting.'_'.$ip_addr];
+		$printer_device = $data_printer['printer_ip'];			
+		if(strstr($printer_device, '\\')){
+			$printer_device = "\\\\".$printer_device;
 		}	
+
+		$printer_pin = $data_printer['printer_pin'];
+		$printer_tipe = $data_printer['printer_tipe'];
 		
 		$print_content = " TEST: ".$printSetting."\n TO PRINTER: ".$printer_device."\n FROM IP ".$ip_addr;
 		if($cutting_only == true){
@@ -5080,37 +6472,38 @@ class BillingCashier extends MY_Controller {
 		}
 		
 		$is_print_error = false;
-		//$ph = @printer_open($printer_device);
-		//die($do_print);
 		
-		try {
-			$ph = printer_open($printer_device);
-		} catch (Exception $e) {
-			$ph = false;
-		}
-		
-		if($ph)
-		{
-			printer_start_doc($ph, "TEST PRINTER ".ucwords($printSetting));
-			printer_start_page($ph);
-			printer_set_option($ph, PRINTER_MODE, "RAW");
-			printer_write($ph, $print_content);
-			printer_end_page($ph);
-			printer_end_doc($ph);
-			printer_close($ph);
+		if($data_printer['print_method'] == 'ESC/POS'){
+			try {
+				$ph = printer_open($printer_device);
+			} catch (Exception $e) {
+				$ph = false;
+			}
 			
-		}else{
-			$is_print_error = true;
+			if($ph)
+			{
+				printer_start_doc($ph, "TEST PRINTER ".ucwords($printSetting));
+				printer_start_page($ph);
+				printer_set_option($ph, PRINTER_MODE, "RAW");
+				printer_write($ph, $print_content);
+				printer_end_page($ph);
+				printer_end_doc($ph);
+				printer_close($ph);
+				
+			}else{
+				$is_print_error = true;
+			}
+			
+			if($is_print_error){					
+				$r['info'] .= 'Communication with Printer Cashier Failed!<br/>';
+				printing_process_error($r['info']);
+				die();
+			}
 		}
 		
-		if($is_print_error){
-			$r = array('success' => false, 'info' => 'Communication with Printer Failed!', 'printer_ip' => $printer_device);
-		}else{
-			$r = array('success' => true, 'printer_tipe' => $printer_tipe, 'printSetting' => $printSetting, 'printer_ip' => $printer_device);
-		}
+				
+		printing_process($data_printer, $print_content, 'print');
 		
-		echo json_encode($r);
-		die();
 	}
 	
 	public function loadingSetting(){
@@ -5539,6 +6932,7 @@ class BillingCashier extends MY_Controller {
 		$cashierReceipt_settlement_layout = $this->input->post('cashierReceipt_settlement_layout', true);	
 		$cashierReceipt_openclose_layout = $this->input->post('cashierReceipt_openclose_layout', true);	
 		$cashierReceipt_bagihasil_layout = $this->input->post('cashierReceipt_bagihasil_layout', true);	
+		$reservationReceipt_layout = $this->input->post('reservationReceipt_layout', true);	
 		$qcReceipt_layout = $this->input->post('qcReceipt_layout', true);	
 		$kitchenReceipt_layout = $this->input->post('kitchenReceipt_layout', true);	
 		$barReceipt_layout = $this->input->post('barReceipt_layout', true);	
@@ -5546,7 +6940,7 @@ class BillingCashier extends MY_Controller {
 		
 		$r = array('success' => false);
 		
-		if($wepos_tipe != 'retail'){
+		//if($wepos_tipe != 'retail'){
 			$data_options = array(
 				'cashierReceipt_layout' => $cashierReceipt_layout,
 				'cashierReceipt_layout_footer' => $cashierReceipt_layout_footer,
@@ -5554,6 +6948,7 @@ class BillingCashier extends MY_Controller {
 				'cashierReceipt_settlement_layout' => $cashierReceipt_settlement_layout,
 				'cashierReceipt_openclose_layout' => $cashierReceipt_openclose_layout,
 				'cashierReceipt_bagihasil_layout' => $cashierReceipt_bagihasil_layout,
+				'reservationReceipt_layout' => $reservationReceipt_layout,
 				'qcReceipt_layout' => $qcReceipt_layout,
 				'kitchenReceipt_layout' => $kitchenReceipt_layout,
 				'barReceipt_layout' => $barReceipt_layout,
@@ -5570,13 +6965,15 @@ class BillingCashier extends MY_Controller {
 					"cashierReceipt_settlement_layout" => $cashierReceipt_settlement_layout, 
 					"cashierReceipt_openclose_layout" => $cashierReceipt_openclose_layout, 
 					"cashierReceipt_bagihasil_layout" => $cashierReceipt_bagihasil_layout, 
+					"reservationReceipt_layout" => $reservationReceipt_layout, 
 					"qcReceipt_layout" => $qcReceipt_layout, 
 					"kitchenReceipt_layout" => $kitchenReceipt_layout, 
 					"barReceipt_layout" => $barReceipt_layout, 
 					"otherReceipt_layout" => $otherReceipt_layout
 				);
 			}
-		}else{
+		
+		/*}else{
 			$data_options = array(
 				'cashierReceipt_layout' => $cashierReceipt_layout,
 				'cashierReceipt_layout_footer' => $cashierReceipt_layout_footer,
@@ -5584,6 +6981,7 @@ class BillingCashier extends MY_Controller {
 				'cashierReceipt_settlement_layout' => $cashierReceipt_settlement_layout,
 				'cashierReceipt_openclose_layout' => $cashierReceipt_openclose_layout,
 				'cashierReceipt_bagihasil_layout' => $cashierReceipt_bagihasil_layout
+				'reservationReceipt_layout' => $reservationReceipt_layout
 			);
 			
 			//UPDATE OPTIONS
@@ -5596,9 +6994,10 @@ class BillingCashier extends MY_Controller {
 					"cashierReceipt_settlement_layout" => $cashierReceipt_settlement_layout, 
 					"cashierReceipt_openclose_layout" => $cashierReceipt_openclose_layout, 
 					"cashierReceipt_bagihasil_layout" => $cashierReceipt_bagihasil_layout
+					"reservationReceipt_layout" => $reservationReceipt_layout
 				);
 			}
-		}
+		}*/
 		
 		die(json_encode($r));
 	}
@@ -5621,6 +7020,7 @@ class BillingCashier extends MY_Controller {
 			'cashierReceipt_settlement_layout', 
 			'cashierReceipt_openclose_layout', 
 			'cashierReceipt_bagihasil_layout', 
+			'reservationReceipt_layout', 
 			'qcReceipt_layout', 
 			'kitchenReceipt_layout', 
 			'barReceipt_layout', 
@@ -5648,6 +7048,9 @@ class BillingCashier extends MY_Controller {
 		}
 		if(!empty($get_opt['cashierReceipt_bagihasil_layout'])){
 			$retValue['cashierReceipt_bagihasil_layout']  = $get_opt['cashierReceipt_bagihasil_layout'];
+		}
+		if(!empty($get_opt['reservationReceipt_layout'])){
+			$retValue['reservationReceipt_layout']  = $get_opt['reservationReceipt_layout'];
 		}
 		if(!empty($get_opt['qcReceipt_layout'])){
 			$retValue['qcReceipt_layout']  = $get_opt['qcReceipt_layout'];
@@ -5677,9 +7080,22 @@ class BillingCashier extends MY_Controller {
 		}
 		
 		$this->table = $this->prefix.'billing';		
+		$this->table_detail = $this->prefix.'billing_detail';		
 		$this->table_inv = $this->prefix.'table_inventory';		
+		$this->table_master = $this->prefix.'table';		
 		$billing_id = $this->input->post('billing_id', true);
 		$table_id = $this->input->post('table_id', true);
+		$is_block_table = $this->input->post('is_block_table', true);
+		$is_all_takeaway = $this->input->post('is_all_takeaway', true);
+		$is_delete = $this->input->post('is_delete', true);
+		$set_default = $this->input->post('set_default', true);
+		
+		if(empty($is_block_table)){
+			$is_block_table = 0;
+		}
+		if(empty($is_all_takeaway)){
+			$is_all_takeaway = 0;
+		}
 		
 		$r = array('success' => false);
 		
@@ -5701,65 +7117,206 @@ class BillingCashier extends MY_Controller {
 			);
 			$is_closing = is_closing($var_closing);
 			if($is_closing){
-				$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+				$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 				die(json_encode($r));
 			}
-			
-			$data_table = array(
-				'table_id' => $table_id
-			);
-					
-			//UPDATE OPTIONS
-			$this->db->update($this->table, $data_table, "id = '".$billing_id."'");
-			
 			
 			//INV
 			$date_today = date("Y-m-d");
 			$date_time_today = date("Y-m-d H:i:s");
 			
-			//clear inv $billingData->billing_no
-			if($billingData->table_id != $table_id){
+			if(!empty($is_delete)){
 				$data_table = array(
 					'status' => 'available',
 					'billing_no' => '',
 					'updated' => $date_time_today,
 					'updatedby' => $session_user
 				);
-				$this->db->update($this->table_inv, $data_table, "billing_no = '".$billingData->billing_no."' AND tanggal = '".$date_today."'");
-			}
-			
-			
-			//echo '<pre>';
-			//print_r($billingData);
-			//$r = array('success' => false, 'data' => $billingData );
-			//die(json_encode($r));
-					
-			//UPDATE OPTIONS
-			$this->db->where("table_id = '".$table_id."' AND tanggal = '".$date_today."'");
-			$get_inv = $this->db->get($this->table_inv);
-			if($get_inv->num_rows() > 0){
-				$data_table = array(
-					'status' => 'booked',
-					'billing_no' => $billingData->billing_no,
-					'updated' => $date_time_today,
-					'updatedby' => $session_user
-				);
-				$this->db->update($this->table_inv, $data_table, "table_id = '".$table_id."' AND tanggal = '".$date_today."'");
+				$this->db->update($this->table_inv, $data_table, "billing_no = '".$billingData->billing_no."' AND  table_id = '".$table_id."' AND tanggal = '".$date_today."'");
+				
+				$r = array('success' => true, 'set_default' => 0);
+				
 			}else{
-				$data_table = array(
-					'status' => 'booked',
-					'table_id' => $table_id,
-					'billing_no' => $billingData->billing_no,
-					'tanggal' => $date_today,
-					'created' => $date_time_today,
-					'createdby' => $session_user,
-					'updated' => $date_time_today,
-					'updatedby' => $session_user
-				);
-				$this->db->insert($this->table_inv, $data_table);
+				
+				if(empty($set_default)){
+					if(empty($is_block_table)){
+						$data_table = array(
+							'table_id' => $table_id,
+							'block_table' => 0
+						);
+								
+						//UPDATE OPTIONS
+						$this->db->update($this->table, $data_table, "id = '".$billing_id."'");
+					
+					
+						//clear inv $billingData->billing_no
+						if($billingData->table_id != $table_id){
+							$data_table = array(
+								'status' => 'available',
+								'billing_no' => '',
+								'updated' => $date_time_today,
+								'updatedby' => $session_user
+							);
+							$this->db->update($this->table_inv, $data_table, "billing_no = '".$billingData->billing_no."' AND tanggal = '".$date_today."'");
+						}
+					}else{
+						$data_table = array(
+							'block_table' => 1
+						);
+								
+						//UPDATE OPTIONS
+						$this->db->update($this->table, $data_table, "id = '".$billing_id."'");
+					}
+				
+				
+					//echo '<pre>';
+					//print_r($billingData);
+					//$r = array('success' => false, 'data' => $billingData );
+					//die(json_encode($r));
+							
+					//UPDATE OPTIONS
+					$this->db->where("table_id = '".$table_id."' AND tanggal = '".$date_today."'");
+					$get_inv = $this->db->get($this->table_inv);
+					if($get_inv->num_rows() > 0){
+						$data_table = array(
+							'status' => 'booked',
+							'billing_no' => $billingData->billing_no,
+							'updated' => $date_time_today,
+							'updatedby' => $session_user
+						);
+						$this->db->update($this->table_inv, $data_table, "table_id = '".$table_id."' AND tanggal = '".$date_today."'");
+					}else{
+						$data_table = array(
+							'status' => 'booked',
+							'table_id' => $table_id,
+							'billing_no' => $billingData->billing_no,
+							'tanggal' => $date_today,
+							'created' => $date_time_today,
+							'createdby' => $session_user,
+							'updated' => $date_time_today,
+							'updatedby' => $session_user
+						);
+						$this->db->insert($this->table_inv, $data_table);
+					}
+					
+				}else{
+					if(!empty($is_block_table)){
+						$data_table = array(
+							'block_table' => 1,
+							//'table_id' => $table_id,
+						);
+								
+						//UPDATE OPTIONS
+						$this->db->update($this->table, $data_table, "id = '".$billing_id."'");
+						
+						//UPDATE OPTIONS
+						$this->db->where("table_id = '".$table_id."' AND tanggal = '".$date_today."'");
+						$get_inv = $this->db->get($this->table_inv);
+						if($get_inv->num_rows() > 0){
+							$data_table = array(
+								'status' => 'booked',
+								'billing_no' => $billingData->billing_no,
+								'updated' => $date_time_today,
+								'updatedby' => $session_user
+							);
+							$this->db->update($this->table_inv, $data_table, "table_id = '".$table_id."' AND tanggal = '".$date_today."'");
+						}else{
+							$data_table = array(
+								'status' => 'booked',
+								'table_id' => $table_id,
+								'billing_no' => $billingData->billing_no,
+								'tanggal' => $date_today,
+								'created' => $date_time_today,
+								'createdby' => $session_user,
+								'updated' => $date_time_today,
+								'updatedby' => $session_user
+							);
+							$this->db->insert($this->table_inv, $data_table);
+						}
+					}
+				}	
+				
+				$r = array('success' => true, 'set_default' => 0);
 			}
 			
-			$r = array('success' => true );
+			if(($billingData->table_id == $table_id AND $is_delete == 1) OR empty($billingData->table_id) OR !empty($set_default)){
+				//ganti default
+				$table_id_default = 0;
+				$table_no_default = '';
+				
+				$this->db->select("a.id,a.table_id, b.table_no");
+				$this->db->from($this->table_inv.' as a');
+				$this->db->join($this->table_master.' as b',"b.id = a.table_id","LEFT");
+				$this->db->where("a.billing_no = '".$billingData->billing_no."' AND a.tanggal = '".$date_today."'");
+				
+				if(!empty($set_default)){
+					$this->db->where("a.table_id = '".$table_id."'");
+				}
+				
+				$this->db->order_by("a.updated","ASC");
+				$get_inv = $this->db->get();
+				if($get_inv->num_rows() > 0){
+					$get_table_id = $get_inv->row();
+					$table_id_default = $get_table_id->table_id;
+					$table_no_default = $get_table_id->table_no;
+					
+					$data_table = array(
+						'table_id' => $table_id_default,
+						'table_no' => $table_no_default,
+					);
+							
+					//UPDATE OPTIONS
+					$this->db->update($this->table, $data_table, "id = '".$billing_id."'");
+					
+				}
+				
+				$r = array('success' => true, 'set_default' => 1, 'table_id' => $table_id_default, 'table_no' => $table_no_default);
+			
+			}
+			
+			if(empty($is_block_table) AND (!empty($billing_id) OR !empty($set_default))){
+				$get_opt_var = array('takeaway_no_tax','takeaway_no_service','set_ta_table_ta');
+				$get_opt = get_option_value($get_opt_var);
+				
+				$set_ta_table_ta = 0;
+				if(!empty($get_opt['set_ta_table_ta'])){
+					$set_ta_table_ta = $get_opt['set_ta_table_ta'];
+				}
+				
+				$takeaway_no_tax = 0;
+				if(!empty($get_opt['takeaway_no_tax'])){
+					$takeaway_no_tax = $get_opt['takeaway_no_tax'];
+				}
+				
+				$takeaway_no_service = 0;
+				if(!empty($get_opt['takeaway_no_service'])){
+					$takeaway_no_service = $get_opt['takeaway_no_service'];
+				}
+				
+				if($set_ta_table_ta == 1){
+					
+					//update 2018-02-25
+					if(!empty($is_all_takeaway)){
+						$data_takeaway = array(
+							'is_takeaway' => 1,
+							'takeaway_no_tax' => $takeaway_no_tax,
+							'takeaway_no_service' => $takeaway_no_service,
+						);
+					}else{
+						$data_takeaway = array(
+							'is_takeaway' => 0,
+							'takeaway_no_tax' => 0,
+							'takeaway_no_service' => 0,
+						);
+					}
+					
+					$this->db->update($this->table_detail, $data_takeaway, "billing_id = '".$billing_id."' AND is_deleted = 0");
+					
+				}
+				
+				$r['is_all_takeaway'] = $is_all_takeaway; 
+			}
+			
 		}
 		
 		die(json_encode($r));
@@ -5804,7 +7361,7 @@ class BillingCashier extends MY_Controller {
 			);
 			$is_closing = is_closing($var_closing);
 			if($is_closing){
-				$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+				$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 				die(json_encode($r));
 			}
 					
@@ -5889,7 +7446,7 @@ class BillingCashier extends MY_Controller {
 			);
 			$is_closing = is_closing($var_closing);
 			if($is_closing){
-				$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+				$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 				die(json_encode($r));
 			}
 			
@@ -6173,7 +7730,7 @@ class BillingCashier extends MY_Controller {
 			);
 			$is_closing = is_closing($var_closing);
 			if($is_closing){
-				$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+				$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 				die(json_encode($r));
 			}
 			
@@ -6451,7 +8008,7 @@ class BillingCashier extends MY_Controller {
 			);
 			$is_closing = is_closing($var_closing);
 			if($is_closing){
-				$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+				$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 				die(json_encode($r));
 			}
 			
@@ -6528,15 +8085,18 @@ class BillingCashier extends MY_Controller {
 		$discount_percentage = $this->input->post('discount_percentage', true);
 		$discount_price = $this->input->post('discount_price', true);
 		$discount_total = $this->input->post('discount_total', true);
+		$discount_total_post = $this->input->post('discount_total', true);
 		$discount_perbilling = $this->input->post('discount_perbilling', true);
 		$voucher_no = $this->input->post('voucher_no', true);
 		$detail_id = $this->input->post('detail_id', true);
 		$is_sistem_tawar = $this->input->post('is_sistem_tawar', true);
+		$clearFirst = $this->input->post('clearFirst', true);
 		
 		//check billing
 		$billingData = array();
 		if(!empty($billing_id)){
-			$this->db->select("total_billing, created, include_tax, include_service, tax_percentage, service_percentage,
+			$this->db->select("total_billing, created, include_tax, include_service, 
+						tax_percentage, service_percentage, tax_total, service_total, 
 						takeaway_no_tax, takeaway_no_service, is_compliment, billing_no");
 			$this->db->from($this->table);
 			$this->db->where("id", $billing_id);
@@ -6553,7 +8113,7 @@ class BillingCashier extends MY_Controller {
 		);
 		$is_closing = is_closing($var_closing);
 		if($is_closing){
-			$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 			die(json_encode($r));
 		}
 		
@@ -6744,7 +8304,7 @@ class BillingCashier extends MY_Controller {
 							
 							//BILLING
 							if($data_diskon->discount_type == 1 AND $diskon_sebelum_pajak_service == 0){
-								$allow_discount = false;
+								//$allow_discount = false;
 							}
 							
 							if($data_diskon->min_total_billing > 0){
@@ -6784,18 +8344,34 @@ class BillingCashier extends MY_Controller {
 									//weekday
 									if($today_in_no >= 1 AND $today_in_no <= 5){
 										$allow_discount = true;
+									}else{
+										$r = array('success' => false, 'info' => 'Diskon Hanya bisa digunakan saat Weekday');
+										die(json_encode($r));
 									}
 								}else
 								if($data_diskon->discount_allow_day == 9){
 									//weekend
 									if($today_in_no >= 6 AND $today_in_no <= 7){
 										$allow_discount = true;
+									}else{
+										$r = array('success' => false, 'info' => 'Diskon Hanya bisa digunakan saat Weekend');
+										die(json_encode($r));
 									}
 								}
-							}							
+							}		
+		
+							$use_disc_product = 0;
+							if(!empty($allow_diskon_product)){
+								if(in_array($dt->product_id, $allow_diskon_product)){
+									$use_disc_product = 1;
+									$allow_discount = true;
+								}else{
+									$allow_discount = false;
+								}
+							}						
 							
 							if($allow_discount == true){
-								
+							
 								$allowed_time = true;
 								if($data_diskon->use_discount_time == 1){
 									
@@ -6817,6 +8393,9 @@ class BillingCashier extends MY_Controller {
 									
 									if($time_now >= $time_from_mk AND $time_now <= $time_till_mk){
 										$allowed_time = true;
+									}else{
+										$r = array('success' => false, 'info' => 'Waktu Penggunaan Diskon tidak sesuai!<br/>Diskon Berlaku Jam: '.$data_diskon->discount_time_start.' s/d '.$data_diskon->discount_time_end);
+										die(json_encode($r));
 									}
 									
 									//echo "allowed_time=".$allowed_time.", $time_from_mk=".$time_from_mk.", $time_till_mk=".$time_till_mk.", $time_now=".$time_now;
@@ -6825,31 +8404,75 @@ class BillingCashier extends MY_Controller {
 								}
 								
 								if($allowed_time){
-									
-									$s['discount_id'] = $discount_id;
-									
-									$discount_percentage_item = $data_diskon->discount_percentage;
-									$discount_price_item = $data_diskon->discount_price;
-									
-									if($data_diskon->discount_percentage == '0.00'){
-										$data_diskon->discount_percentage = 0;
-									}
-									
-									//BILLING
-									if($data_diskon->discount_type == 1 AND $diskon_sebelum_pajak_service == 1){
-										$persentase_item = ($product_price_real*$order_qty)/$billingData->total_billing;
+								
+									$allowed_time = true;
+									if($data_diskon->use_discount_time == 1){
 										
-										if(!empty($data_diskon->discount_percentage)){
-											$discount_percentage_item = $persentase_item*$data_diskon->discount_percentage;
-										}else{
-											$discount_price_item = $persentase_item*$data_diskon->discount_price;
-											$discount_price_item = priceFormat($discount_price_item/$order_qty, 0, ".", "");
+										$allowed_time = false;
+										
+										if($data_diskon->discount_time_end == '12:00 AM'){
+											$data_diskon->discount_time_end = '11:59 PM';
 										}
+										
+										$time_from = date("d-m-Y")." ".$data_diskon->discount_time_start;
+										$time_till = date("d-m-Y")." ".$data_diskon->discount_time_end;
+										
+										$time_from_mk = strtotime($time_from);
+										$time_till_mk = strtotime($time_till);
+										
+										$time_now = strtotime(date("d-m-Y H:i:s"));
+										
+										
+										
+										if($time_now >= $time_from_mk AND $time_now <= $time_till_mk){
+											$allowed_time = true;
+										}else{
+											$r = array('success' => false, 'info' => 'Waktu Penggunaan Diskon tidak sesuai!<br/>Diskon Berlaku Jam: '.$data_diskon->discount_time_start.' s/d '.$data_diskon->discount_time_end);
+											die(json_encode($r));
+										}
+										
+										//echo "allowed_time=".$allowed_time.", $time_from_mk=".$time_from_mk.", $time_till_mk=".$time_till_mk.", $time_now=".$time_now;
+										//die();
+										
 									}
 									
-									//if($data_diskon->discount_product == 1){
-									if(!empty($allow_diskon_product)){
-										if(in_array($dt->product_id, $allow_diskon_product)){
+									if($allowed_time){
+										
+										$s['discount_id'] = $discount_id;
+										
+										$discount_percentage_item = $data_diskon->discount_percentage;
+										$discount_price_item = $data_diskon->discount_price;
+										
+										if($data_diskon->discount_percentage == '0.00'){
+											$data_diskon->discount_percentage = 0;
+										}
+									
+										
+										if(empty($discount_total_perbilling)){
+											$discount_total_perbilling = $discount_total_post;
+										}
+										if(empty($jumlah_total_diskon_peritem)){
+											$jumlah_total_diskon_peritem = 0;
+										}
+										
+										if($diskon_sebelum_pajak_service == 0){
+											//AFTER TAX
+											if($billingData->include_tax == 1 AND $billingData->include_service == 1){
+												$discount_total_perbilling = ($data_diskon->discount_percentage/100) * ($billingData->total_billing+$billingData->tax_total+$billingData->service_total);
+											}
+											
+											if($billingData->include_tax == 1){
+												$discount_total_perbilling = ($data_diskon->discount_percentage/100) * ($billingData->total_billing+$billingData->service_total);
+											}
+											
+											if($billingData->include_service == 1){
+												$discount_total_perbilling = ($data_diskon->discount_percentage/100) * ($billingData->total_billing+$billingData->tax_total);
+											}
+											$discount_total_perbilling = priceFormat($discount_total_perbilling, 0, ".", "");
+										}
+										
+										if($data_diskon->discount_type == 0 OR $use_disc_product == 1){
+										
 											//all
 											if(!empty($data_diskon->discount_percentage)){
 												$s['discount_notes'] = $data_diskon->discount_name;
@@ -6857,36 +8480,81 @@ class BillingCashier extends MY_Controller {
 												$product_price_discount = priceFormat(($discount_percentage_item / 100) * $product_price_real, 0, ".", "");
 												$s['discount_price'] = $product_price_discount;
 												$s['discount_total'] = $product_price_discount * $order_qty;
-												//$s['status_discount'] = 1;
 											}else
 											if(!empty($data_diskon->discount_price)){
 												$s['discount_notes'] = $data_diskon->discount_name;
 												$s['discount_percentage'] = 0;
-												//$product_price_discount = priceFormat($product_price_real - $discount_price_item, 0, ".", "");
 												$s['discount_price'] = $discount_price_item;
 												$s['discount_total'] = $discount_price_item * $order_qty;
-												//$s['status_discount'] = 1;
 											}
-										}else{
 											
-										}
-									}else{
-										//all
-										if(!empty($data_diskon->discount_percentage)){
-											$s['discount_notes'] = $data_diskon->discount_name;
-											$s['discount_percentage'] = $discount_percentage_item;
-											$product_price_discount = priceFormat(($discount_percentage_item / 100) * $product_price_real, 0, ".", "");
-											$s['discount_price'] = $product_price_discount;
-											$s['discount_total'] = $product_price_discount * $order_qty;
-											//$s['status_discount'] = 1;
 										}else
-										if(!empty($data_diskon->discount_price)){
-											$s['discount_notes'] = $data_diskon->discount_name;
-											$s['discount_percentage'] = 0;
-											//$product_price_discount = priceFormat($product_price_real - $discount_price_item, 0, ".", "");
-											$s['discount_price'] = $discount_price_item;
-											$s['discount_total'] = $discount_price_item * $order_qty;
-											//$s['status_discount'] = 1;
+										if($data_diskon->discount_type == 1){
+											
+											//PER-BILLING-------------------------------
+											if($diskon_sebelum_pajak_service == 1){
+												$total_billing_real = $billingData->total_billing - ($billingData->tax_total+$billingData->service_total);
+												$persentase_item = ($product_price_real*$order_qty)/$total_billing_real;
+												
+												if(!empty($data_diskon->discount_percentage)){
+													$discount_price_item = $product_price_real*($data_diskon->discount_percentage/100);
+													$discount_price_item = priceFormat($discount_price_item, 0, ".", "");
+													$s['discount_notes'] = $data_diskon->discount_name;
+													$s['discount_percentage'] = $discount_percentage_item;
+													$s['discount_price'] = $discount_price_item;
+													$s['discount_total'] = $discount_price_item * $order_qty;
+												}else{
+													$discount_price_item = $persentase_item*$data_diskon->discount_price;
+													$discount_price_item = priceFormat($discount_price_item, 0, ".", "");
+													
+													if($order_qty > 1){
+														$discount_price_item = ($discount_price_item/$order_qty);
+													}
+													
+													$s['discount_notes'] = $data_diskon->discount_name;
+													$s['discount_percentage'] = 0;
+													$s['discount_price'] = $discount_price_item;
+													$s['discount_total'] = $discount_price_item * $order_qty;
+												}
+												
+											}else
+											if($data_diskon->discount_type == 1 AND $diskon_sebelum_pajak_service == 0){
+												
+												$persentase_item = ($product_price_real*$order_qty)/$billingData->total_billing;
+												
+												if(!empty($data_diskon->discount_percentage)){
+													$discount_price_item = $persentase_item*$discount_total_perbilling;
+													$discount_price_item = priceFormat($discount_price_item, 0, ".", "");
+													
+													if($order_qty > 1){
+														$discount_price_item = ($discount_price_item/$order_qty);
+													}
+													
+													$s['discount_notes'] = $data_diskon->discount_name;
+													$s['discount_percentage'] = $discount_percentage_item;
+													$s['discount_price'] = $discount_price_item;
+													$s['discount_total'] = $discount_price_item * $order_qty;
+												}else{
+													$discount_price_item = $persentase_item*$data_diskon->discount_price;
+													$discount_price_item = priceFormat($discount_price_item, 0, ".", "");
+													$s['discount_notes'] = $data_diskon->discount_name;
+													$s['discount_percentage'] = 0;
+													$s['discount_price'] = $discount_price_item;
+													$s['discount_total'] = $discount_price_item * $order_qty;
+												}
+												
+											}
+											
+											$discount_price_item = priceFormat($discount_price_item, 0, ".", "");
+											
+											$jumlah_total_diskon_peritem += $discount_price_item;
+											
+											if(($discount_total_perbilling-$jumlah_total_diskon_peritem) <= 0){
+												$selisih = ($discount_total_perbilling-$jumlah_total_diskon_peritem);
+												$discount_price_item = $discount_price_item - $selisih;
+												$jumlah_total_diskon_peritem = $discount_total_perbilling;
+											}
+											
 										}
 								
 									}
@@ -6906,9 +8574,14 @@ class BillingCashier extends MY_Controller {
 			
 			if(!empty($data_diskon)){
 				
-				if($data_diskon->discount_type == 1 AND !empty($data_diskon->discount_price)){
+				//if($data_diskon->discount_type == 1 AND !empty($data_diskon->discount_price)){
+				if($data_diskon->discount_type == 1){
 					
-					$discount_total = $data_diskon->discount_price;
+					if(empty($discount_total_perbilling)){
+						$discount_total_perbilling = $discount_total_post;
+					}
+					
+					$discount_total = $discount_total_perbilling;
 					
 				}else{
 					
@@ -6919,6 +8592,7 @@ class BillingCashier extends MY_Controller {
 					
 				}
 				
+				
 				if($data_diskon->discount_percentage == 0 AND $data_diskon->discount_price > 0){
 					$data_diskon->discount_max_price = $data_diskon->discount_price;
 				}
@@ -6928,6 +8602,7 @@ class BillingCashier extends MY_Controller {
 						$discount_total = $data_diskon->discount_max_price;
 					}
 				}
+				
 			}
 			
 			if(!empty($update_detail)){
@@ -7051,7 +8726,7 @@ class BillingCashier extends MY_Controller {
 		);
 		$is_closing = is_closing($var_closing);
 		if($is_closing){
-			$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 			die(json_encode($r));
 		}
 		
@@ -7504,7 +9179,7 @@ class BillingCashier extends MY_Controller {
 		);
 		$is_closing = is_closing($var_closing);
 		if($is_closing){
-			$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 			die(json_encode($r));
 		}
 		
@@ -7541,7 +9216,8 @@ class BillingCashier extends MY_Controller {
 		$update_billing = $this->calculateBilling($main_billing_id);
 		
 		//SET STATUS TABLE
-		if(!empty($all_table_id) AND $wepos_tipe != 'retail'){
+		//if(!empty($all_table_id) AND $wepos_tipe != 'retail'){
+		if(!empty($all_table_id)){
 			$all_table_id_txt = implode(",", $all_table_id);
 			$data_status_table = array(
 				'status' => 'booked',
@@ -7584,7 +9260,7 @@ class BillingCashier extends MY_Controller {
 		);
 		$is_closing = is_closing($var_closing);
 		if($is_closing){
-			$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 			die(json_encode($r));
 		}
 		
@@ -7853,7 +9529,7 @@ class BillingCashier extends MY_Controller {
 		);
 		$is_closing = is_closing($var_closing);
 		if($is_closing){
-			$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 			die(json_encode($r));
 		}
 		
@@ -7939,7 +9615,7 @@ class BillingCashier extends MY_Controller {
 		);
 		$is_closing = is_closing($var_closing);
 		if($is_closing){
-			$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 			die(json_encode($r));
 		}
 			
@@ -8237,7 +9913,7 @@ class BillingCashier extends MY_Controller {
 		);
 		$is_closing = is_closing($var_closing);
 		if($is_closing){
-			$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 			die(json_encode($r));
 		}
 			
@@ -8439,7 +10115,7 @@ class BillingCashier extends MY_Controller {
 			);
 			$is_closing = is_closing($var_closing);
 			if($is_closing){
-				$r = array('success' => false, 'info' => 'Sales Date Been Closed!'); 
+				$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal tersebut sudah ditutup!'); 
 				die(json_encode($r));
 			}
 					
@@ -8527,57 +10203,90 @@ class BillingCashier extends MY_Controller {
 			'printer_ip_cashierReceipt_default',
 			'printer_pin_cashierReceipt_default',
 			'printer_tipe_cashierReceipt_default',
-			'printer_ip_cashierReceipt_'.$ip_addr,
-			'printer_pin_cashierReceipt_'.$ip_addr,
-			'printer_tipe_cashierReceipt_'.$ip_addr
+			'printer_id_cashierReceipt_default',
+			'printer_id_cashierReceipt_'.$ip_addr
 		);
 		$get_opt = get_option_value($opt_value);
 		
-		//Cashier Printer ----------------------
-		$printer_ip_cashierReceipt = "\\\\".$ip_addr."\\".$get_opt['printer_ip_cashierReceipt_default'];
-		if(!empty($get_opt['printer_ip_cashierReceipt_'.$ip_addr])){
-			$printer_ip_cashierReceipt = $get_opt['printer_ip_cashierReceipt_'.$ip_addr];			
-			if(strstr($printer_ip_cashierReceipt, '\\')){
-				$printer_ip_cashierReceipt = "\\\\".$printer_ip_cashierReceipt;
-			}			
-		}		
-		
-		if(empty($get_opt['cashierReceipt_settlement_layout'])){
-			$get_opt['cashierReceipt_settlement_layout'] = '';
+		//ID Printer ----------------------
+		$printer_id_cashierReceipt = $get_opt['printer_id_cashierReceipt_default'];
+		if(!empty($get_opt['printer_id_cashierReceipt_'.$ip_addr])){
+			$printer_id_cashierReceipt = $get_opt['printer_id_cashierReceipt_'.$ip_addr];
 		}
-		$cashierReceipt_settlement_layout = $get_opt['cashierReceipt_settlement_layout'];
-		//---------------------- Cashier Printer
+
+		//GET PRINTER DATA
+		$this->db->from($this->prefix.'printer');		
+		$this->db->where("id", $printer_id_cashierReceipt);		
+		$get_printer = $this->db->get();
+
+		$data_printer = array();
+		if($get_printer->num_rows() > 0){
+			$data_printer = $get_printer->row_array();
+		}else{
+			echo 'Printer Tidak Ditemukan!';
+			die();
+		}	
 		
-		$printer_pin_cashierReceipt = '42 CHAR';
-		if(!empty($get_opt['printer_pin_cashierReceipt_'.$ip_addr])){
-			$printer_pin_cashierReceipt = $get_opt['printer_pin_cashierReceipt_'.$ip_addr];
+		//update -- 2018-01-23
+		$printer_ip_cashierReceipt = $data_printer['printer_ip'];			
+		if(strstr($printer_ip_cashierReceipt, '\\')){
+			$printer_ip_cashierReceipt = "\\\\".$printer_ip_cashierReceipt;
+		}	
+
+		$printer_pin_cashierReceipt = $data_printer['printer_pin'];
+		$printer_type_cashier = $data_printer['printer_tipe'];
+
+		if(!empty($print_anywhere)){
+			$printer_type_cashier = $print_anywhere->printer_tipe;
+		}
+
+		$cashierReceipt_settlement_layout = $get_opt['cashierReceipt_settlement_layout'];
+		if(!empty($print_type)){
+			$cashierReceipt_settlement_layout = $get_opt['cashierReceipt_settlement_layout'];
+		}
+
+		$printer_pin_cashierReceipt = trim(str_replace("CHAR", "", $printer_pin_cashierReceipt));
+
+		$no_limit_text = false;
+		if($data_printer['print_method'] == 'ESC/POS'){
+			//$no_limit_text = false;
 		}
 		
 		//trim prod name
-		$max_text = 18;
-		
-		if($printer_pin_cashierReceipt == '32 CHAR'){
+		$max_text = 18; //44
+		$max_number_1 = 9;
+		$max_number_2 = 13;
+		$max_number_3 = 14;
+
+		if($printer_pin_cashierReceipt == 32){
 			$max_text -= 7;
+			$max_number_1 = 7;
+			$max_number_2 = 9;
+			$max_number_3 = 14;
 		}
-		if($printer_pin_cashierReceipt == '40 CHAR'){
-			$max_text -= 2;
+		if($printer_pin_cashierReceipt == 40){
+			$max_text -= 4;
+			$max_number_1 = 7;
+			$max_number_2 = 11;
+			$max_number_3 = 14;
 		}
-		if($printer_pin_cashierReceipt == '48 CHAR'){
-			$max_text += 6;
+		if($printer_pin_cashierReceipt == 42){
+			$max_text -= 3;
+			$max_number_1 = 9;
+			$max_number_2 = 13;
+			$max_number_3 = 14;
 		}
-		
-		//TYPE PRINTER
-		$printer_type_cashier = '';
-		$printer_tipe_cashierReceipt_default = '';
-		if(!empty($get_opt['printer_tipe_cashierReceipt_default'])){
-			$printer_tipe_cashierReceipt_default = $get_opt['printer_tipe_cashierReceipt_default'];
+		if($printer_pin_cashierReceipt == 46){
+			$max_text += 2;
+			$max_number_1 = 9;
+			$max_number_2 = 13;
+			$max_number_3 = 14;
 		}
-		if(!empty($get_opt['printer_tipe_cashierReceipt_'.$ip_addr])){
-			$printer_type_cashier = $get_opt['printer_tipe_cashierReceipt_'.$ip_addr];
-		}
-		
-		if(empty($printer_type_cashier)){
-			$printer_type_cashier = $printer_tipe_cashierReceipt_default;
+		if($printer_pin_cashierReceipt == 48){
+			$max_text += 4;
+			$max_number_1 = 9;
+			$max_number_2 = 13;
+			$max_number_3 = 14;
 		}
 		
 		//TOTAL BILLING - SSR
@@ -8592,6 +10301,8 @@ class BillingCashier extends MY_Controller {
 		
 		if(!empty($get_opt['diskon_sebelum_pajak_service'])){
 			$data_post['diskon_sebelum_pajak_service'] = $get_opt['diskon_sebelum_pajak_service'];
+		}else{
+			$data_post['diskon_sebelum_pajak_service'] = 0;
 		}
 		if(empty($get_opt['cashier_max_pembulatan'])){
 			$get_opt['cashier_max_pembulatan'] = 0;
@@ -8696,6 +10407,42 @@ class BillingCashier extends MY_Controller {
 					$all_bil_id[] = $s['id'];
 				}		
 				
+				$s['total_billing_awal'] = $s['total_billing'];
+					
+				//CHECK REAL TOTAL BILLING
+				if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+					if(!empty($s['include_tax']) AND !empty($s['include_service'])){
+					
+						if($data_post['diskon_sebelum_pajak_service'] == 1){
+							$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
+							$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+							$s['total_billing'] = $get_total_billing;
+						}else{
+							$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
+						}
+						
+					}else{
+						if(!empty($s['include_tax'])){
+							if($data_post['diskon_sebelum_pajak_service'] == 1){
+								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
+								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+								$s['total_billing'] = $get_total_billing;
+							}else{
+								$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
+							}
+						}
+						if(!empty($s['include_service'])){
+							if($data_post['diskon_sebelum_pajak_service'] == 1){
+								$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
+								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+								$s['total_billing'] = $get_total_billing;
+							}else{
+								$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
+							}
+						}
+					}
+				}
+				
 				if(!empty($s['is_compliment'])){
 					$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
 					$s['service_total'] = 0;
@@ -8707,6 +10454,27 @@ class BillingCashier extends MY_Controller {
 					$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];		
 				}else{
 					$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+					
+					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+						//CHECKING BALANCE #1
+						if(empty($s['discount_total'])){
+							if($s['sub_total'] != $s['total_billing_awal']){
+								$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
+								$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+							}
+						}else{
+							if(($s['sub_total'] + $s['total_pembulatan']) != $s['grand_total']){
+								$s['sub_total'] = ($s['grand_total']-$s['total_pembulatan'])+$s['compliment_total'];
+							}
+							
+							$cek_total_billing = $s['sub_total'] - ($s['tax_total'] + $s['service_total']) + $s['discount_total'];
+							if($s['total_billing'] != $cek_total_billing){
+								$s['total_billing'] = $cek_total_billing;
+							}
+						}
+					}
+					
+					
 					$s['net_sales'] = $s['total_billing'] - $s['discount_total'];
 				}
 				
@@ -8745,6 +10513,10 @@ class BillingCashier extends MY_Controller {
 				
 				if($s['total_pembulatan'] < 0){
 					$s['total_pembulatan_show'] = "(".priceFormat($s['total_pembulatan']).")";
+				}
+				
+				if(empty($s['net_sales'])){
+					$s['net_sales'] = 0;
 				}
 				
 				$s['sub_total_show'] = priceFormat($s['sub_total']);
@@ -8817,12 +10589,6 @@ class BillingCashier extends MY_Controller {
 						$s['payment_note'] .= $s['billing_notes'];
 					}
 				}
-				
-				//if($s['billing_no'] == '1601010055'){
-					//echo '<pre>';
-					//print_r($s);
-					//die();
-				//}
 				
 				$data_post['summary_data']['total_billing'] += $s['total_billing'];
 				$data_post['summary_data']['total_discount_item'] += $s['discount_total'];
@@ -9007,7 +10773,8 @@ class BillingCashier extends MY_Controller {
 		$menu_net_sales = printer_command_align_right(priceFormat($menu_net_sales_count), 11);
 		$disc_per_billing = printer_command_align_right(priceFormat($data_post['summary_data']['total_discount_billing']), 11);
 		
-		$total_net_sales_count = ($menu_net_sales_count-$data_post['summary_data']['total_discount_item']);
+		//$total_net_sales_count = ($menu_net_sales_count-$data_post['summary_data']['total_discount_item']);
+		$total_net_sales_count = $menu_net_sales_count - $data_post['summary_data']['total_discount_billing'];
 		$total_net_sales = printer_command_align_right(priceFormat($total_net_sales_count), 11);
 		
 		$service_total = printer_command_align_right(priceFormat($data_post['summary_data']['service_total']), 11);
@@ -9026,10 +10793,10 @@ class BillingCashier extends MY_Controller {
 		$all_summary_data .= "[align=0][tab]SERVICE[tab]".$service_total."\n"; 
 		$all_summary_data .= "[align=0][tab]TAX[tab]".$tax_total."\n"; 
 		$all_summary_data .= "[align=0][tab]PEMBULATAN[tab]".$total_pembulatan."\n"; 
-		$all_summary_data .= "[align=0][tab]TOTAL SALES[tab]".$grand_total; 
 		if(!empty($data_post['summary_data']['compliment_total'])){
 			$all_summary_data .= "\n[align=0][tab]COMPLIMENT[tab]".$compliment_total; 
 		}
+		$all_summary_data .= "[align=0][tab]TOTAL SALES[tab]".$grand_total; 
 		
 		
 		$all_payment_data = '';
@@ -9118,6 +10885,7 @@ class BillingCashier extends MY_Controller {
 		
 		
 		$print_attr = array(
+			"{user}"	=> $session_user,
 			"{tanggal_shift}"		=> date("d/m/Y"),
 			"{jam_shift}"			=> date("H:i"),
 			"{summary_data}"			=> $all_summary_data,
@@ -9127,46 +10895,363 @@ class BillingCashier extends MY_Controller {
 		$print_content_cashierReceipt = strtr($cashierReceipt_settlement_layout, $print_attr);
 		
 		
-		$print_content_cashierReceipt = replace_to_printer_command($print_content_cashierReceipt, $printer_type_cashier, $printer_pin_cashierReceipt);
+		$print_content = replace_to_printer_command($print_content_cashierReceipt, $printer_type_cashier, $printer_pin_cashierReceipt);
 		
 		$r = array('success' => false, 'info' => '', 'print' => array());
 		
-		//echo '<pre>';
-		//print_r($print_content_cashierReceipt);
-		//die();
+		//$r['print'][] = $print_content_cashierReceipt;
 		
-		
-		$r['print'][] = $print_content_cashierReceipt;
 		//DIRECT PRINT USING PHP - CASHIER PRINTER				
 		$is_print_error = false;
 		
-		try {
-			$ph = printer_open($printer_ip_cashierReceipt);
-		} catch (Exception $e) {
-			$ph = false;
+		if($data_printer['print_method'] == 'ESC/POS'){
+			try {
+				$ph = @printer_open($printer_ip_cashierReceipt);
+			} catch (Exception $e) {
+				$ph = false;
+			}
+			
+			//$ph = @printer_open($printer_ip_cashierReceipt);
+			
+			if($ph)
+			{	
+				printer_start_doc($ph, "CLOSE CASHIER - SETTLEMENT");
+				printer_start_page($ph);
+				printer_set_option($ph, PRINTER_MODE, "RAW");
+				printer_write($ph, $print_content);
+				printer_end_page($ph);
+				printer_end_doc($ph);
+				printer_close($ph);
+				$r['success'] = true;
+				
+			}else{
+				$is_print_error = true;
+			}
+			
+			if($is_print_error){					
+				$r['info'] = 'Communication with Printer Cashier Failed!<br/>';
+				printing_process_error($r['info']);
+				die();
+			}
 		}
 		
-		//$ph = @printer_open($printer_ip_cashierReceipt);
+				
+		printing_process($data_printer, $print_content_cashierReceipt, 'print');
 		
-		if($ph)
-		{	
-			printer_start_doc($ph, "CLOSE CASHIER - SETTLEMENT");
-			printer_start_page($ph);
-			printer_set_option($ph, PRINTER_MODE, "RAW");
-			printer_write($ph, $print_content_cashierReceipt);
-			printer_end_page($ph);
-			printer_end_doc($ph);
-			printer_close($ph);
-			$r['success'] = true;
+
+	}
+	
+	public function billingReservation(){
+		$this->table = $this->prefix.'billing';	
+		$this->table_billing_detail = $this->prefix.'billing_detail';	
+		$this->table_reservation = $this->prefix.'reservation';		
+		$this->table_reservation_detail = $this->prefix.'reservation_detail';		
+		$this->table_discount = $this->prefix.'discount';		
+		$this->table_product = $this->prefix.'product';		
+				
+		$date_now = date('Y-m-d H:i:s');
+		$session_user = $this->session->userdata('user_username');		
+		if(empty($session_user)){
+			$r = array('success' => false, 'info' => 'Sesi Login sudah habis, Silahkan Login ulang!');
+			echo json_encode($r);
+			die();
+		}
+		
+		$reservation_id = $this->input->post('reservation_id', true);
+		$reservation_number = $this->input->post('reservation_number', true);
+		if(empty($reservation_id)){
+			$r = array('success' => false, 'info' => 'Reservasi: '.$reservation_number.' tidak dikenali!'); 
+			die(json_encode($r));
+		}
+		
+		
+		//CLOSING DATE
+		$var_closing = array(
+			'xdate'	=> date("Y-m-d"),
+			'xtipe'	=> 'sales'
+		);
+		$is_closing = is_closing($var_closing);
+		if($is_closing){
+			$r = array('success' => false, 'info' => 'Transaksi Penjualan pada tanggal: '.date("Y-m-d").' sudah ditutup!'); 
+			die(json_encode($r));
+		}
+		
+		/*$get_no_billing = $this->generate_billing_no();
+		$r = array('success' => false, 'info' => 'User: '.$get_no_billing);
+		echo json_encode($r);
+		die();*/
+		
+		//hold_billing_id
+		$hold_billing_id = $this->input->post('hold_billing_id', true);
+		$table_id = $this->input->post('table_id', true);
+		$holdBilling = false;
+		if(!empty($hold_billing_id)){
+			
+			//CHECK IF BILLING IS NOT PAID
+			$this->db->select("b.id, b.id as billing_id, b.billing_no, b.billing_status");
+			$this->db->from($this->table." as b");
+			$this->db->where("b.id = ".$hold_billing_id);
+			//$this->db->where("b.billing_status = 'paid'");
+			$get_billing = $this->db->get();
+			if($get_billing->num_rows() > 0){
+				$billingData = $get_billing->row();
+			
+				if($billingData->billing_status == 'unpaid' OR $billingData->billing_status == 'hold'){
+					$holdBilling = $this->doHoldBilling($hold_billing_id);
+					if($holdBilling == false){
+						$r = array('success' => false, 'info' => 'Hold Billing Failed!');
+						echo json_encode($r);
+						die();
+					}
+				}
+				
+			}else{
+				$r = array('success' => false, 'info' => 'Billing Id: #'.$hold_billing_id.' Not Found!');
+				echo json_encode($r);
+				die();
+			}
+			
+			
+		}
+		
+		//LOAD reservation & res.detail
+		$this->db->select("a.*");
+		$this->db->from($this->table_reservation." as a");
+		$this->db->where("a.id = ".$reservation_id);
+		$get_reservation = $this->db->get();
+		if($get_reservation->num_rows() > 0){
+			$ResData = $get_reservation->row();
+		
+			if($ResData->billing_id > 0 OR $ResData->billing_no != ''){
+				$r = array('success' => false, 'info' => 'Reservation: '.$ResData->reservation_number.' sudah diset dengan billing: '.$ResData->billing_no);
+				echo json_encode($r);
+				die();
+			}
 			
 		}else{
-			$is_print_error = true;
+			$r = array('success' => false, 'info' => 'Reservasi: '.$reservation_number.' tidak dikenali!'); 
+			die(json_encode($r));
 		}
 		
-		if($is_print_error){					
-			$r['info'] .= 'Communication with Printer Cashier Failed!<br/>';
+		$billingData = $this->getBilling();
+		if($billingData == false OR empty($billingData->billing_id)){
+			$r = array('success' => false, 'info' => 'Create New Billing Failed!');
+			echo json_encode($r);
+			die();
 		}
 		
+		
+		$opt_value = array(
+			'default_discount_id_reservation',
+			'use_order_counter'
+		);
+		
+		$get_opt = get_option_value($opt_value);
+		
+		$default_discount_id_reservation = 0;
+		if(!empty($get_opt['default_discount_id_reservation'])){
+			$default_discount_id_reservation = $get_opt['default_discount_id_reservation'];
+		}
+		
+		//SAVE FROM RESERVATION
+		if(!empty($billingData->billing_no)){
+			$billingData->created_datetime = date('d.m.Y H:i', strtotime($billingData->created));
+			
+			//update billing$
+			$updateBilling = array(
+				'total_billing' => $ResData->reservation_sub_total,
+				'tax_total' => $ResData->reservation_tax,
+				'service_total' => $ResData->reservation_service,
+				'grand_total' => $ResData->reservation_total_price,
+				'total_pembulatan' => 0,
+				'total_dp' => $ResData->reservation_dp,
+				'compliment_total' => 0,
+				
+				'discount_id' => 0,
+				'discount_notes' => 0,
+				'discount_percentage' => 0,
+				'discount_price' => $ResData->reservation_discount,
+				'discount_total' => $ResData->reservation_discount,
+				'discount_perbilling' => 1,
+				
+				'total_guest' => $ResData->total_guest,
+				'sales_id' => $ResData->sales_id,
+				'sales_percentage' => $ResData->sales_percentage,
+				'sales_price' => $ResData->sales_price,
+				'sales_type' => $ResData->sales_type,
+				'customer_id' => $ResData->customer_id,
+				'billing_notes' => $ResData->reservation_memo,
+				
+				'is_reservation' => 1,
+			);
+			
+			
+			//GET DISCOUNT ID
+			if(!empty($ResData->reservation_discount) AND !empty($default_discount_id_reservation)){
+				
+				$this->db->select("a.*");
+				$this->db->from($this->table_discount." as a");
+				$this->db->where("a.id = ".$default_discount_id_reservation);
+				$get_disc = $this->db->get();
+				if($get_disc->num_rows() > 0){
+					$DiscData = $get_disc->row();
+				
+					$updateBilling['discount_id'] = $DiscData->id;
+					$updateBilling['discount_notes'] = $DiscData->discount_name;
+					$updateBilling['discount_percentage'] = $DiscData->discount_percentage;
+					$updateBilling['discount_price'] = $ResData->reservation_discount;
+					$updateBilling['discount_total'] = $ResData->reservation_discount;
+					$updateBilling['discount_perbilling'] = 1;
+					$updateBilling['voucher_no'] = $ResData->reservation_number;
+					
+				}
+				
+				
+			}
+			
+			//TAX, SERVICE, TAKE AWAY & COMPLIMENT
+			$include_tax = $billingData->include_tax;
+			$include_service = $billingData->include_service;
+			$tax_percentage = $billingData->tax_percentage;
+			$service_percentage = $billingData->service_percentage;
+			$takeaway_no_tax = $billingData->takeaway_no_tax;
+			$takeaway_no_service = $billingData->takeaway_no_service;
+			$billing_is_compliment = $billingData->is_compliment;
+			
+			if(empty($get_opt['use_order_counter'])){
+				$get_opt['use_order_counter'] = 0;
+			}
+			
+			//GET COUNTER
+			$order_day_counter = date('Ymd');
+			if($get_opt['use_order_counter'] == 1){
+				$order_counter = $this->getBillingDetailCounter();
+			}else{
+				$order_counter = 0;
+			}
+			
+			$qty_order = 0;
+			//GET DETAIL RESERVATION
+			$data_detail = array();
+			$this->db->select("a.*, b.category_id");
+			$this->db->from($this->table_reservation_detail." as a");
+			$this->db->join($this->table_product." as b","b.id = a.product_id","LEFT");
+			$this->db->where("a.reservation_id = ".$reservation_id);
+			$get_ResDetail = $this->db->get();
+			if($get_ResDetail->num_rows() > 0){
+				foreach($get_ResDetail->result() as $dtDetail){
+					
+					$product_price = $dtDetail->resd_price;
+					$tax_total = 0;
+					$service_total = 0;
+					$product_price_real = 0;
+					if(!empty($include_tax) OR !empty($include_service)){
+						if(!empty($include_tax) AND !empty($include_service)){
+							$all_percentage = 100 + $tax_percentage + $service_percentage;
+							$one_percent = $product_price / $all_percentage;
+							$tax_total = priceFormat($one_percent * $tax_percentage, 0, ".", "");
+							$service_total = priceFormat($one_percent * $service_percentage, 0, ".", "");
+							$product_price_real = $product_price - ($tax_total + $service_total);
+							
+							$tax_percent = $tax_percentage/100;
+							$service_percent = $service_percentage/100;
+							$tax_total = priceFormat($product_price_real * $tax_percent, 0, ".", "");
+							$service_total = priceFormat($product_price_real * $service_percent, 0, ".", "");
+						
+						}else{
+							if(!empty($include_tax)){
+								$all_percentage = 100 + $tax_percentage;
+								$one_percent = $product_price / $all_percentage;
+								$tax_total = priceFormat($one_percent * $tax_percentage, 0, ".", "");
+								$product_price_real = $product_price - ($tax_total);
+								
+								$tax_percent = $tax_percentage/100;
+								$tax_total = priceFormat($product_price_real * $tax_percent, 0, ".", "");
+								
+							}
+							
+							if(!empty($include_service)){
+								$all_percentage = 100 + $service_percentage;
+								$one_percent = $product_price / $all_percentage;
+								$service_total = priceFormat($one_percent * $service_percentage, 0, ".", "");
+								$product_price_real = $product_price - ($service_total);
+								
+								$service_percent = $service_percentage/100;
+								$service_total = priceFormat($product_price_real * $service_percent, 0, ".", "");
+								
+							}
+							
+						}
+					}else
+					{
+						$product_price_real = $product_price;
+						$tax_percent = $tax_percentage/100;
+						$service_percent = $service_percentage/100;
+						$tax_total = priceFormat($product_price* $tax_percent, 0, ".", "");
+						$service_total = priceFormat($product_price* $service_percent, 0, ".", "");
+					}
+					
+					$data_detail[] = array(
+						'billing_id'  		=> 	$billingData->billing_id,
+						'product_id'		=>	$dtDetail->product_id,
+						'category_id'		=>	$dtDetail->category_id,
+						'product_varian_id'	=>	$dtDetail->product_varian_id,
+						'varian_id'			=>	$dtDetail->varian_id,
+						'has_varian'		=>	$dtDetail->has_varian,
+						'include_tax'		=>	$include_tax,
+						'tax_percentage'	=>	$tax_percentage,
+						'tax_total'			=>	($tax_total*$dtDetail->resd_qty),
+						'include_service'	=>	$include_service,
+						'service_percentage'=>	$service_percentage,
+						'service_total'		=>	($service_total*$dtDetail->resd_qty),
+						'takeaway_no_tax'	=>	$takeaway_no_tax,
+						'takeaway_no_service'	=>	$takeaway_no_service,
+						'product_price_real'	=>	$product_price_real,
+						'product_price'			=>	$dtDetail->resd_price,
+						'product_price_hpp'		=>	$dtDetail->resd_hpp,
+						'product_normal_price'	=>	$dtDetail->resd_price,
+						'order_qty'				=>	$dtDetail->resd_qty,
+						'order_notes'			=>	$dtDetail->resd_notes,
+						'order_status'			=>	'order',
+						'order_counter'			=>	$order_counter,
+						'order_day_counter'		=>	$order_day_counter,
+						'created'				=>	$date_now,
+						'createdby'				=>	$session_user,
+						'updated'				=>	$date_now,
+						'updatedby'				=>	$session_user,
+						'is_kerjasama'			=>	$dtDetail->is_kerjasama,
+						'supplier_id'			=>	$dtDetail->supplier_id,
+						'persentase_bagi_hasil'	=>	$dtDetail->persentase_bagi_hasil,
+						'total_bagi_hasil'		=>	$dtDetail->total_bagi_hasil,
+						'grandtotal_bagi_hasil'	=>	$dtDetail->total_bagi_hasil*$dtDetail->resd_qty
+					);
+					
+					if($get_opt['use_order_counter'] == 1){
+						$order_counter += 1;
+					}
+					
+					$qty_order += $dtDetail->resd_qty;
+				}
+			}
+
+			//INSERT DETAIL
+			if(!empty($data_detail)){
+				$this->db->insert_batch($this->table_billing_detail, $data_detail);
+			}
+			
+			//UPDATE RESERVATION
+			$update_res = array(
+				'billing_id' => $billingData->id, 
+				'billing_no' => $billingData->billing_no
+			);
+			$this->db->update($this->table_reservation, $update_res, "id = ".$reservation_id);
+			
+			//UPDATE BILLING
+			$this->db->update($this->table, $updateBilling, "id = ".$billingData->billing_id);
+			
+		}
+		
+		$r = array('success' => true, 'billing_no' => $billingData->billing_no, 'data_detail' => count($data_detail)); 
 		echo json_encode($r);
 		die();
 	}

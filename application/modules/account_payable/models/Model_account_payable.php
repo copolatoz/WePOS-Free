@@ -87,6 +87,10 @@ class Model_account_payable extends DB_Model {
 							$data_post['is_deleted'] = 0;
 						}
 						
+						if($data_AP->total_tagihan != $data_PO->po_total_price){
+							$data_post['total_tagihan'] = $data_PO->po_total_price;
+						}
+						
 					}else{
 						
 						$data_post['total_tagihan'] = $data_PO->po_total_price;
@@ -144,7 +148,64 @@ class Model_account_payable extends DB_Model {
 					}
 				}
 				
+				return $return;
 				
+			}else{
+				
+				$this->db->from($this->table_account_payable);
+				$this->db->where("ap_tipe = 'purchasing'");
+				$this->db->where("po_id = '".$po_id."'");
+				$get_ap = $this->db->get();
+				if($get_ap->num_rows() > 0){
+					
+					$data_AP = $get_ap->row();
+					
+					//update AP
+					$data_post = array(
+						'ap_name'	=> $data_PO->supplier_name,
+						'ap_date'	=> date('Y-m-d'),
+						'ap_phone'	=> $data_PO->supplier_phone,
+						'ap_address'	=> $data_PO->supplier_address,
+						'supplier_id'	=> $data_PO->supplier_id,
+						'no_ref'		=> $data_PO->po_number,
+						'updated'		=>	date('Y-m-d H:i:s'),
+						'updatedby'		=>	$session_user
+					);
+					
+					$return = false;
+					if($data_PO->po_status == 'done'){
+						
+						if($data_AP->total_tagihan != $data_PO->po_total_price){
+							$data_AP->total_tagihan = $data_PO->po_total_price;
+							
+							//update AP
+							$data_post = array();
+							$data_post['total_tagihan'] = $data_PO->po_total_price;
+							
+							$this->db->update($this->table_account_payable, $data_post, "id = '".$data_AP->id."'");
+						}
+						
+						if($data_AP->ap_status == 'pengakuan' OR $data_AP->ap_status == 'posting'){
+							//update AP
+							$data_post['total_tagihan'] = $data_PO->po_total_price;
+							$data_post['is_active'] = 0;
+							$data_post['is_deleted'] = 1;
+							
+							$return = true;
+							
+							$this->db->update($this->table_account_payable, $data_post, "id = '".$data_AP->id."'");
+							
+							return $return;
+							
+						}else{
+							$return = 'kontrabon';
+							return $return;
+						}
+						
+					}
+					
+					return $return;
+				}
 			}
 			
 			

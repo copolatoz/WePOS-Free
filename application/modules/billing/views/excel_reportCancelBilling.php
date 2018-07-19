@@ -7,8 +7,8 @@ header("Expires: 0");
 header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
 header("Cache-Control: private",false);
 
-$set_width = 1000;
-$total_cols = 9;
+$set_width = 1130;
+$total_cols = 10;
 ?>
 <html>
 <body>
@@ -33,6 +33,7 @@ $total_cols = 9;
 			<tr>
 				<td class="tbl_head_td_first_xcenter" width="50">NO</td>
 				<td class="tbl_head_td_xcenter" width="130">DATE</td>
+				<td class="tbl_head_td_xcenter" width="130">TIPE</td>
 				<td class="tbl_head_td_xcenter" width="80">BILLING NO.</td>
 				<td class="tbl_head_td_xcenter" width="110">TOTAL BILLING</td>
 				<td class="tbl_head_td_xcenter" width="90">TAX</td>
@@ -54,10 +55,15 @@ $total_cols = 9;
 			$grand_total = 0;
 			$grand_total_payment = array();
 			foreach($report_data as $det){
+				$tipe_cancel = 'AFTER PAYMENT';
+				if(empty($det['payment_date'])){
+					$tipe_cancel = 'BEFORE PAYMENT';
+				}
 				?>
 				<tr>
 					<td class="tbl_data_td_first_xcenter"><?php echo $no; ?></td>
 					<td class="tbl_data_td_xcenter"><?php echo $det['billing_date']; ?></td>
+					<td class="tbl_data_td_xcenter"><?php echo $tipe_cancel; ?></td>
 					<td class="tbl_data_td_xcenter"><?php echo $det['billing_no']; ?></td>
 					<td class="tbl_data_td_xright">Rp. <?php echo $det['total_billing_show']; ?></td>
 					<td class="tbl_data_td_xright">Rp. <?php echo $det['tax_total_show']; ?></td>
@@ -77,7 +83,7 @@ $total_cols = 9;
 			
 			?>
 			<tr>
-				<td class="tbl_summary_td_first_xright" colspan="<?php echo 3; ?>">TOTAL</td>
+				<td class="tbl_summary_td_first_xright" colspan="<?php echo 4; ?>">TOTAL</td>
 				<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_billing); ?></td>
 				<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_tax); ?></td>
 				<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_service); ?></td>

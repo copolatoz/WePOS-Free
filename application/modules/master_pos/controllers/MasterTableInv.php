@@ -14,6 +14,7 @@ class MasterTableInv extends MY_Controller {
 	{
 		$this->billing = $this->prefix.'billing';
 		$this->floorplan = $this->prefix.'floorplan';
+		$this->room = $this->prefix.'room';
 		$this->table = $this->prefix.'table';
 		$this->table_inventory = $this->prefix.'table_inventory';
 		$session_client_id = $this->session->userdata('client_id');
@@ -35,12 +36,14 @@ class MasterTableInv extends MY_Controller {
 		
 		//is_active_text
 		$sortAlias = array(
-			'is_active_text' => 'b.is_active'
+			'is_active_text' => 'b.is_active',
+			'floorplan_name' => 'c.floorplan_name',
+			'room_name' => 'c2.room_name'
 		);		
 		
 		// Default Parameter
 		$params = array(
-			'fields'		=> "a.id, a.table_id, a.billing_no, a.tanggal, a.status, b.*, c.floorplan_name",
+			'fields'		=> "a.id, a.table_id, a.billing_no, a.tanggal, a.status, b.*, c.floorplan_name, c2.room_name, c2.room_no",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table_inventory.' as a',
 			'join'			=> array(
@@ -48,6 +51,7 @@ class MasterTableInv extends MY_Controller {
 									array( 
 										array($this->table.' as b','b.id = a.table_id','LEFT'),
 										array($this->floorplan.' as c','c.id = b.floorplan_id','LEFT'),
+										array($this->room.' as c2','c2.id = b.room_id','LEFT'),
 										array($this->billing.' as d','d.billing_no = a.billing_no','LEFT')
 									)
 								),
@@ -76,6 +80,11 @@ class MasterTableInv extends MY_Controller {
 			$show_available = false;
 		}
 		
+		$show_selected = $this->input->post('show_selected');
+		if(empty($show_selected)){
+			$show_selected = false;
+		}
+		
 		
 		if(!empty($is_dropdown)){
 			$params['order'] = array('b.table_no' => 'ASC');
@@ -93,6 +102,16 @@ class MasterTableInv extends MY_Controller {
 				$params['where'][] = "(a.status = 'available' OR (a.status != 'available' AND d.id = '".$curr_billing."'))";
 			}else{
 				$params['where'][] = "a.status = 'available'";
+			}
+			
+		}
+		
+		if($show_selected == true){
+			
+			if(!empty($curr_billing)){
+				$params['where'][] = "((a.status = 'booked' OR a.status = 'reserved')  AND d.id = '".$curr_billing."')";
+			}else{
+				$params['where'][] = "a.status = 'available' d.id = -1";
 			}
 			
 		}
@@ -117,6 +136,21 @@ class MasterTableInv extends MY_Controller {
 		
 			foreach ($get_data['data'] as $s){
 				$s['is_active_text'] = ($s['is_active'] == '1') ? '<span style="color:green;">Active</span>':'<span style="color:red;">Inactive</span>';
+				
+				if(!empty($s['kapasitas'])){
+					$s['kapasitas_text'] = 'Kapasitas: '.$s['kapasitas'].' org';
+				}
+				
+				$text_tipe = 'Dine In';
+				if($s['table_tipe'] == 'takeaway'){
+					$text_tipe = 'Take Away';
+				}
+				if($s['table_tipe'] == 'delivery'){
+					$text_tipe = 'Delivery';
+				}
+				$s['table_tipe_text'] = '<span style="color:green;">'.$text_tipe.'</span>';
+				
+				
 				array_push($newData, $s);
 			}
 		}

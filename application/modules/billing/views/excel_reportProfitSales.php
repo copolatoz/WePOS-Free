@@ -7,8 +7,8 @@ header("Expires: 0");
 header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
 header("Cache-Control: private",false);
 
-$set_width = 1200;
-$total_cols = 11;
+$set_width = 700;
+$total_cols = 7;
 
 ?>
 <html>
@@ -36,11 +36,7 @@ $total_cols = 11;
 				<td class="tbl_head_td_first_xcenter" width="50">NO</td>
 				<td class="tbl_head_td_xcenter" width="130">PAYMENT DATE</td>
 				<td class="tbl_head_td_xcenter" width="80">BILLING NO.</td>
-				<td class="tbl_head_td_xcenter" width="100">SUB TOTAL</td>
-				<td class="tbl_head_td_xcenter" width="100">PEMBULATAN</td>
-				<td class="tbl_head_td_xcenter" width="100">DISCOUNT</td>
-				<td class="tbl_head_td_xcenter" width="120">GRAND TOTAL</td>	
-				<td class="tbl_head_td_xcenter" width="100">COMPLIMENT</td>
+				<td class="tbl_head_td_xcenter" width="100">TOTAL BILLING</td>
 				<td class="tbl_head_td_xcenter" width="110">TOTAL HPP</td>
 				<td class="tbl_head_td_xcenter" width="110">TOTAL PROFIT</td>
 				<td class="tbl_head_td_xcenter" width="200">NOTE</td>
@@ -70,11 +66,7 @@ $total_cols = 11;
 						<td class="tbl_data_td_first_xcenter"><?php echo $no; ?></td>
 						<td class="tbl_data_td"><?php echo date("Y-m-d", strtotime($det['payment_date'])); ?></td>
 						<td class="tbl_data_td"><?php echo $det['billing_no']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['sub_total_show']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['total_pembulatan_show']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['discount_total_show']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['grand_total_show']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['total_compliment_show']; ?></td>
+						<td class="tbl_data_td_xright">Rp. <?php echo $det['total_billing_show']; ?></td>
 						<td class="tbl_data_td_xright">Rp. <?php echo $det['total_hpp_show']; ?></td>
 						<td class="tbl_data_td_xright">Rp. <?php echo $det['total_profit_show']; ?></td>
 						<td class="tbl_data_td"><?php echo $det['payment_note']; ?></td>
@@ -98,11 +90,7 @@ $total_cols = 11;
 				?>
 				<tr>
 					<td class="tbl_summary_td_first_xright" colspan="<?php echo 3; ?>">TOTAL</td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_sub_total); ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_total_pembulatan); ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_discount_total); ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_total); ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_total_compliment); ?></td>
+					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_billing); ?></td>
 					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_hpp); ?></td>
 					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_profit); ?></td>
 					<td class="tbl_summary_td_xright">&nbsp;</td>

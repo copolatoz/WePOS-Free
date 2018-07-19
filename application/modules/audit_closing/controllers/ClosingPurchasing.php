@@ -1113,7 +1113,7 @@ class ClosingPurchasing extends MY_Controller {
 		
 		if(!empty($get_opt['closing_purchasing_start_date'])){
 			$closing_purchasing_start_date = $get_opt['closing_purchasing_start_date'];
-			$closing_purchasing_start_date = date("Y-m-d", strtotime($closing_purchasing_start_date));
+			//$closing_purchasing_start_date = date("Y-m-d", strtotime($closing_purchasing_start_date));
 		}
 		
 		if(empty($closing_purchasing_start_date)){

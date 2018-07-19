@@ -8,8 +8,8 @@
 	</head>
 <body>
 	<?php
-		$set_width = 1050;
-		$total_cols = 10;
+		$set_width = 670;
+		$total_cols = 6;
 	?>
 	<div class="report_area" style="width:<?php echo $set_width.'px'; ?>;">
 		
@@ -35,11 +35,7 @@
 					<td class="first xcenter" width="50">NO</td>
 					<td class="xcenter" width="130">DATE</td>
 					<td class="xcenter" width="80">QTY BILLING</td>
-					<td class="xcenter" width="120">SUB TOTAL</td>
-					<td class="xcenter" width="100">PEMBULATAN</td>
-					<td class="xcenter" width="100">DISCOUNT</td>
-					<td class="xcenter" width="120">GRAND TOTAL</td>
-					<td class="xcenter" width="110">COMPLIMENT</td>
+					<td class="xcenter" width="120">TOTAL BILLING</td>
 					<td class="xcenter" width="120">TOTAL HPP</td>
 					<td class="xcenter" width="120">TOTAL PROFIT</td>
 				</tr>
@@ -70,11 +66,7 @@
 							<td class="first xcenter"><?php echo $no; ?></td>
 							<td class="xcenter"><?php echo $det['date']; ?></td>
 							<td class="xcenter"><?php echo $det['qty_billing']; ?></td>
-							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
-							<td class="xright"><?php echo $det['total_pembulatan_show']; ?></td>
-							<td class="xright"><?php echo $det['discount_total_show']; ?></td>
-							<td class="xright"><?php echo $det['grand_total_show']; ?></td>
-							<td class="xright"><?php echo $det['total_compliment_show']; ?></td>
+							<td class="xright"><?php echo $det['total_billing_show']; ?></td>
 							<td class="xright"><?php echo $det['total_hpp_show']; ?></td>
 							<td class="xright"><?php echo $det['total_profit_show']; ?></td>
 						</tr>
@@ -101,11 +93,7 @@
 					<tr class="tbl-total">
 						<td class="first xright xbold" colspan="<?php echo 2; ?>">TOTAL</td>
 						<td class="xcenter xbold"><?php echo $total_qty; ?></td>
-						<td class="xright xbold"><?php echo priceFormat($grand_sub_total); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($grand_total_pembulatan); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($grand_total_discount); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($grand_total); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($grand_total_compliment); ?></td>
+						<td class="xright xbold"><?php echo priceFormat($total_billing); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($total_hpp); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($total_profit); ?></td>
 					</tr>

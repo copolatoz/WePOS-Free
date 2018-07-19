@@ -54,7 +54,7 @@ class WarehouseAccess extends MY_Controller {
 		}
 		
 		if(!empty($searching)){
-			$params['where'][] = "(a.storehouse_name LIKE '%".$searching."%' OR a.user_username LIKE '%".$searching."%')";
+			$params['where'][] = "(b.storehouse_name LIKE '%".$searching."%' OR c.user_username LIKE '%".$searching."%')";
 		}
 		
 		$params['where'][] = "c.id != 0";

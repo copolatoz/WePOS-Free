@@ -82,9 +82,11 @@ class Model_Supervisor extends DB_Model {
 					'supervisor_access'	=> $spv_data['supervisor_access'],
 					'supervisor_access_id'	=> $spv_data['supervisor_id'],
 					'log_data'	=> $data,
+					'ref_id_1'	=> $ref_id_1,
+					'ref_id_2'	=> $ref_id_2,
 					'created'	=> $date_now,
 					'createdby'	=> $session_user,
-					'updated'	=> $data,
+					'updated'	=> $date_now,
 					'updatedby'	=> $session_user
 				);
 				

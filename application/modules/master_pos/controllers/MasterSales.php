@@ -37,7 +37,11 @@ class MasterSales extends MY_Controller {
 		$searching = $this->input->post('query');
 		$show_valid_date = $this->input->post('show_valid_date');
 		$show_all_text = $this->input->post('show_all_text');
+		$keywords = $this->input->post('keywords');
 		
+		if(!empty($keywords)){
+			$searching = $keywords;
+		}
 		if(!empty($is_dropdown)){
 			$params['order'] = array('sales_name' => 'ASC');
 		}

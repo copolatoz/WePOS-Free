@@ -90,7 +90,7 @@ class OpenCloseCashier extends MY_Controller {
 			$params['where'][] = "(a.kasir_user LIKE '%".$searching."%' OR a.spv_user LIKE '%".$searching."%')";
 		}
 		if(!empty($tipe_shift)){
-			$params['where'][] = "(a.tipe_shift = '".$tipe_shift."')";
+			$params['where'][] = "(a.user_shift = '".$tipe_shift."')";
 		}
 		if(!empty($user_cashier)){
 			$this->db->where('a.kasir_user', $user_cashier);

@@ -437,6 +437,10 @@ class Model_receivedetail extends DB_Model {
 						foreach($get_items->result() as $dt){
 							
 							if(!empty($all_item_updated_price[$dt->id])){
+							
+								if(empty($dt->item_hpp)){
+									$dt->item_hpp = $dt->item_price;
+								}
 								
 								$item_hpp = $dt->item_hpp;
 								$last_in  = $all_item_updated_price[$dt->id];
@@ -470,6 +474,58 @@ class Model_receivedetail extends DB_Model {
 					
 					if(!empty($update_item_price_average)){
 						$this->db->update_batch($this->prefix."items", $update_item_price_average, "id");
+					}
+					
+					//SUPPLIER ITEM
+					$supplier_id = $dt_rowguid['supplier_id'];
+					if(!empty($supplier_id)){
+						$update_supplier_item_price = array();
+						$all_item_updated_txt = implode("','", $all_item_updated);
+						$this->db->where("item_id IN ('".$all_item_updated_txt."') AND supplier_id = '".$supplier_id."'");
+						$this->db->from($this->prefix.'supplier_item'); 
+						$get_items = $this->db->get();
+						if($get_items->num_rows() > 0){
+							foreach($get_items->result() as $dt){
+								
+								if(!empty($all_item_updated_price[$dt->item_id])){
+									
+									if(empty($dt->item_hpp)){
+										$dt->item_hpp = $dt->item_price;
+									}
+									
+									$item_hpp = $dt->item_hpp;
+									$last_in  = $all_item_updated_price[$dt->item_id];
+									$old_last_in  = $dt->last_in;
+									
+									if($update_stok == 'rollback'){
+										$item_hpp = ($dt->item_hpp * 2) - $all_item_updated_price[$dt->item_id];
+										$item_hpp = priceFormat($item_hpp);
+										$item_hpp = numberFormat($item_hpp);
+										
+										$last_in = $dt->old_last_in;
+										
+									}else{
+										$item_hpp = ($all_item_updated_price[$dt->item_id] + $dt->item_hpp) / 2;
+										$item_hpp = priceFormat($item_hpp);
+										$item_hpp = numberFormat($item_hpp);
+									}
+									
+									$update_supplier_item_price[] = array(
+										'id'			=> $dt->id,
+										'item_hpp'		=> $item_hpp,
+										//'item_price'	=> $all_item_updated_price[$dt->id],
+										'last_in'		=> $all_item_updated_price[$dt->item_id],
+										'old_last_in'	=> $old_last_in
+									);
+									
+								}
+								
+							}
+						}
+						
+						if(!empty($update_supplier_item_price)){
+							$this->db->update_batch($this->prefix."supplier_item", $update_supplier_item_price, "id");
+						}
 					}
 					
 				}

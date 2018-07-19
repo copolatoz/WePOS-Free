@@ -71,7 +71,7 @@ class PelunasanAP extends MY_Controller {
 			if(!empty($date_from) OR !empty($date_till)){
 			
 				if(empty($date_from)){ $date_from = date('Y-m-d'); }
-				if(empty($date_till)){ $date_till = date('Y-m-td'); }
+				if(empty($date_till)){ $date_till = date('Y-m-t'); }
 				
 				$mktime_dari = strtotime($date_from);
 				$mktime_sampai = strtotime($date_till);

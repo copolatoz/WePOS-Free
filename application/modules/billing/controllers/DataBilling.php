@@ -56,8 +56,8 @@ class DataBilling extends MY_Controller {
 								a.merge_id, a.merge_main_status, a.split_from_id, a.total_guest, a.lock_billing, a.qc_notes,
 								a.created, a.updated, a.takeaway_no_tax, a.takeaway_no_service, a.is_compliment,  
 								a.discount_perbilling, a.total_return, a.compliment_total_tax_service, a.is_half_payment,
-								a.sales_id, a.sales_percentage, a.sales_price, a.sales_type, a.customer_id, 
-								a.id as billing_id, b.table_name, b.table_no, b.table_desc, b.floorplan_id, c.floorplan_name, 
+								a.sales_id, a.sales_percentage, a.sales_price, a.sales_type, a.customer_id, a.block_table,
+								a.id as billing_id, b.table_name, b.table_no, b.table_desc, b.floorplan_id, c.floorplan_name, a.is_reservation,
 								d.payment_type_name, e.user_firstname, e.user_lastname, f.bank_name, 
 								g.billing_no as merge_billing_no, h.sales_name, h.sales_company, i.customer_name',
 			'primary_key'	=> 'id',
@@ -518,6 +518,11 @@ class DataBilling extends MY_Controller {
 					$s['payment_note'] = strtoupper($s['bank_name']).' '.$s['card_no'];
 				}
 				
+				if(empty($s['payment_id'])){
+					$s['payment_id'] = 1;
+					$s['payment_type_name'] = 'Cash';
+				}
+				
 				$s['total_cash_show'] = priceFormat($s['total_cash']);
 				$s['total_credit_show'] = priceFormat($s['total_credit']);
 				
@@ -548,6 +553,11 @@ class DataBilling extends MY_Controller {
 					$s['sales_name_company_fee'] = $s['sales_name'].' / '.$s['sales_company'].' ('.$sales_type_simple.' '.$jenis_fee.')';
 				}
 				
+				$s['billing_no_show'] = $s['billing_no'];
+				if(!empty($s['is_reservation'])){
+					$s['billing_no_show'] = 'R'.$s['billing_no'];
+				}
+				
 				$newData[$s['id']] = $s;
 				//array_push($newData, $s);
 				
@@ -556,7 +566,7 @@ class DataBilling extends MY_Controller {
 		}
 		
 		$all_bil_id_txt = implode("','", $all_bil_id);
-		$this->db->select("billing_id, order_qty, product_price, product_price_hpp, order_status");
+		$this->db->select("billing_id, order_qty, product_price, product_price_hpp, order_status, free_item, package_item");
 		$this->db->from($this->table2);
 		$this->db->where("billing_id IN ('".$all_bil_id_txt."')");
 		$this->db->where("is_deleted = 0");
@@ -565,6 +575,18 @@ class DataBilling extends MY_Controller {
 			foreach($get_detail->result() as $detail){
 				
 				$total_qty = $detail->order_qty;
+				
+				
+				//FREE				
+				if($detail->free_item == 1 AND $detail->package_item == 0){
+					$detail->product_price = 0;
+				}		
+
+				//package_item
+				if($detail->package_item == 1){
+					$detail->product_price = 0;
+				}
+				
 				$total_order = $detail->order_qty*$detail->product_price;
 				$total_hpp = $detail->order_qty*$detail->product_price_hpp;
 				
@@ -629,7 +651,7 @@ class DataBilling extends MY_Controller {
 								a.order_status, a.order_notes, a.is_active, a.retur_type, a.retur_qty, a.retur_reason,
 								a.is_promo, a.promo_id, a.promo_tipe, a.promo_percentage, a.promo_price, a.promo_desc,
 								a.is_buyget, a.buyget_id, a.buyget_tipe, a.buyget_desc, a.buyget_qty, a.buyget_percentage, a.buyget_total, 
-								a.buyget_item, a.free_item, a.ref_order_id, a.use_stok_kode_unik, a.data_stok_kode_unik, a.product_price_real,
+								a.buyget_item, a.free_item, a.package_item, a.ref_order_id, a.use_stok_kode_unik, a.data_stok_kode_unik, a.product_price_real,
 								a.is_kerjasama, a.supplier_id, a.persentase_bagi_hasil, a.total_bagi_hasil,
 								b.product_name, b.product_chinese_name, b.has_varian, b.product_desc, b.product_type, b.product_image, 
 								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code",
@@ -672,6 +694,8 @@ class DataBilling extends MY_Controller {
 		if(!empty($get_opt['hide_compliment_order'])){
 			$hide_compliment_order = 1;
 		}
+		
+		$product_package = array();
 		
   		$newData = array();
 		$no = 1;
@@ -732,7 +756,7 @@ class DataBilling extends MY_Controller {
 					$s['promo_price_show'] = priceFormat($promo_price);
 					$s['product_name_show'] = $s['product_name'].' <font color="orange">Promo</font>';
 					$s['product_price_show'] = 'Rp <strike>'.priceFormat($s['product_normal_price']).'</strike> <font color="orange">'.$s['promo_price_show'].'</font>';
-					$s['product_detail_info'] .= $additional_text.' <font color="orange">Promo</font><br/>X @ Rp.'.priceFormat($s['product_price']);
+					$s['product_detail_info'] = $s['product_name'].$additional_text.' <font color="orange">Promo</font><br/>X @ Rp.'.priceFormat($s['product_price']);
 					
 					$s['discount_id'] = $s['promo_id'];
 					$s['discount_notes'] = $s['promo_desc'];
@@ -761,13 +785,28 @@ class DataBilling extends MY_Controller {
 				}
 				
 				//FREE				
-				if($s['free_item'] == 1){
+				if($s['free_item'] == 1 AND $s['package_item'] == 0){
 					$s['product_name_show'] = $s['product_name'].' <font color="red">Free</font>';
-					$s['product_detail_info'] = $s['product_name'].$additional_text.' <font color="red">Free</font><br/>X @ Rp.'.priceFormat($s['product_price']);
-					
+					$s['product_detail_info'] = '&#10146; '.$s['product_name'].$additional_text.' <font color="red">Free</font>';
+					$s['order_total'] = 0;
+					$s['product_price'] = 0;
+					$s['product_price_real'] = 0;
+				}		
+
+				//package_item
+				if($s['package_item'] == 1){
+					$s['product_name_show'] = $s['product_name'];
+					$s['product_detail_info'] = '&#10146; '.$s['product_name'].$additional_text;
+					//9644, 9492, 10146, 10148
+					$s['order_total'] = 0;
+					$s['product_price'] = 0;
+					$s['product_price_real'] = 0;
 				}
 				
-
+				//update 2018-02-25
+				if(in_array($s['id'], $product_package)){
+					$s['order_status'] = 'done';
+				}
 					
 				$s['order_status_text'] = '<b style="color:orange;">'.ucwords($s['order_status']).'</b>';
 				if($s['order_status'] == 'done'){
@@ -807,11 +846,14 @@ class DataBilling extends MY_Controller {
 				$s['service_total_show'] = priceFormat($s['service_total']);
 				$s['discount_total_show'] = priceFormat($s['discount_total']);
 				if(empty($s['discount_total'])){
-					$s['discount_total_show'] = '';
+					$s['discount_total_show'] = '-';
 				}
 					
 				$s['order_subtotal'] = $s['order_total']-$s['discount_total'];		
 				$s['order_subtotal_show'] = priceFormat($s['order_subtotal']);		
+				if(empty($s['order_subtotal'])){
+					$s['order_subtotal_show'] = '-';
+				}
 				
 				if($s['is_takeaway'] == '1'){
 					$s['is_takeaway_text'] = '<span style="color:green;">Yes</span>';
@@ -857,11 +899,20 @@ class DataBilling extends MY_Controller {
 				}
 				
 				$s['order_subtotal_show'] = priceFormat($s['order_subtotal']);
-				$s['total_taxservice_show'] = priceFormat($s['tax_total']+$s['service_total']);
+				$total_taxservice = $s['tax_total']+$s['service_total'];
+				$s['total_taxservice_show'] = priceFormat($total_taxservice);
+				if(empty($total_taxservice)){
+					$s['total_taxservice_show'] = '-';
+				}
 				
-				if($s['free_item'] == 1){
-					$s['discount_total_show'] = priceFormat($s['order_qty']*$s['product_price']);
-					//$s['order_subtotal_show'] = priceFormat(0);
+				if($s['free_item'] == 1 AND $s['package_item'] == 0){
+					$s['discount_total_show'] = '-';
+					$s['order_subtotal_show'] = '<span style="color:red;">Free</span>';
+				}
+				
+				if($s['package_item'] == 1){
+					$s['discount_total_show'] = '-';
+					$s['order_subtotal_show'] = '-';
 				}
 				
 				$s['is_kerjasama_text'] = ($s['is_kerjasama'] == '1') ? '<span style="color:green;">Yes</span>':'<span style="color:red;">No</span>';

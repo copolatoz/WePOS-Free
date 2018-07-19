@@ -36,7 +36,12 @@ class DiscountPlanner extends MY_Controller {
 		$is_dropdown = $this->input->post('is_dropdown');
 		$searching = $this->input->post('query');
 		$show_valid_date = $this->input->post('show_valid_date');
+		$keywords = $this->input->post('keywords');
 		
+		
+		if(!empty($keywords)){
+			$searching = $keywords;
+		}
 		if(!empty($is_dropdown)){
 			$params['order'] = array('discount_desc' => 'ASC');
 		}
@@ -75,6 +80,14 @@ class DiscountPlanner extends MY_Controller {
 			array_push($newData, $s);
 		}
 		
+		$get_opt_var = array('diskon_sebelum_pajak_service');
+		$get_opt = get_option_value($get_opt_var);
+		
+		$diskon_sebelum_pajak_service = 0;
+		if(!empty($get_opt['diskon_sebelum_pajak_service'])){
+			$diskon_sebelum_pajak_service = $get_opt['diskon_sebelum_pajak_service'];
+		}
+		
 		if(!empty($get_data['data'])){
 			foreach ($get_data['data'] as $s){
 				$s['is_active_text'] = ($s['is_active'] == '1') ? '<span style="color:green;">Active</span>':'<span style="color:red;">Inactive</span>';
@@ -104,6 +117,9 @@ class DiscountPlanner extends MY_Controller {
 				}else{
 					$s['date_end'] = '';
 				}
+				
+				$s['diskon_sebelum_pajak_service'] = $diskon_sebelum_pajak_service;
+				
 				array_push($newData, $s);
 			}
 		}

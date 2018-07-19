@@ -25,6 +25,76 @@
 		$(document).ready(function(e)
 		{
 			
+			$('#store_data').change(function(){
+				
+				// Target url
+				var target = appUrl + "login";
+				if (!target || target == '')
+				{
+					// Page url without hash
+					target = document.location.href.match(/^([^#]+)/)[1];
+				}
+				
+				// Request
+				var data = {
+					view_multiple_store: $('#view_multiple_store').val(),
+					store_data: $('#store_data').val(),
+					type_login: 'store'
+				};
+				
+				
+				$('#login-message').attr('class','');
+				$('#login-message').addClass('fg-color-white');	
+				
+				
+				// Send
+				$.ajax({
+					url: target,
+					dataType: 'json',
+					type: 'POST',
+					data: data,
+					success: function(data, textStatus, XMLHttpRequest)
+					{
+						//alert(data.errors.reason);
+						if (data.success)
+						{
+							$('#login-message').fadeOut();
+							$('#login-message').html(' DB Connected..');
+							$('#login-message').removeClass('bg-color-blue');
+							$('#login-message').addClass('bg-color-green');
+							$('#login-message').addClass('icon-checkmark');
+							$('#login-message').fadeIn();
+						}
+						else
+						{
+							// Message
+							//$('#login-message').html(data.errors.reason);
+							$('#login-message').html(' Connect DB Failed!');
+							$('#login-message').removeClass('bg-color-blue');
+							$('#login-message').addClass('bg-color-red');
+							$('#login-message').addClass('icon-warning');
+							$('#login-message').fadeIn();
+							$('#loadBox').hide();
+							$('#loginBox').fadeIn();
+							
+						}
+					},
+					error: function(XMLHttpRequest, textStatus, errorThrown)
+					{
+						// Message
+						//$('#login-message').html(data.errors.reason);
+						$('#login-message').html(' Connect DB Failed!');
+						$('#login-message').removeClass('bg-color-blue');
+						$('#login-message').addClass('bg-color-red');
+						$('#login-message').addClass('icon-warning');	
+						$('#login-message').fadeIn();
+						$('#loadBox').hide();
+						$('#loginBox').fadeIn();
+					}
+				});
+					
+			});
+			
 			$('#button_option_menu').click(function(event){
 				event.preventDefault();
 				document.location.href = appUrl;
@@ -75,6 +145,8 @@
 					// Request
 					var data = {
 						a: $('#a').val(),
+						view_multiple_store: $('#view_multiple_store').val(),
+						store_data: $('#store_data').val(),
 						type_login: 'pin',
 						loginUsernamePin: loginUsernamePin
 					};
@@ -181,6 +253,27 @@
 							<p class="fg-color-white" id="login-message" style="display:none; padding:6px 10px;"></p>
 							
 							<div id="loginBox">
+								<?php
+								if(!empty($view_multiple_store) AND !empty($data_multiple_store)){
+									?>
+									<div class="input-control">
+										<select id="store_data" name="store_data">
+										<?php
+										foreach($data_multiple_store as $dt){
+											$sent_val = $dt['client_ip'].'|'.$dt['mysql_user'].'|'.$dt['mysql_pass'].'|'.$dt['mysql_port'].'|'.$dt['mysql_database'];
+											echo '<option value="'.$sent_val.'">'.$dt['client_name'].'</option>';
+										}
+										?>
+										</select>
+									</div>
+									<?php
+									echo '<input type="hidden" name="view_multiple_store" id="view_multiple_store" value="1" />';
+								}else{
+									echo '<input type="hidden" name="store_data" id="store_data" value="" />';
+									echo '<input type="hidden" name="view_multiple_store" id="view_multiple_store" value="0" />';
+								}
+								?>
+								
 								<div class="input-control text loginUsernamePin">
 									<input type="password" id="loginUsernamePin" name="loginUsernamePin" class="with-helper" tabindex="0" placeholder="PIN"/>
 									<a href="javascript:void(0);" class="helper loginUsernamePin"></a>

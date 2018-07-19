@@ -505,6 +505,40 @@ class ReportSalesBagiHasil extends MY_Controller {
 						$all_bil_id[] = $s['id'];
 					}		
 					
+					//CHECK REAL TOTAL BILLING
+					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
+						
+							if($data_post['diskon_sebelum_pajak_service'] == 1){
+								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
+								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+								$s['total_billing'] = $get_total_billing;
+							}else{
+								$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
+							}
+							
+						}else{
+							if(!empty($s['include_tax'])){
+								if($data_post['diskon_sebelum_pajak_service'] == 1){
+									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
+									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+									$s['total_billing'] = $get_total_billing;
+								}else{
+									$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
+								}
+							}
+							if(!empty($s['include_service'])){
+								if($data_post['diskon_sebelum_pajak_service'] == 1){
+									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
+									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
+									$s['total_billing'] = $get_total_billing;
+								}else{
+									$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
+								}
+							}
+						}
+					}
+					
 					if(!empty($s['is_compliment'])){
 						$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
 						//if(!empty($s['include_tax']) OR !empty($s['include_service'])){
@@ -705,7 +739,7 @@ class ReportSalesBagiHasil extends MY_Controller {
 									//$tot_payment = $s['grand_total'];
 									//$tot_payment_show = $s['grand_total_show'];
 									
-									if($key_id == 3 OR $key_id == 2){
+									if($key_id == 2 OR $key_id == 3 OR $key_id == 4){
 										$tot_payment = $s['total_credit'];	
 									}else{
 										$tot_payment = $s['total_cash'];	

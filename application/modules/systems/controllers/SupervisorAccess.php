@@ -300,6 +300,7 @@ class SupervisorAccess extends MY_Controller {
 		$change_dp = $this->input->post('change_dp', true);	
 		$set_compliment_item = $this->input->post('set_compliment_item', true);	
 		$clear_compliment_item = $this->input->post('clear_compliment_item', true);	
+		$approval_po = $this->input->post('approval_po', true);	
 		
 		$r = array('success' => false);
 		
@@ -313,7 +314,8 @@ class SupervisorAccess extends MY_Controller {
 			'change_service' => $change_service,
 			'change_dp' => $change_dp,
 			'set_compliment_item' => $set_compliment_item,
-			'clear_compliment_item' => $clear_compliment_item
+			'clear_compliment_item' => $clear_compliment_item,
+			'approval_po' => $approval_po
 		);
 		
 		$supervisorAccess_name = array();

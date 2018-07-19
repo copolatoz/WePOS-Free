@@ -36,6 +36,12 @@ class ProductCategory extends MY_Controller {
 		$searching = $this->input->post('query');
 		$show_all_text = $this->input->post('show_all_text');
 		$show_choose_text = $this->input->post('show_choose_text');
+		$is_active = $this->input->post('is_active');
+		$keywords = $this->input->post('keywords');
+		
+		if(!empty($keywords)){
+			$searching = $keywords;
+		}
 		
 		if(!empty($is_dropdown)){
 			$params['order'] = array('product_category_desc' => 'ASC');
@@ -43,6 +49,9 @@ class ProductCategory extends MY_Controller {
 		}
 		if(!empty($searching)){
 			$params['where'][] = "(product_category_name LIKE '%".$searching."%' OR product_category_desc LIKE '%".$searching."%')";
+		}
+		if(!empty($is_active)){
+			$params['where'][] = "(is_active = ".$is_active.")";
 		}
 		
 		//get data -> data, totalCount

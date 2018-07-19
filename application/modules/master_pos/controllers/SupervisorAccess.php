@@ -51,7 +51,7 @@ class SupervisorAccess extends MY_Controller {
 		}
 		
 		if(!empty($searching)){
-			$params['where'][] = "(a.supervisor_id LIKE '%".$searching."%' OR a.supervisor_access LIKE '%".$searching."%')";
+			$params['where'][] = "(c.user_username LIKE '%".$searching."%' OR a.supervisor_access LIKE '%".$searching."%')";
 		}
 		
 		$params['where'][] = "c.id != 0";
