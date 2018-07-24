@@ -8,16 +8,18 @@ ALTER TABLE `acc_autoposting`
 MODIFY `autoposting_tipe` enum('purchasing','sales','other','pelunasan_account_payable','account_payable','account_receivable','pembayaran_account_receivable','cashflow_penerimaan','cashflow_pengeluaran','cashflow_mutasi_kas_bank') DEFAULT 'other';
 
 ALTER TABLE `apps_clients`
-ADD `client_ip` char(30) COLLATE latin1_general_ci DEFAULT NULL,
-ADD `mysql_user` char(30) COLLATE latin1_general_ci DEFAULT NULL,
-ADD `mysql_pass` varchar(100) COLLATE latin1_general_ci DEFAULT NULL,
-ADD `mysql_port` char(10) COLLATE latin1_general_ci DEFAULT NULL,
-ADD `mysql_database` char(100) COLLATE latin1_general_ci DEFAULT NULL;
-
+ADD `client_ip` char(30) DEFAULT NULL,
+ADD `mysql_user` char(30) DEFAULT NULL,
+ADD `mysql_pass` varchar(100) DEFAULT NULL,
+ADD `mysql_port` char(10) DEFAULT NULL,
+ADD `mysql_database` char(100) DEFAULT NULL;
 
 ALTER TABLE `apps_supervisor_log`
-ADD  `ref_id_1` varchar(50) COLLATE latin1_general_ci DEFAULT '',
-ADD  `ref_id_2` varchar(50) COLLATE latin1_general_ci DEFAULT '';
+MODIFY `supervisor_access_id` int(11) DEFAULT NULL,
+MODIFY `supervisor_access` char(100) DEFAULT NULL,
+MODIFY `log_data` text NOT NULL,
+ADD `ref_id_1` varchar(50) DEFAULT '',
+ADD `ref_id_2` varchar(50) DEFAULT '';
 
 ALTER TABLE `pos_billing`
 ADD  `block_table` tinyint(1) DEFAULT '0',
@@ -86,7 +88,7 @@ CREATE TABLE `pos_order_note` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 ALTER TABLE `pos_printer`
-ADD `print_method` enum('ESC/POS','JSPRINT','BROWSER') COLLATE latin1_general_ci DEFAULT 'ESC/POS',
+ADD `print_method` enum('ESC/POS','JSPRINT','BROWSER') DEFAULT 'ESC/POS',
 ADD `print_logo` tinyint(1) DEFAULT '0';
 
 ALTER TABLE `pos_product_gramasi`
@@ -120,8 +122,8 @@ CREATE TABLE `pos_room` (
 
 
 ALTER TABLE `pos_supplier`
-ADD `supplier_status` enum('ok','warning','blacklist') COLLATE latin1_general_ci DEFAULT 'ok',
-ADD `keterangan_blacklist` varchar(255) COLLATE latin1_general_ci DEFAULT NULL;
+ADD `supplier_status` enum('ok','warning','blacklist') DEFAULT 'ok',
+ADD `keterangan_blacklist` varchar(255) DEFAULT NULL;
   
 ALTER TABLE `pos_supplier_item`
 MODIFY `item_price` double DEFAULT '0',

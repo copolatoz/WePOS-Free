@@ -1,12 +1,12 @@
 <?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed');
 
 /*General Info*/
-$config['program_name']			=	'WePOS-Free';
+$config['program_name']			=	'WePOS-Cafe.Free';
 $config['program_version']		=	'3.42.19';
 $config['program_release']		=	'2018';
-$config['program_name_short'] 	=	'WePOS-Free';
+$config['program_name_short'] 	=	'WePOS-CF';
 $config['copyright']			=	$config['program_name_short'].' v'.$config['program_version'].' &copy copyright '.$config['program_release'];
-$config['client_name']			=	'WePOS-dev';
+$config['client_name']			=	'WePOS-CF';
 $config['program_author']		=	'WePOS-dev';
 
 /*Common config*/
