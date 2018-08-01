@@ -15,9 +15,4 @@ $config['db_prefix2']	= 'pos_';
 $config['db_prefix3']	= 'acc_';
 
 $config['timezone_default']	= 'Asia/Jakarta';
-
-/*Config Rest Server*/
-$config['use_rest']			= false;
-$config['rest_server_url']	=	'';
-$config['rest_username']	=	'';
-$config['rest_password']	=	'';
+$config['wepos_crt_file']	= 'cacert.pem';

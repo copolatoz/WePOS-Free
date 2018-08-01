@@ -633,9 +633,9 @@ if(!function_exists('printing_process')){
 		$set_width = array(
 			'32' => 220,
 			'40' => 250,
-			'42' => 260,
-			'46' => 280,
-			'48' => 300,
+			'42' => 265,
+			'46' => 305,
+			'48' => 305,
 		);	
 		
 		//CHAR PIN
@@ -765,55 +765,55 @@ if(!function_exists('printing_process')){
 		);
 		$set_tab_pixel[42] = array(
 			'1' => array(
-						25, 105, 60, 70
+						25, 110, 60, 70
 					),
 			'2' => array(
-						95, 90, 75
+						100, 90, 75
 					),
 			'3' => array(
-						1, 184, 75
+						1, 189, 75
 					),
 			'4' => array(
-						25, 160, 75
+						25, 165, 75
 					),
 			'5' => array(
-						130, 130
+						135, 130
 					)		
 		);
 
 		$set_tab_pixel[46] = array(
 			'1' => array(
-						25, 115, 65, 75
+						25, 140, 65, 75
 					),
 			'2' => array(
-						115, 90, 75
+						140, 90, 75
 					),
 			'3' => array(
-						1, 204, 75
+						1, 229, 75
 					),
 			'4' => array(
-						25, 180, 75
+						25, 205, 75
 					),
 			'5' => array(
-						140, 140
+						155, 150
 					)	
 		);
 
 		$set_tab_pixel[48] = array(
 			'1' => array(
-						25, 135, 65, 75
+						25, 140, 65, 75
 					),
 			'2' => array(
-						135, 90, 75
+						140, 90, 75
 					),
 			'3' => array(
-						1, 224, 75
+						1, 229, 75
 					),
 			'4' => array(
-						25, 200, 75
+						25, 205, 75
 					),
 			'5' => array(
-						150, 150
+						155, 150
 					)	
 		);
 		
@@ -826,19 +826,18 @@ if(!function_exists('printing_process')){
 			$curr_settab = $set_tab[42];
 			$curr_settab_pixel = $set_tab_pixel[42];
 		}
-
-
-		?>
-		<!DOCTYPE html>
-		<html>
-		<head>
-			<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-			<meta charset="utf-8">
-			<link rel="stylesheet" type="text/css" href="<?php echo base_url().'assets/desktop/css/report.css'; ?>"/>	
-			<link rel="stylesheet" type="text/css" href="<?php echo base_url().'assets/desktop/css/report.css'; ?>" media="print"/>	
-			</head>
-		<body>
-		<div class="report_area" style="padding:0px; margin:0px auto; text-align:left; border:0px solid #ccc; width:<?php echo $set_width[$printer_pin].'px'; ?>;">
+		
+?>
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta charset="utf-8">
+	<link rel="stylesheet" type="text/css" href="<?php echo base_url().'assets/desktop/css/report.css'; ?>"/>	
+	<link rel="stylesheet" type="text/css" href="<?php echo base_url().'assets/desktop/css/report.css'; ?>" media="print"/>	
+	</head>
+<body>
+<div class="report_area" style="padding:0px; margin:0px auto; text-align:left; border:0px solid #ccc; width:<?php echo $set_width[$printer_pin].'px'; ?>;">
 		<?php
 		if($data_printer['print_logo'] == 1 AND $print_logo == 1){
 			?>
@@ -983,42 +982,6 @@ if(!function_exists('printing_process')){
 							foreach($exp_dt_tab as $key_tab => $dt_tab){
 								
 								$font_align_style = '';
-								/*
-								$dt_tab = str_replace("|*","[", $dt_tab);
-								$dt_tab = str_replace("*|", "]",$dt_tab);
-								//--FONT STYLE---------------
-								
-								if(strstr($dt_tab,'[align=0]')){
-									$dt_tab = str_replace('[align=0]','',$dt_tab);
-									$font_align_style .= 'text-align:left; ';
-								}
-								if(strstr($dt_tab,'[align=1]')){
-									$dt_tab = str_replace('[align=1]','',$dt_tab);
-									$font_align_style .= 'text-align:center; ';
-								}
-								if(strstr($dt_tab,'[align=2]')){
-									$dt_tab = str_replace('[align=2]','',$dt_tab);
-									$font_align_style .= 'text-align:right; ';
-								}
-								//size
-								if(strstr($dt_tab,'[size=0]')){
-									$dt_tab = str_replace('[size=0]','',$dt_tab);
-									$font_align_style .= 'font-size:12px; ';
-								}
-								if(strstr($dt_tab,'[size=1]')){
-									$dt_tab = str_replace('[size=1]','',$dt_tab);
-									$font_align_style .= 'font-size:14px; font-weight:bold; ';
-								}
-								if(strstr($dt_tab,'[size=2]')){
-									$dt_tab = str_replace('[size=2]','',$dt_tab);
-									$font_align_style .= 'font-size:16px; font-weight:bold; ';
-								}
-								if(strstr($dt_tab,'[size=3]')){
-									$dt_tab = str_replace('[size=3]','',$dt_tab);
-									$font_align_style .= 'font-size:18px; font-weight:bold; ';
-								}
-								//--FONT STYLE---------------
-								*/
 								
 								$dt_tab = trim($dt_tab);
 								$jumlah_text_tab = strlen($dt_tab);
@@ -1056,7 +1019,7 @@ if(!function_exists('printing_process')){
 									}
 									
 									//RECURSIVE
-									if($jumlah_text_tab > $total_text AND $count_text_tab == true){
+									/*if($jumlah_text_tab > $total_text AND $count_text_tab == true){
 										$curr_tab++;
 										
 										//$jml_text_awal = $get_settab[$curr_tab];
@@ -1080,7 +1043,7 @@ if(!function_exists('printing_process')){
 											$width_tab += $get_settab_pixel[$curr_tab+1];
 										}
 										
-									}
+									}*/
 									
 									$gap_text = $total_text - $jumlah_text_tab;
 									
@@ -1228,9 +1191,9 @@ if(!function_exists('printing_process')){
 		<?php
 		}
 		?>
-		</body>
-		</html>
-		<?php
+</body>
+</html>
+<?php
 	}
 }
 
@@ -1244,25 +1207,25 @@ if(!function_exists('printing_process_error')){
 		if(empty($error)){
 			die();
 		}
-		?>
-		<!DOCTYPE html>
-		<html>
-		<head>
-			<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-			<meta charset="utf-8">
-			<link rel="stylesheet" type="text/css" href="<?php echo base_url().'assets/desktop/css/report.css'; ?>"/>	
-			<link rel="stylesheet" type="text/css" href="<?php echo base_url().'assets/desktop/css/report.css'; ?>" media="print"/>	
-			</head>
-		<body>
-		<div class="report_area" style="padding:0px; margin:0px auto; text-align:left; border:0px solid #ccc;">
-		<?php echo $error; ?>
-		</div>
-		<script type="text/javascript">
-			alert('<?php echo $error;?>');
-		</script>
-		</body>
-		</html>
-		<?php
+?>
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta charset="utf-8">
+	<link rel="stylesheet" type="text/css" href="<?php echo base_url().'assets/desktop/css/report.css'; ?>"/>	
+	<link rel="stylesheet" type="text/css" href="<?php echo base_url().'assets/desktop/css/report.css'; ?>" media="print"/>	
+	</head>
+<body>
+<div class="report_area" style="padding:0px; margin:0px auto; text-align:left; border:0px solid #ccc;">
+<?php echo $error; ?>
+</div>
+<script type="text/javascript">
+	alert('<?php echo $error;?>');
+</script>
+</body>
+</html>
+<?php
 	}
 }
 

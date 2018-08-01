@@ -47,6 +47,7 @@ $total_cols = 8;
 			if(!empty($report_data)){
 			
 				$no = 1;
+				$discount = 0;
 				$total_item = 0;
 				$total_qty = 0;
 				$total_price = 0;
@@ -60,7 +61,7 @@ $total_cols = 8;
 						<td class="tbl_data_td"><?php echo $det['supplier_name']; ?></td>
 						<td class="tbl_data_td_xright"><?php echo priceFormat($det['total_item']); ?></td>
 						<td class="tbl_data_td_xright"><?php echo priceFormat($det['total_qty']); ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo priceFormat($det['total_price']); ?></td>
+						<td class="tbl_data_td_xright"><?php echo priceFormat($det['total_price']-$det['discount']); ?></td>
 						<td class="tbl_data_td"><?php echo $det['receive_memo']; ?></td>
 						
 					</tr>
@@ -68,7 +69,8 @@ $total_cols = 8;
 										
 					$total_item += $det['total_item'];
 					$total_qty += $det['total_qty'];
-					$total_price +=  $det['total_price'];
+					$total_price +=  ($det['total_price']-$det['discount']);
+					$discount +=  $det['discount'];
 					
 					$no++;
 				}
@@ -78,7 +80,7 @@ $total_cols = 8;
 					<td class="tbl_summary_td_first_xright" colspan="4">TOTAL</td>
 					<td class="tbl_summary_td_xcenter"><?php echo $total_item; ?></td>
 					<td class="tbl_summary_td_xcenter"><?php echo priceFormat($total_qty); ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_price); ?></td>					
+					<td class="tbl_summary_td_xright"><?php echo priceFormat($total_price); ?></td>					
 					<td class="tbl_summary_td_xright">&nbsp;</td>
 				</tr>
 				<?php

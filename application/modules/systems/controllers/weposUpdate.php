@@ -88,8 +88,19 @@ class WeposUpdate extends MY_Controller {
 		//$get_data .= '&curr_version2='.$current_version2;
 		
 		$client_url = 'https://wepos.id/wepos_update/check?_dc='.$mktime_dc.$get_data;
+		//$curl_ret = $this->curl->simple_post($client_url, $post_data);
 		
-		$curl_ret = $this->curl->simple_post($client_url, $post_data);
+		$wepos_crt = ASSETS_PATH.config_item('wepos_crt_file');
+		$this->curl->create($client_url);
+		$this->curl->option('connecttimeout', 600);
+		$this->curl->option('RETURNTRANSFER', 1);
+		$this->curl->option('SSL_VERIFYPEER', 1);
+		$this->curl->option('SSL_VERIFYHOST', 2);
+		//$this->curl->option('SSLVERSION', 3);
+		$this->curl->option('POST', 1);
+		$this->curl->option('POSTFIELDS', $post_data);
+		$this->curl->option('CAINFO', $wepos_crt);
+		$curl_ret = $this->curl->execute();
 		
 		$info = '';
 		$is_success = false;

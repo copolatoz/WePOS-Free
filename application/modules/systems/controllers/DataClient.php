@@ -98,7 +98,7 @@ class DataClient extends MY_Controller {
 			{  
 				$r = array('success' => true, 'id' => $insert_id); 
 				
-				//CREATE STRUKTUR
+				$verified = $this->weposID($insert_id);
 				
 			}  
 			else
@@ -130,6 +130,7 @@ class DataClient extends MY_Controller {
 			if($update)
 			{  
 				$r = array('success' => true, 'id' => $id);
+				$verified = $this->weposID($id);
 			}  
 			else
 			{  
@@ -155,6 +156,7 @@ class DataClient extends MY_Controller {
 		
 		//Delete
 		$this->db->where("id IN (".$sql_Id.")");
+		$this->db->where("id != 1");
 		$q = $this->db->delete($this->table);
 		
 		$r = '';
@@ -185,19 +187,28 @@ class DataClient extends MY_Controller {
 			'client_name'  	=> 	$client_name,
 			'client_email'	=>	'',
 			'client_phone'	=>	'',
-			'client_address'	=>	''
+			'client_address'	=>	'',
+			'merchant_verified'	=>	'unverified',
+			'merchant_verified_show'	=>	'<font color="red"><b>Unverified</b></font>'
 		);
 		
 		$r = array('success' => true, 'data' => $data_client, 'info' => 'Get Info Client Failed!'); 
 		if($q->num_rows() > 0)  
         {  
 			$dt = $q->row();
+			
+			$dt->merchant_verified_show = '<font color="red"><b>Unverified</b></font>';
+			if($dt->merchant_verified == 'verified'){
+				$dt->merchant_verified_show = '<font color="green"><b>Verified</b></font>';
+			}
 			$data_client = array(
 				'client_code'  	=> 	$dt->client_code,
 				'client_name'  	=> 	$dt->client_name,
 				'client_email'	=>	$dt->client_email,
 				'client_phone'	=>	$dt->client_phone,
-				'client_address'	=>	$dt->client_address
+				'client_address'	=>	$dt->client_address,
+				'merchant_verified'	=>	$dt->merchant_verified,
+				'merchant_verified_show'	=>	$dt->merchant_verified_show
 			);
 			
             $r = array('success' => true, 'data' => $data_client, 'info' => 'Get Info Client Success!'); 
@@ -218,6 +229,8 @@ class DataClient extends MY_Controller {
 		$client_email = $this->input->post('client_email');
 		$client_phone = $this->input->post('client_phone');
 		$client_address = $this->input->post('client_address');
+		$merchant_xid = $this->input->post('merchant_xid');
+		$merchant_verified = $this->input->post('merchant_verified');
 		
 		if(empty($client_email) OR empty($client_name) OR empty($client_phone)){
 			$r = array('success' => false, "info" => "Update Info Failed!");
@@ -255,18 +268,52 @@ class DataClient extends MY_Controller {
 		$r = array('success' => true, 'data' => $data_client, 'info' => 'Save Client Info Failed!'); 
 		if($update)
 		{  
+			$verified = $this->weposID($id, true);
+			
+			if(!empty($verified['merchant_xid'])){
+				$data_client['merchant_verified_show'] = $verified['merchant_verified_show'];
+				$data_client['merchant_verified'] = $verified['merchant_verified'];
+				$data_client['merchant_xid'] = $verified['merchant_xid'];
+				
+				$data_client['info_koneksi'] = '<font color="blue"><b>Merchant Terdaftar di WePOS.id</b></font>';
+				
+			}else{
+				
+				$merchant_verified_show = '<font color="red"><b>'.ucwords($merchant_verified).'</b></font>';
+				if($merchant_verified == 'verified'){
+					$merchant_verified_show = '<font color="green"><b>'.ucwords($merchant_verified).'</b></font>';
+				}
+				
+				$data_client['merchant_verified_show'] = $merchant_verified_show;
+				$data_client['merchant_verified'] = $merchant_verified;
+				$data_client['merchant_xid'] = $merchant_xid;
+				
+				$data_client['info_koneksi'] = '';
+				
+				if($verified == 'koneksi'){
+					$data_client['info_koneksi'] = '<font color="red"><b>Koneksi ke WePOS.id Gagal!</b></font>';
+				}
+				if($verified == 'user'){
+					$data_client['info_koneksi'] = '<font color="red"><b>Kode/Merchant Tidak Dikenali</b></font>';
+				}
+				
+			}
+			
 			$r = array('success' => true, 'data' => $data_client, 'info' => 'Client Info Updated!');
+			
+			
 		}  
 		
 		die(json_encode($r));
 	}
 	
-	public function weposID()
+	public function weposID($id = 1, $is_return = false)
 	{
 		$prefix = $this->prefix;
 		$this->table = $this->prefix.'clients';
+		$session_user = $this->session->userdata('user_username');
 		
-		$this->db->where("id = 1");
+		$this->db->where("id = $id");
 		$q = $this->db->get($this->table);
 		
 		if($q->num_rows() > 0)  
@@ -279,16 +326,90 @@ class DataClient extends MY_Controller {
 			
 			$this->load->library('curl');
 			$mktime_dc = strtotime(date("d-m-Y H:i:s"));
-			$client_url = 'https://wepos.id/aplikasi-pos/client-info?_dc='.$mktime_dc;
+			//$client_url = 'http://mverify.wepos.id/client-info?_dc='.$mktime_dc;
+			$client_url = 'https://wepos.id/client-info?_dc='.$mktime_dc;
+			
+			/*$client_url .= '&client_code='.urlencode($dt->client_code);
+			$client_url .= '&merchant_xid='.urlencode($dt->merchant_xid);
 			$client_url .= '&client_name='.urlencode($dt->client_name);
-			$client_url .= '&client_address='.urlencode($dt->client_address);
 			$client_url .= '&client_phone='.urlencode($dt->client_phone);
-			$client_url .= '&client_fax='.urlencode($dt->client_fax);
 			$client_url .= '&client_email='.urlencode($dt->client_email);
 			$client_url .= '&programName='.urlencode($programName);
 			$client_url .= '&programVersion='.urlencode($programVersion);
 			$client_url .= '&programRelease='.urlencode($programRelease);
-			$curl_ret = $this->curl->simple_get($client_url);
+			$client_url .= '&client_address='.urlencode($dt->client_address);*/
+			
+			$post_data = array(
+				'client_code'	=> $dt->client_code,
+				'merchant_xid'	=> $dt->merchant_xid,
+				'client_name'	=> $dt->client_name,
+				'client_phone'	=> $dt->client_phone,
+				'client_email'	=> $dt->client_email,
+				'programName'	=> $programName,
+				'programVersion'	=> $programVersion,
+				'programRelease'	=> $programRelease,
+				'client_address'	=> $dt->client_address,
+			);
+			
+			$wepos_crt = ASSETS_PATH.config_item('wepos_crt_file');
+			$this->curl->create($client_url);
+			$this->curl->option('connecttimeout', 600);
+			$this->curl->option('RETURNTRANSFER', 1);
+			$this->curl->option('SSL_VERIFYPEER', 1);
+			$this->curl->option('SSL_VERIFYHOST', 2);
+			//$this->curl->option('SSLVERSION', 3);
+			$this->curl->option('POST', 1);
+			$this->curl->option('POSTFIELDS', $post_data);
+			$this->curl->option('CAINFO', $wepos_crt);
+			$curl_ret = $this->curl->execute();
+			
+			
+			//$curl_ret = $this->curl->simple_get($client_url);
+			$ret_data = json_decode($curl_ret, true);
+			
+			if(!empty($ret_data['success'] === true)){
+				
+				if(!empty($ret_data['merchant_xid'])){
+					$merchant_xid = $ret_data['merchant_xid'];
+					$merchant_verified = $ret_data['merchant_verified'];
+					
+					$var = array('fields'	=>	array(
+							'merchant_verified'  => 	$merchant_verified,
+							'merchant_xid'  	=> 	$merchant_xid,
+							'updated'		=>	date('Y-m-d H:i:s'),
+							'updatedby'		=>	'system'
+						),
+						'table'			=>  $this->table,
+						'primary_key'	=>  'id'
+					);
+					$update = $this->m->save($var, $id);
+					
+					$merchant_verified_show = '<font color="red"><b>'.ucwords($merchant_verified).'</b></font>';
+					if($merchant_verified == 'verified'){
+						$merchant_verified_show = '<font color="green"><b>'.ucwords($merchant_verified).'</b></font>';
+					}
+		
+					$return_data = array(
+						'merchant_xid'	=> $merchant_xid,
+						'merchant_verified'	=> $merchant_verified,
+						'merchant_verified_show'	=> $merchant_verified_show
+					);
+					
+					if($is_return){
+						return $return_data;
+					}
+				}
+				
+				if($is_return){
+					return 'user';
+				}
+				
+			}else{
+				if($is_return){
+					return 'koneksi';
+				}
+			}
+		
 			
         } 
 		

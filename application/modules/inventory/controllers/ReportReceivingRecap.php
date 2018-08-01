@@ -58,9 +58,10 @@ class reportReceivingRecap extends MY_Controller {
 			
 			$add_where = "(a.receive_date >= '".$qdate_from."' AND a.receive_date <= '".$qdate_till."')";
 			
-			$this->db->select("a.*, b.supplier_name");
+			$this->db->select("a.*, b.supplier_name, c.po_discount as discount");
 			$this->db->from($this->table." as a");
 			$this->db->join($this->prefix.'supplier as b','b.id = a.supplier_id','LEFT');
+			$this->db->join($this->prefix.'po as c','c.id = a.po_id','LEFT');
 			$this->db->where("a.receive_status", 'done');
 			$this->db->where("a.is_deleted", 0);
 			$this->db->where($add_where);
@@ -88,11 +89,13 @@ class reportReceivingRecap extends MY_Controller {
 							'total_receiving'	=> 0,
 							'total_item'	=> 0,
 							'total_qty'		=> 0,
-							'total_price'	=> 0	
+							'total_price'	=> 0,
+							'discount'	=> 0	
 						);
 					}
 					
 					$newData[$s['receive_date']]['total_receiving'] += 1;
+					$newData[$s['receive_date']]['discount'] += $s['discount'];
 					//array_push($newData, $s);
 					
 					if(empty($all_receive_id_date[$s['id']])){

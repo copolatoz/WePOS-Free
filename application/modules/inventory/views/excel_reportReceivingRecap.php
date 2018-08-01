@@ -49,6 +49,7 @@ $total_cols = 6;
 				$total_item = 0;
 				$total_qty = 0;
 				$total_price = 0;
+				$discount = 0;
 				foreach($report_data as $det){
 
 					?>
@@ -58,14 +59,15 @@ $total_cols = 6;
 						<td class="tbl_data_td_xcenter"><?php echo $det['total_receiving']; ?></td>
 						<td class="tbl_data_td_xcenter"><?php echo priceFormat($det['total_item']); ?></td>
 						<td class="tbl_data_td_xcenter"><?php echo priceFormat($det['total_qty']); ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo priceFormat($det['total_price']); ?></td>						
+						<td class="tbl_data_td_xright"><?php echo priceFormat($det['total_price']-$det['discount']); ?></td>						
 					</tr>
 					<?php	
 
 					$total_receiving += $det['total_receiving'];
 					$total_item += $det['total_item'];
 					$total_qty += $det['total_qty'];
-					$total_price += $det['total_price'];
+					$total_price += ($det['total_price']-$det['discount']);
+					$discount += $det['discount'];
 					
 					$no++;
 				}
@@ -76,7 +78,7 @@ $total_cols = 6;
 					<td class="tbl_summary_td_xcenter"><?php echo $total_receiving; ?></td>
 					<td class="tbl_summary_td_xcenter"><?php echo $total_item; ?></td>
 					<td class="tbl_summary_td_xcenter"><?php echo priceFormat($total_qty); ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_price); ?></td>
+					<td class="tbl_summary_td_xright"><?php echo priceFormat($total_price); ?></td>
 				</tr>
 				<?php
 			}else{

@@ -4755,7 +4755,7 @@ class BillingCashier extends MY_Controller {
 				);
 				
 				if(!empty($is_void)){
-					$print_attr["billing_no}"] = $billingData->billing_no.' (VOID)';
+					$print_attr["{billing_no}"] = $billingData->billing_no.' (VOID)';
 				}
 				
 				if($discount_total == 0){

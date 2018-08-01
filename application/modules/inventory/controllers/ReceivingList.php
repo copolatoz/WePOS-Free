@@ -7,6 +7,7 @@ class ReceivingList extends MY_Controller {
 	{
 		parent::__construct();
 		$this->prefix = config_item('db_prefix2');
+		$this->prefix_acc = config_item('db_prefix3');
 		$this->load->model('model_receivinglist', 'm');
 		$this->load->model('model_receivedetail', 'm2');
 		$this->load->model('purchase/model_purchaseorderdetail', 'm3');
@@ -71,7 +72,7 @@ class ReceivingList extends MY_Controller {
 			if(!empty($date_from) OR !empty($date_till)){
 			
 				if(empty($date_from)){ $date_from = date('Y-m-d'); }
-				if(empty($date_till)){ $date_till = date('Y-m-td'); }
+				if(empty($date_till)){ $date_till = date('Y-m-t'); }
 				
 				$mktime_dari = strtotime($date_from);
 				$mktime_sampai = strtotime($date_till);
@@ -397,7 +398,7 @@ class ReceivingList extends MY_Controller {
 				if(!empty($all_unik_kode_perkey[$key])){
 					$receiveDetail[$key]['data_stok_kode_unik'] = implode("\n", $all_unik_kode_perkey[$key]);
 					
-					if($dtDet['receive_det_qty'] != count($all_unik_kode_perkey[$key])){
+					if(!empty($dtDet['returd_qty']) AND $dtDet['receive_det_qty'] != count($all_unik_kode_perkey[$key])){
 						$r = array('success' => false, 'info' => 'Total Unik Kode (SN/IMEI) pada Item: '.$dtDet['item_name'].' tidak sesuai dengan Total Qty yang diterima'); 
 						die(json_encode($r));
 					}
@@ -420,15 +421,15 @@ class ReceivingList extends MY_Controller {
 		$r = '';
 		if($this->input->post('form_type_receivingList', true) == 'add')
 		{
-			$date_now = date("Y-m-d");
+			
 			//CLOSING DATE
 			$var_closing = array(
-				'xdate'	=> $date_now,
+				'xdate'	=> $receive_date,
 				'xtipe'	=> 'purchasing'
 			);
 			$is_closing = is_closing($var_closing);
 			if($is_closing){
-				$r = array('success' => false, 'info' => 'Transaksi untuk Purchasing & Receiving pada tanggal: '.$date_now.' sudah ditutup!'); 
+				$r = array('success' => false, 'info' => 'Transaksi untuk Purchasing & Receiving pada tanggal: '.$receive_date.' sudah ditutup!'); 
 				die(json_encode($r));
 			}
 			
@@ -571,7 +572,8 @@ class ReceivingList extends MY_Controller {
 			
 			//CLOSING DATE
 			$var_closing = array(
-				'xdate'	=> $old_data['receive_date'],
+				//'xdate'	=> $old_data['receive_date'],
+				'xdate'	=> $receive_date,
 				'xtipe'	=> 'purchasing'
 			);
 			$is_closing = is_closing($var_closing);
@@ -622,6 +624,33 @@ class ReceivingList extends MY_Controller {
 				if($receive_date != date("Y-m-d")){
 					$warning_update_stok = true;
 				}
+				
+				//CEK PEMBAYARAN AP != kontrabon
+				$this->db->from($this->prefix_acc.'account_payable');
+				$this->db->where("po_id = '".$po_id."'");
+				$this->db->where("ap_tipe = 'purchasing' AND is_deleted = 0");
+				$get_stat_ap = $this->db->get();	
+				if($get_stat_ap->num_rows() > 0){
+					
+					$dt_ap = $get_stat_ap->row();
+					
+					if($dt_ap->ap_status == 'pengakuan' OR $dt_ap->ap_status == 'posting'){
+						
+					}else
+					if($dt_ap->ap_status == 'kontrabon'){
+						$r = array('success' => false, 'info' => 'Tidak boleh update status ke Progress<br/>Silahkan Cek Status AP/Hutang: '.$dt_ap->ap_no.',<br/>AP/Hutang sudah dibuat kontrabon: '.$dt_ap->no_kontrabon); 
+						die(json_encode($r));
+					}else
+					if($dt_ap->ap_status == 'pembayaran'){
+						$r = array('success' => false, 'info' => 'Tidak boleh update status ke Progress<br/>Silahkan Cek Status AP/Hutang: '.$dt_ap->ap_no.',<br/>AP/Hutang sudah selesai s/d pembayaran'); 
+						die(json_encode($r));
+					}else{
+						$r = array('success' => false, 'info' => 'Tidak boleh update status ke Progress<br/>Silahkan Cek Status AP/Hutang: '.$dt_ap->ap_no.',<br/>AP/Hutang sudah sampai tahap Jurnal/Posting ke Bag.Keuangan'); 
+						die(json_encode($r));
+					}
+					
+					
+				}	
 			}
 			
 			$this->lib_trans->begin();

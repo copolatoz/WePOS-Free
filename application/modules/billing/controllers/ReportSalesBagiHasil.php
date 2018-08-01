@@ -87,6 +87,12 @@ class ReportSalesBagiHasil extends MY_Controller {
 			$this->db->where("a.is_deleted", 0);
 			$this->db->where($add_where);
 			
+			if(!empty($tipe)){
+				if($tipe != 'null'){
+					$this->db->where("b.table_id", $tipe);
+				}
+			}
+			
 			if(!empty($supplier_id)){
 				$this->db->where("a.supplier_id = '".$supplier_id."'");
 			}
@@ -161,57 +167,87 @@ class ReportSalesBagiHasil extends MY_Controller {
 				'printer_ip_cashierReceipt_default',
 				'printer_pin_cashierReceipt_default',
 				'printer_tipe_cashierReceipt_default',
-				'printer_ip_cashierReceipt_'.$ip_addr,
-				'printer_pin_cashierReceipt_'.$ip_addr,
-				'printer_tipe_cashierReceipt_'.$ip_addr
+				'printer_id_cashierReceipt_default',
+				'printer_id_cashierReceipt_'.$ip_addr
 			);
 			$get_opt = get_option_value($opt_value);
 			
-			//Cashier Printer ----------------------
-			$printer_ip_cashierReceipt = "\\\\".$ip_addr."\\".$get_opt['printer_ip_cashierReceipt_default'];
-			if(!empty($get_opt['printer_ip_cashierReceipt_'.$ip_addr])){
-				$printer_ip_cashierReceipt = $get_opt['printer_ip_cashierReceipt_'.$ip_addr];			
-				if(strstr($printer_ip_cashierReceipt, '\\')){
-					$printer_ip_cashierReceipt = "\\\\".$printer_ip_cashierReceipt;
-				}			
-			}		
-			
-			if(empty($get_opt['cashierReceipt_bagihasil_layout'])){
-				$get_opt['cashierReceipt_bagihasil_layout'] = '';
+			//ID Printer ----------------------
+			$printer_id_cashierReceipt = $get_opt['printer_id_cashierReceipt_default'];
+			if(!empty($get_opt['printer_id_cashierReceipt_'.$ip_addr])){
+				$printer_id_cashierReceipt = $get_opt['printer_id_cashierReceipt_'.$ip_addr];
 			}
-			$cashierReceipt_bagihasil_layout = $get_opt['cashierReceipt_bagihasil_layout'];
-			//---------------------- Cashier Printer
 			
-			$printer_pin_cashierReceipt = 'PIN 42';
-			if(!empty($get_opt['printer_pin_cashierReceipt_'.$ip_addr])){
-				$printer_pin_cashierReceipt = $get_opt['printer_pin_cashierReceipt_'.$ip_addr];
+			//GET PRINTER DATA
+			$this->db->from($this->prefix.'printer');		
+			$this->db->where("id", $printer_id_cashierReceipt);		
+			$get_printer = $this->db->get();
+
+			$data_printer = array();
+			if($get_printer->num_rows() > 0){
+				$data_printer = $get_printer->row_array();
+			}else{
+				echo 'Printer Tidak Ditemukan!';
+				die();
+			}	
+			
+			//update -- 2018-01-23
+			$printer_ip_cashierReceipt = $data_printer['printer_ip'];			
+			if(strstr($printer_ip_cashierReceipt, '\\')){
+				$printer_ip_cashierReceipt = "\\\\".$printer_ip_cashierReceipt;
+			}	
+
+			$printer_pin_cashierReceipt = $data_printer['printer_pin'];
+			$printer_type_cashier = $data_printer['printer_tipe'];
+			
+
+			$cashierReceipt_bagihasil_layout = $get_opt['cashierReceipt_bagihasil_layout'];
+			if(!empty($print_type)){
+				$cashierReceipt_bagihasil_layout = $get_opt['cashierReceipt_bagihasil_layout'];
+			}
+
+			$printer_pin_cashierReceipt = trim(str_replace("CHAR", "", $printer_pin_cashierReceipt));
+
+			$no_limit_text = false;
+			if($data_printer['print_method'] == 'ESC/POS'){
+				//$no_limit_text = false;
 			}
 			
 			//trim prod name
-			$max_text = 19;
-			
-			if($printer_pin_cashierReceipt == 'PIN 32'){
+			$max_text = 18; //44
+			$max_number_1 = 9;
+			$max_number_2 = 13;
+			$max_number_3 = 14;
+
+			if($printer_pin_cashierReceipt == 32){
 				$max_text -= 7;
+				$max_number_1 = 7;
+				$max_number_2 = 9;
+				$max_number_3 = 14;
 			}
-			if($printer_pin_cashierReceipt == 'PIN 40'){
-				$max_text -= 2;
+			if($printer_pin_cashierReceipt == 40){
+				$max_text -= 4;
+				$max_number_1 = 7;
+				$max_number_2 = 11;
+				$max_number_3 = 14;
 			}
-			if($printer_pin_cashierReceipt == 'PIN 48'){
-				$max_text += 6;
+			if($printer_pin_cashierReceipt == 42){
+				$max_text -= 3;
+				$max_number_1 = 9;
+				$max_number_2 = 13;
+				$max_number_3 = 14;
 			}
-			
-			//TYPE PRINTER
-			$printer_type_cashier = '';
-			$printer_tipe_cashierReceipt_default = '';
-			if(!empty($get_opt['printer_tipe_cashierReceipt_default'])){
-				$printer_tipe_cashierReceipt_default = $get_opt['printer_tipe_cashierReceipt_default'];
+			if($printer_pin_cashierReceipt == 46){
+				$max_text += 2;
+				$max_number_1 = 9;
+				$max_number_2 = 13;
+				$max_number_3 = 14;
 			}
-			if(!empty($get_opt['printer_tipe_cashierReceipt_'.$ip_addr])){
-				$printer_type_cashier = $get_opt['printer_tipe_cashierReceipt_'.$ip_addr];
-			}
-			
-			if(empty($printer_type_cashier)){
-				$printer_type_cashier = $printer_tipe_cashierReceipt_default;
+			if($printer_pin_cashierReceipt == 48){
+				$max_text += 4;
+				$max_number_1 = 9;
+				$max_number_2 = 13;
+				$max_number_3 = 14;
 			}
 			
 			$sales_data_title = "";
@@ -220,11 +256,14 @@ class ReportSalesBagiHasil extends MY_Controller {
 			$total_sales = 0;
 			$total_toko = 0;
 			$total_supplier = 0;
+			$all_text_array = array();
+			$no = 0;
 			
 			if(!empty($data_post['report_data'])){
 				
 				foreach($data_post['report_data'] as $dt){
 					
+					$no++;
 					$product_name = $dt['product_name'];
 					
 					if(strlen($product_name) > $max_text){
@@ -275,22 +314,22 @@ class ReportSalesBagiHasil extends MY_Controller {
 						}
 					}
 							
-					$total_price = printer_command_align_right($dt['total_price'], 7);		
-					$total_price_supplier = printer_command_align_right($dt['total_price_supplier'], 9);
+					$total_price = printer_command_align_right($dt['total_price'], $max_number_1);		
+					$total_price_supplier = printer_command_align_right($dt['total_price_supplier'], $max_number_2);
 					
-					if($printer_pin_cashierReceipt == 'PIN 32'){
-						$total_price = printer_command_align_right($dt['total_price'], 6);
-						$total_price_supplier = printer_command_align_right($dt['total_price_supplier'], 8);
+					if(in_array($printer_pin_cashierReceipt, array(32,40)) AND $no_limit_text == false){
+						$total_price = printer_command_align_right($dt['total_price'], $max_number_1);
+						$total_price_supplier = printer_command_align_right($dt['total_price_supplier'], $max_number_2);
 					
 						if(empty($sales_data_title)){
-							$sales_data_title = "[align=0]QTY[tab]ITEM[tab]".printer_command_align_right("SALES",6)."[tab]".printer_command_align_right("SUPPLIER",8);
+							$sales_data_title = "[align=0]QTY[tab]ITEM[tab]".printer_command_align_right("SALES",$max_number_1)."[tab]".printer_command_align_right("SUPPLIER",$max_number_2);
 							
 						}
 						
 					}else{
 						
 						if(empty($sales_data_title)){
-							$sales_data_title = "[align=0]QTY[tab]ITEM[tab]".printer_command_align_right("SALES",7)."[tab]".printer_command_align_right("SUPPLIER",9);
+							$sales_data_title = "[align=0]QTY[tab]ITEM[tab]".printer_command_align_right("SALES",$max_number_1)."[tab]".printer_command_align_right("SUPPLIER",$max_number_2);
 							
 						}
 					}
@@ -320,10 +359,10 @@ class ReportSalesBagiHasil extends MY_Controller {
 			}
 			
 			
-			$total_qty = printer_command_align_right(priceFormat($total_qty), 11);
-			$total_sales = printer_command_align_right(priceFormat($total_sales), 11);
-			$total_toko = printer_command_align_right(priceFormat($total_toko), 11);
-			$total_supplier = printer_command_align_right(priceFormat($total_supplier), 11);
+			$total_qty = printer_command_align_right(priceFormat($total_qty), $max_number_3);
+			$total_sales = printer_command_align_right(priceFormat($total_sales), $max_number_3);
+			$total_toko = printer_command_align_right(priceFormat($total_toko), $max_number_3);
+			$total_supplier = printer_command_align_right(priceFormat($total_supplier), $max_number_3);
 			
 			$print_attr = array(
 				"{tanggal_shift}"		=> date("d/m/Y"),
@@ -340,47 +379,59 @@ class ReportSalesBagiHasil extends MY_Controller {
 			$print_content_cashierReceipt = strtr($cashierReceipt_bagihasil_layout, $print_attr);
 			
 			
-			$print_content_cashierReceipt = replace_to_printer_command($print_content_cashierReceipt, $printer_type_cashier, $printer_pin_cashierReceipt);
-			
+			$print_content = replace_to_printer_command($print_content_cashierReceipt, $printer_type_cashier, $printer_pin_cashierReceipt);
+				
+				
 			$r = array('success' => false, 'info' => '', 'print' => array());
 			
 			//echo '<pre>';
-			//print_r($print_content_cashierReceipt);
+			//print_r($print_content);
 			//die();
 			
+			$r['print'][] = $print_content;
 			
 			//$r['print'][] = $print_content_cashierReceipt;
 			//DIRECT PRINT USING PHP - CASHIER PRINTER				
 			$is_print_error = false;
 			
-			try {
-				$ph = printer_open($printer_ip_cashierReceipt);
-			} catch (Exception $e) {
-				$ph = false;
-			}
-			
-			//$ph = @printer_open($printer_ip_cashierReceipt);
-			
-			if($ph)
-			{	
-				printer_start_doc($ph, "SALES - SUPPLIER");
-				printer_start_page($ph);
-				printer_set_option($ph, PRINTER_MODE, "RAW");
-				printer_write($ph, $print_content_cashierReceipt);
-				printer_end_page($ph);
-				printer_end_doc($ph);
-				printer_close($ph);
-				$r['success'] = true;
+			if($data_printer['print_method'] == 'ESC/POS'){
+				try {
+					@$ph = printer_open($printer_ip_cashierReceipt);
+				} catch (Exception $e) {
+					$ph = false;
+				}
 				
-			}else{
-				$is_print_error = true;
-			}
-			
-			if($is_print_error){					
-				echo 'Communication with Printer Cashier Failed!<br/>';
+				//$ph = @printer_open($printer_ip_cashierReceipt);
+				
+				if($ph)
+				{	
+					printer_start_doc($ph, "SALES - SUPPLIER");
+					printer_start_page($ph);
+					printer_set_option($ph, PRINTER_MODE, "RAW");
+					printer_write($ph, $print_content_cashierReceipt);
+					printer_end_page($ph);
+					printer_end_doc($ph);
+					printer_close($ph);
+					$r['success'] = true;
+					
+				}else{
+					$is_print_error = true;
+				}
+				
+				
+				$data_printer['escpos_pass'] = 1;
+				
+				if($is_print_error){					
+					$r['info'] .= 'Communication with Printer Cashier Failed!<br/>';
+					echo $r['info'];
+					die();
+				}
 			}
 			
 			//echo json_encode($r);
+			
+			printing_process($data_printer, $print_content, 'print');
+			
 			die();
 			
 		}
@@ -420,12 +471,16 @@ class ReportSalesBagiHasil extends MY_Controller {
 			'do'	=> '',
 			'report_data'	=> array(),
 			'report_place_default'	=> '',
+			'supplier_name'	=> '-',
 			'report_name'	=> 'LAPORAN BAGI HASIL (RECAP)',
 			'date_from'	=> $date_from,
 			'date_till'	=> $date_till,
 			'user_fullname'	=> $user_fullname,
+			'session_user'	=> $session_user,
 			'diskon_sebelum_pajak_service' => 0
 		);
+		
+		//$data_post['supplier_name'] = $supplier_name;
 		
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service','cashier_max_pembulatan','cashier_pembulatan_keatas'));
 		if(!empty($get_opt['report_place_default'])){
@@ -464,6 +519,12 @@ class ReportSalesBagiHasil extends MY_Controller {
 			$this->db->where("a.billing_status", 'paid');
 			$this->db->where("a.is_deleted", 0);
 			$this->db->where($add_where);
+			
+			if(!empty($tipe)){
+				if($tipe != 'null'){
+					$this->db->where("a.table_id", $tipe);
+				}
+			}
 			
 			if(empty($sorting)){
 				$this->db->order_by("payment_date","ASC");
@@ -646,6 +707,12 @@ class ReportSalesBagiHasil extends MY_Controller {
 						}
 					}
 					
+					
+					
+					//$total_price = $dt['order_qty']*$dt['product_price'];
+					//$total_price_toko = $dt['order_qty']*($dt['product_price']-$dt['total_bagi_hasil']);
+					//$total_price_supplier = ($dt['order_qty']*$dt['total_bagi_hasil']);
+					
 					//REKAP TGL
 					$payment_date = date("d-m-Y",strtotime($s['payment_date']));
 					if(empty($all_group_date[$payment_date])){
@@ -655,6 +722,8 @@ class ReportSalesBagiHasil extends MY_Controller {
 							'date'		=> $payment_date, 
 							'qty_billing'		=> 0, 
 							'total_billing'		=> 0, 
+							'total_price_toko'		=> 0, 
+							'total_price_supplier'		=> 0, 
 							'total_billing_show'=> 0,
 							'tax_total'			=> 0, 
 							'tax_total_show'	=> 0, 
@@ -696,8 +765,13 @@ class ReportSalesBagiHasil extends MY_Controller {
 					
 					$all_bil_id_date[$s['billing_id']] = $payment_date;
 					
+					$s['total_price_toko'] = 0;
+					$s['total_price_supplier'] = 0;
+					
 					$all_group_date[$payment_date]['qty_billing'] += 1;
 					$all_group_date[$payment_date]['total_billing'] += $s['total_billing'];
+					$all_group_date[$payment_date]['total_price_toko'] += $s['total_price_toko'];
+					$all_group_date[$payment_date]['total_price_supplier'] += $s['total_price_supplier'];
 					$all_group_date[$payment_date]['tax_total'] += $s['tax_total'];
 					$all_group_date[$payment_date]['service_total'] += $s['service_total'];
 					$all_group_date[$payment_date]['discount_total'] += $s['discount_total'];
@@ -816,6 +890,9 @@ class ReportSalesBagiHasil extends MY_Controller {
 			
 			//calc detail
 			$total_hpp = array();
+			$total_price_toko = array();
+			$total_price_supplier = array();
+					
 			if(!empty($all_bil_id)){
 				$all_bil_id_txt = implode(",",$all_bil_id);
 				$this->db->from($this->table2);
@@ -831,6 +908,9 @@ class ReportSalesBagiHasil extends MY_Controller {
 						if($total_qty < 0){
 						$total_qty = 0;
 						}*/
+						$dt = (array) $dtRow;
+						$price_toko = $dt['order_qty']*($dt['product_price']-$dt['total_bagi_hasil']);
+						$price_supplier = ($dt['order_qty']*$dt['total_bagi_hasil']);
 						
 						if(!empty($all_bil_id_date[$dtRow->billing_id])){
 							$payment_date = $all_bil_id_date[$dtRow->billing_id];
@@ -839,6 +919,16 @@ class ReportSalesBagiHasil extends MY_Controller {
 								$total_hpp[$payment_date] = 0;
 							}
 							$total_hpp[$payment_date] += $dtRow->product_price_hpp * $total_qty;
+							
+							if(empty($total_price_toko[$payment_date])){
+								$total_price_toko[$payment_date] = 0;
+							}
+							$total_price_toko[$payment_date] += $price_toko;
+							
+							if(empty($total_price_supplier[$payment_date])){
+								$total_price_supplier[$payment_date] = 0;
+							}
+							$total_price_supplier[$payment_date] += $price_supplier;
 						}
 			
 						
@@ -872,6 +962,14 @@ class ReportSalesBagiHasil extends MY_Controller {
 
 					if(!empty($total_hpp[$key])){
 						$detail['total_hpp'] = $total_hpp[$key];
+					}
+
+					if(!empty($total_price_toko[$key])){
+						$detail['total_price_toko'] = $total_price_toko[$key];
+					}
+
+					if(!empty($total_price_supplier[$key])){
+						$detail['total_price_supplier'] = $total_price_supplier[$key];
 					}
 
 					$detail['total_profit'] = $detail['total_billing']-$detail['total_hpp'];
