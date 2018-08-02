@@ -1,7 +1,7 @@
 RewriteEngine On
 
 #If installed in the public_html on linux, then add the users folder
-RewriteBase /wepos/
+RewriteBase /wepos-free/
 
 RewriteCond $1 !^(index\.php|themes|js|files)
 RewriteCond %{REQUEST_FILENAME} !-f
