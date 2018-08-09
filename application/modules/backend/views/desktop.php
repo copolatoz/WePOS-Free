@@ -4,6 +4,11 @@
 	<title><?php echo config_item('program_name'); ?> | <?php echo $this->session->userdata('client_name'); ?></title> 
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="<?php echo $meta_description; ?>">
+    <meta name="author" content="<?php echo $meta_author; ?>">
+    <meta name="keywords" content="<?php echo $meta_keywords; ?>">
+
+    <link rel="shortcut icon" href="<?php echo base_url(); ?>assets/themes/frontend/images/favicon.ico" />
 	<link rel="stylesheet" href="<?php echo base_url().'assets/desktop/css/loading.css'; ?>" />
 	<script src="<?php echo base_url().'backend/config?v='.time(); ?>" type="text/javascript" charset="utf-8"></script>
 	
