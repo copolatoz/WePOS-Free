@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title><?php echo config_item('program_name'); ?> | <?php echo $this->session->userdata('client_name'); ?></title> 
+	<title><?php echo config_item('program_name'); ?> &mdash; <?php echo $this->session->userdata('client_name').' / '.$this->session->userdata('client_phone').' / '.$this->session->userdata('client_address'); ?></title> 
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="description" content="<?php echo $meta_description; ?>">
@@ -35,16 +35,16 @@
 	
 	</div>
 	
-	<!--
-	<div id="poweredby">
-		<div>
-		<div class="logo">
-			<img src="<?php echo base_url(); ?>assets/resources/client_logo/<?php echo $this->session->userdata('client_logo'); ?>">
-		</div>
-		<?php echo $this->session->userdata('client_name'); ?><br/>
-		<small><?php echo $this->session->userdata('client_unit_name'); ?></small>
-		</div>
-	</div>
-	-->
+	
+	
+	<!--Start of Zendesk Chat Script-->
+	<script type="text/javascript">
+	window.$zopim||(function(d,s){var z=$zopim=function(c){z._.push(c)},$=z.s=
+	d.createElement(s),e=d.getElementsByTagName(s)[0];z.set=function(o){z.set.
+	_.push(o)};z._=[];z.set._=[];$.async=!0;$.setAttribute("charset","utf-8");
+	$.src="https://v2.zopim.com/?3rmcPc13QzDajPqfCVOSZBlvA97Hixyj";z.t=+new Date;$.
+	type="text/javascript";e.parentNode.insertBefore($,e)})(document,"script");
+	</script>
+	<!--End of Zendesk Chat Script-->
 </body>
 </html>
