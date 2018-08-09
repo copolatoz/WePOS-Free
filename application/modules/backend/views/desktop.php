@@ -4,9 +4,6 @@
 	<title><?php echo config_item('program_name'); ?> &mdash; <?php echo $this->session->userdata('client_name').' / '.$this->session->userdata('client_phone').' / '.$this->session->userdata('client_address'); ?></title> 
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="description" content="<?php echo $meta_description; ?>">
-    <meta name="author" content="<?php echo $meta_author; ?>">
-    <meta name="keywords" content="<?php echo $meta_keywords; ?>">
 
     <link rel="shortcut icon" href="<?php echo base_url(); ?>assets/themes/frontend/images/favicon.ico" />
 	<link rel="stylesheet" href="<?php echo base_url().'assets/desktop/css/loading.css'; ?>" />
