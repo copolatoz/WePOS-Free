@@ -1,0 +1,13 @@
+
+Cara Membuat Database Baru
+1. buka http://localhost/phpmyadmin
+2. creata new database / membuat database baru (dengan nama: 'wepos_free')
+3. pilih database yang baru saja dibuat
+4. cari tab / pilihan tombol 'IMPORT' database, pilih file dalam folder wepos/db: 'wepos_retail-free-3.42.19.sql'
+
+Cara Update dari versi sebelumnya:
+1. buka http://localhost/phpmyadmin
+2. pilih database yang sudah ada / digunakan
+3. cari tab / pilihan tombol 'SQ'L database
+4. buka file 'update-ke-v.3.42.19.sql' dan copy ke 'SQL'
+5. jalan kan 'SQL' dengan tombol'Go'
