@@ -7,7 +7,7 @@ class Mdl_login extends CI_Model {
 		parent::__construct();	
 	}
 
-	function submit($username, $password, $store_data = '')
+	function submit($username, $password, $store_data = '', $mkey = '')
 	{
 		$prefix	= config_item('db_prefix');
 		$this->db->select('id as id_user, client_id');
@@ -24,7 +24,8 @@ class Mdl_login extends CI_Model {
 		if($c > 0)
 		{
 			$row = $query->row();
-			$d = $this->get_client($row->client_id, $row->id_user);
+			$d = $this->get_client($row->client_id, $row->id_user, $mkey);
+			$d->is_cloud = $mkey;
 			$d->client_ip = '';
 			$d->mysql_user = '';
 			$d->mysql_pass = '';
@@ -50,7 +51,7 @@ class Mdl_login extends CI_Model {
 	}
 	
 
-	function submit_pin($user_pin = '-1', $store_data = '')
+	function submit_pin($user_pin = '-1', $store_data = '', $mkey = '')
 	{
 		
 		$prefix	= config_item('db_prefix');
@@ -67,7 +68,8 @@ class Mdl_login extends CI_Model {
 		if($c > 0)
 		{
 			$row = $query->row();
-			$d = $this->get_client($row->client_id, $row->id_user);
+			$d = $this->get_client($row->client_id, $row->id_user, $mkey);
+			$d->is_cloud = $mkey;
 			$d->client_ip = '';
 			$d->mysql_user = '';
 			$d->mysql_pass = '';
@@ -101,7 +103,7 @@ class Mdl_login extends CI_Model {
 		);
 	}
 	
-	function get_client($id_client = 0, $id_user=0)
+	function get_client($id_client = 0, $id_user=0, $mkey = '')
 	{
 		//UNIT KERJA
 		$prefix	=	config_item('db_prefix');
@@ -140,6 +142,27 @@ class Mdl_login extends CI_Model {
 		if($q->num_rows() > 0){
 			$ret_data = $q->row();
 			$ret_data->user_fullname = $ret_data->user_firstname.' '.$ret_data->user_lastname;
+			
+			$opt_val = array(
+				'merchant_key'
+			);
+			
+			$get_opt = get_option_value($opt_val);
+			
+			if(($ret_data->client_code == '' OR empty($get_opt['merchant_key'])) AND !empty($mkey)){
+				//update code
+				$opt_val = array(
+					'merchant_key' => $mkey
+				);
+				update_option($opt_val);
+				
+				$update_client = array('client_code' => $mkey);
+				$this->db->update($prefix.'clients', $update_client, "id = ".$ret_data->client_id);
+				
+				$ret_data->client_code = $mkey;
+				
+			}
+			
 		}
 		
 		return $ret_data;

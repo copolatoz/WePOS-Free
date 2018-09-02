@@ -578,7 +578,7 @@ class BillingCashier extends MY_Controller {
 		
 		$opt_var = array('include_tax','include_service',
 		'default_tax_percentage','default_service_percentage',
-		'takeaway_no_tax','takeaway_no_service','autohold_create_billing');
+		'takeaway_no_tax','takeaway_no_service','autohold_create_billing','default_tipe_billing');
 		$get_opt = get_option_value($opt_var);
 		
 		$include_tax = 0;
@@ -615,6 +615,13 @@ class BillingCashier extends MY_Controller {
 		$autohold_create_billing = 0;
 		if(!empty($get_opt['autohold_create_billing'])){
 			$autohold_create_billing = $get_opt['autohold_create_billing'];
+		}
+		
+		//default_tipe_billing
+		$default_tipe_billing = 0;
+		if(!empty($get_opt['default_tipe_billing']) AND empty($table_id)){
+			$default_tipe_billing = $get_opt['default_tipe_billing'];
+			$table_id = $get_opt['default_tipe_billing'];
 		}
 		
 		$is_new = false;

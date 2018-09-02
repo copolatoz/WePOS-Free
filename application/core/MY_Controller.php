@@ -78,11 +78,7 @@ class MY_Controller extends MX_Controller{
 			}
 			
 			
-		}
-		
-		//RESTFUL
-		$this->set_rest_value('id_client', $this->id_client);
-		$this->set_rest_value('id_user', $this->id_user);
+		}	
 				
 		// XSS Filtering
 		if(isset($_POST)){
@@ -120,28 +116,6 @@ class MY_Controller extends MX_Controller{
 		{
 			//redirect('homepage', 'refresh');
 		}
-	}
-
-	function rest_server($d)
-	{
-		$config = array(
-			'server' 	=> config_item('rest_server_url').$d,  
-		    'http_user' => config_item('rest_username'),  
-		    'http_pass' => config_item('rest_password'),  
-		    'http_auth' => 'basic'
-		);
-		
-		$this->rest->initialize($config);
-	}
-
-	function set_rest_value($key,$value)
-	{
-		$this->rest_parameters[$key] = $value;
-	}
-	
-	function get_rest_parameters()
-	{
-		return $this->rest_parameters;
 	}
 	
 }

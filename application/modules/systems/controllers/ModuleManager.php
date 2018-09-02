@@ -395,6 +395,73 @@ class ModuleManager extends MY_Controller {
 		die(json_encode(($r==null or $r=='')? array('success'=>false) : $r));
 	}
 	
+	
+	public function checkClient()
+	{
+		$this->table = $this->prefix.'clients';
+		$opt_var = array(
+			'merchant_key',
+			'merchant_last_check',
+			'merchant_cor_token',
+			'merchant_acc_token',
+			'merchant_mkt_token',
+			'produk_nama',
+			'produk_expired'
+		);
+		$get_opt = get_option_value($opt_var);
+		
+		if(empty($get_opt['merchant_key'])){
+			$get_opt['merchant_key'] = '';
+		}
+		if(empty($get_opt['merchant_cor_token'])){
+			$get_opt['merchant_cor_token'] = '';
+		}
+		if(empty($get_opt['merchant_acc_token'])){
+			$get_opt['merchant_acc_token'] = '';
+		}
+		if(empty($get_opt['merchant_mkt_token'])){
+			$get_opt['merchant_mkt_token'] = '';
+		}
+		if(empty($get_opt['produk_nama'])){
+			$get_opt['produk_nama'] = 'Gratis / Free';
+		}
+		if(empty($get_opt['produk_expired'])){
+			$get_opt['produk_expired'] = 'unlimited';
+		}
+		if(empty($get_opt['merchant_last_check'])){
+			$get_opt['merchant_last_check'] = '0';
+		}
+		
+		$this->db->from($this->table);
+		$this->db->where("id = 1");
+		$q = $this->db->get();
+		if($q->num_rows() > 0)  
+        { 
+			$dt = $q->row();
+			
+		}else{
+			$r = array('success' => true); 
+			die(json_encode($r));
+		}
+		
+		$post_dt = array(
+			'merchant_key' 			=> $get_opt['merchant_key'],
+			'merchant_last_check' 	=> $get_opt['merchant_last_check'],
+			'merchant_cor_token' 	=> $get_opt['merchant_cor_token'],
+			'merchant_acc_token'	=> $get_opt['merchant_acc_token'],
+			'merchant_mkt_token' 	=> $get_opt['merchant_mkt_token'],
+			'produk_nama' 			=> $get_opt['produk_nama'],
+			'produk_expired' 		=> $get_opt['produk_expired'],
+			'merchant_verified' 	=> $dt->merchant_verified,
+			'merchant_xid' 			=> $dt->merchant_xid
+		);
+		
+		$this->m->checkClient($post_dt);
+		
+		$r = array('success' => true); 
+		die(json_encode($r));
+	}
+	
 	public function delete()
 	{
 		$prefix = $this->prefix;

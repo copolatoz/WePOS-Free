@@ -98,7 +98,7 @@ class DataClient extends MY_Controller {
 			{  
 				$r = array('success' => true, 'id' => $insert_id); 
 				
-				$verified = $this->weposID($insert_id);
+				//$verified = $this->weposID($insert_id);
 				
 			}  
 			else
@@ -130,7 +130,7 @@ class DataClient extends MY_Controller {
 			if($update)
 			{  
 				$r = array('success' => true, 'id' => $id);
-				$verified = $this->weposID($id);
+				//$verified = $this->weposID($id);
 			}  
 			else
 			{  
@@ -171,28 +171,139 @@ class DataClient extends MY_Controller {
 		die(json_encode($r));
 	}
 	
+	public function checkClient()
+	{
+		$this->table = $this->prefix.'clients';
+		$opt_var = array(
+			'merchant_key',
+			'merchant_last_check',
+			'merchant_cor_token',
+			'merchant_acc_token',
+			'merchant_mkt_token',
+			'produk_nama',
+			'produk_expired'
+		);
+		$get_opt = get_option_value($opt_var);
+		
+		if(empty($get_opt['merchant_key'])){
+			$get_opt['merchant_key'] = '';
+		}
+		if(empty($get_opt['merchant_cor_token'])){
+			$get_opt['merchant_cor_token'] = '';
+		}
+		if(empty($get_opt['merchant_acc_token'])){
+			$get_opt['merchant_acc_token'] = '';
+		}
+		if(empty($get_opt['merchant_mkt_token'])){
+			$get_opt['merchant_mkt_token'] = '';
+		}
+		if(empty($get_opt['produk_nama'])){
+			$get_opt['produk_nama'] = 'Gratis / Free';
+		}
+		if(empty($get_opt['produk_expired'])){
+			$get_opt['produk_expired'] = 'unlimited';
+		}
+		if(empty($get_opt['merchant_last_check'])){
+			$get_opt['merchant_last_check'] = '0';
+		}
+		
+		$this->db->from($this->table);
+		$this->db->where("id = 1");
+		$q = $this->db->get();
+		if($q->num_rows() > 0)  
+        { 
+			$dt = $q->row();
+			
+		}else{
+			$r = array('success' => true); 
+			die(json_encode($r));
+		}
+		
+		$post_dt = array(
+			'merchant_key' 			=> $get_opt['merchant_key'],
+			'merchant_last_check'	=> $get_opt['merchant_last_check'],
+			'merchant_cor_token' 	=> $get_opt['merchant_cor_token'],
+			'merchant_acc_token' 	=> $get_opt['merchant_acc_token'],
+			'merchant_mkt_token' 	=> $get_opt['merchant_mkt_token'],
+			'produk_nama' 			=> $get_opt['produk_nama'],
+			'produk_expired' 		=> $get_opt['produk_expired'],
+			'merchant_verified' 	=> $dt->merchant_verified,
+			'merchant_xid' 			=> $dt->merchant_xid
+		);
+		
+		$this->m->checkClient($post_dt);
+		
+		$r = array('success' => true); 
+		die(json_encode($r));
+	}
+	
 	public function clientInfo()
 	{
 		$prefix = $this->prefix;
 		$this->table = $this->prefix.'clients';
 		
-		//Delete
-		//$this->db->where("id = 1");
-		$q = $this->db->get($this->table);
-		
 		$client_name = config_item('client_name');
 		
+		$opt_var = array(
+			'wepos_tipe',
+			'merchant_tipe',
+			'merchant_key',
+			'merchant_cor_token',
+			'merchant_acc_token',
+			'merchant_mkt_token',
+			'produk_key',
+			'produk_nama',
+			'produk_expired',
+			'share_membership');
+		$get_opt = get_option_value($opt_var);
+		
+		$merchant_tipe = $get_opt['wepos_tipe'];
+		if(!empty($get_opt['merchant_tipe'])){
+			$merchant_tipe = $get_opt['merchant_tipe'];
+		}
+		
+		$produk_nama = 'Gratis / Free';
+		if(!empty($get_opt['produk_nama'])){
+			$produk_nama = $get_opt['produk_nama'];
+		}
+		
+		$produk_key = 'GFR-'.strtotime(date("d-m-Y"));
+		if(!empty($get_opt['produk_key'])){
+			$produk_key = $get_opt['produk_key'];
+		}
+		
+		$produk_expired = 'unlimited';
+		if(!empty($get_opt['produk_expired'])){
+			$produk_expired = $get_opt['produk_expired'];
+		}
+		
+		$produk_expired_show = $produk_expired;
+		if($produk_expired_show == 'unlimited'){
+			$produk_expired_show = 'Selamanya';
+		}
+		
 		$data_client = array(
-			'client_code'  	=> 	'TRIAL-'.$client_name,
+			'client_code'  	=> 	'MERCHANT-CODE',
 			'client_name'  	=> 	$client_name,
 			'client_email'	=>	'',
 			'client_phone'	=>	'',
 			'client_address'	=>	'',
+			'merchant_tipe'		=>	$merchant_tipe,
 			'merchant_verified'	=>	'unverified',
-			'merchant_verified_show'	=>	'<font color="red"><b>Unverified</b></font>'
+			'merchant_verified_show'=>	'<font color="red"><b>Unverified</b></font>',
+			'produk_nama'		=>	$produk_nama,
+			'produk_key'		=>	$produk_key,
+			'produk_expired'	=>	$produk_expired,
+			'produk_expired_show'	=>	'<font color="blue"><b>'.$produk_expired_show.'</b></font>',
+			'merchant_tipe_show'=>	'<font color="blue"><b>'.strtoupper($merchant_tipe).'</b></font>',
+			'produk_nama_show'	=>	'<font color="blue"><b>'.$produk_nama.' ('.$produk_key.') </b></font>'
 		);
 		
 		$r = array('success' => true, 'data' => $data_client, 'info' => 'Get Info Client Failed!'); 
+		
+		$this->db->from($this->table);
+		$this->db->where("id = 1");
+		$q = $this->db->get();
 		if($q->num_rows() > 0)  
         {  
 			$dt = $q->row();
@@ -201,14 +312,22 @@ class DataClient extends MY_Controller {
 			if($dt->merchant_verified == 'verified'){
 				$dt->merchant_verified_show = '<font color="green"><b>Verified</b></font>';
 			}
+			
 			$data_client = array(
 				'client_code'  	=> 	$dt->client_code,
 				'client_name'  	=> 	$dt->client_name,
 				'client_email'	=>	$dt->client_email,
 				'client_phone'	=>	$dt->client_phone,
 				'client_address'	=>	$dt->client_address,
+				'merchant_tipe'		=>	$merchant_tipe,
 				'merchant_verified'	=>	$dt->merchant_verified,
-				'merchant_verified_show'	=>	$dt->merchant_verified_show
+				'merchant_verified_show'	=>	$dt->merchant_verified_show,
+				'produk_nama'		=>	$produk_nama,
+				'produk_key'		=>	$produk_key,
+				'produk_expired'	=>	$produk_expired,
+				'produk_expired_show'	=>	'<font color="green"><b>'.$produk_expired_show.'</b></font>',
+				'merchant_tipe_show'=>	'<font color="green"><b>'.strtoupper($merchant_tipe).'</b></font>',
+				'produk_nama_show'	=>	'<font color="green"><b>'.$produk_nama.' ('.$produk_key.') </b></font>'
 			);
 			
             $r = array('success' => true, 'data' => $data_client, 'info' => 'Get Info Client Success!'); 
@@ -224,11 +343,13 @@ class DataClient extends MY_Controller {
 				
 		$session_user = $this->session->userdata('user_username');
 		
+		$verify = $this->input->post('verify');
 		$client_code = $this->input->post('client_code');
 		$client_name = $this->input->post('client_name');
 		$client_email = $this->input->post('client_email');
 		$client_phone = $this->input->post('client_phone');
 		$client_address = $this->input->post('client_address');
+		$merchant_tipe = $this->input->post('merchant_tipe');
 		$merchant_xid = $this->input->post('merchant_xid');
 		$merchant_verified = $this->input->post('merchant_verified');
 		
@@ -268,33 +389,85 @@ class DataClient extends MY_Controller {
 		$r = array('success' => true, 'data' => $data_client, 'info' => 'Save Client Info Failed!'); 
 		if($update)
 		{  
-			$verified = $this->weposID($id, true);
-			
-			if(!empty($verified['merchant_xid'])){
-				$data_client['merchant_verified_show'] = $verified['merchant_verified_show'];
-				$data_client['merchant_verified'] = $verified['merchant_verified'];
-				$data_client['merchant_xid'] = $verified['merchant_xid'];
+			if($verify == true){
 				
-				$data_client['info_koneksi'] = '<font color="blue"><b>Merchant Terdaftar di WePOS.id</b></font>';
+				$verified = $this->weposID($id, true);
 				
-			}else{
+				$produk_nama = 'Gratis / Free';
+				$produk_key = 'GFR-'.strtotime(date("d-m-Y"));
+				$produk_expired = 'unlimited';
 				
-				$merchant_verified_show = '<font color="red"><b>'.ucwords($merchant_verified).'</b></font>';
-				if($merchant_verified == 'verified'){
-					$merchant_verified_show = '<font color="green"><b>'.ucwords($merchant_verified).'</b></font>';
+				$produk_expired_show = $produk_expired;
+				if($produk_expired_show == 'unlimited'){
+					$produk_expired_show = 'Selamanya';
+				}
+				if(!empty($verified['data_option'])){
+					$merchant_tipe = $verified['data_option']['merchant_tipe'];
+					$produk_nama = $verified['data_option']['produk_nama'];
+					$produk_key = $verified['data_option']['produk_key'];
+					$produk_expired = $verified['data_option']['produk_expired'];
+					$produk_expired_show = $verified['data_option']['produk_expired'];
 				}
 				
-				$data_client['merchant_verified_show'] = $merchant_verified_show;
-				$data_client['merchant_verified'] = $merchant_verified;
-				$data_client['merchant_xid'] = $merchant_xid;
-				
-				$data_client['info_koneksi'] = '';
-				
-				if($verified == 'koneksi'){
-					$data_client['info_koneksi'] = '<font color="red"><b>Koneksi ke WePOS.id Gagal!</b></font>';
-				}
-				if($verified == 'user'){
-					$data_client['info_koneksi'] = '<font color="red"><b>Kode/Merchant Tidak Dikenali</b></font>';
+				if(!empty($verified['merchant_xid']) AND !empty($verified['data_option'])){
+					
+					$data_client['merchant_verified_show'] = $verified['merchant_verified_show'];
+					$data_client['merchant_verified'] = $verified['merchant_verified'];
+					$data_client['merchant_xid'] = $verified['merchant_xid'];
+					$data_client['merchant_tipe'] = $merchant_tipe;
+					$data_client['produk_nama'] = $produk_nama;
+					$data_client['produk_key'] = $produk_key;
+					$data_client['produk_expired'] = $produk_expired;
+					$data_client['produk_expired_show'] = '<font color="green"><b>'.$produk_expired_show.'</b></font>';
+					$data_client['merchant_tipe_show'] = '<font color="green"><b>'.strtoupper($merchant_tipe).'</b></font>';
+					$data_client['produk_nama_show'] = '<font color="green"><b>'.$produk_nama.' ('.$produk_key.')</b></font>';
+					
+					$data_client['info_koneksi'] = '<font color="blue"><b>Merchant Terdaftar di WePOS.id</b></font>';
+					
+				}else{
+					
+					if(!empty($verified['merchant_verified'])){
+						
+						$data_client['merchant_verified_show'] = $verified['merchant_verified_show'];
+						$data_client['merchant_verified'] = $verified['merchant_verified'];
+						$data_client['merchant_xid'] = $verified['merchant_xid'];
+						$data_client['merchant_tipe'] = $merchant_tipe;
+						$data_client['produk_nama'] = $produk_nama;
+						$data_client['produk_key'] = $produk_key;
+						$data_client['produk_expired'] = $produk_expired;
+						$data_client['produk_expired_show'] = '<font color="blue"><b>'.$produk_expired_show.'</b></font>';
+						$data_client['merchant_tipe_show'] = '<font color="blue"><b>'.strtoupper($merchant_tipe).'</b></font>';
+						$data_client['produk_nama_show'] = '<font color="blue"><b>'.$produk_nama.' ('.$produk_key.')</b></font>';
+						
+						$data_client['info_koneksi'] = '<font color="blue"><b>Merchant Terdaftar di WePOS.id</b></font>';
+						if($verified['merchant_verified'] == 'unverified'){
+							$data_client['info_koneksi'] = '<font color="red"><b>Merchant Key Tidak Terdaftar di WePOS.id</b></font>';
+						}
+						
+					}else{
+						$merchant_verified= 'unverified';
+						$merchant_verified_show = '<font color="red"><b>'.ucwords($merchant_verified).'</b></font>';
+						$data_client['merchant_verified_show'] = $merchant_verified_show;
+						$data_client['merchant_verified'] = $merchant_verified;
+						$data_client['merchant_xid'] = '';
+						$data_client['merchant_tipe'] = $merchant_tipe;
+						$data_client['produk_nama'] = $produk_nama;
+						$data_client['produk_key'] = $produk_key;
+						$data_client['produk_expired'] = $produk_expired;
+						$data_client['produk_expired_show'] = '<font color="blue"><b>'.$produk_expired_show.'</b></font>';
+						$data_client['merchant_tipe_show'] = '<font color="blue"><b>'.strtoupper($merchant_tipe).'</b></font>';
+						$data_client['produk_nama_show'] = '<font color="blue"><b>'.$produk_nama.' ('.$produk_key.')</b></font>';
+						
+						$data_client['info_koneksi'] = '<font color="red"><b>Merchant Key Tidak Terdaftar di WePOS.id</b></font>';
+					}
+					
+					if($verified == 'koneksi'){
+						$data_client['info_koneksi'] = '<font color="red"><b>Koneksi ke WePOS.id Gagal!</b></font>';
+					}
+					if($verified == 'user'){
+						$data_client['info_koneksi'] = '<font color="red"><b>Kode/Merchant Tidak Dikenali</b></font>';
+					}
+					
 				}
 				
 			}
@@ -307,14 +480,83 @@ class DataClient extends MY_Controller {
 		die(json_encode($r));
 	}
 	
+	public function notifcheck()
+	{
+		
+		$prefix = $this->prefix;
+		$this->table_options = $this->prefix.'options';
+		$session_user = $this->session->userdata('user_username');
+		
+		$opt_val = array(
+			'merchant_last_checkon',
+			'merchant_last_check',
+			'merchant_tipe',
+			'merchant_key',
+			'merchant_cor_token',
+			'merchant_acc_token',
+			'merchant_mkt_token',
+			'produk_key',
+			'produk_nama',
+			'produk_expired',
+			'share_membership'
+		);
+		
+		$this->db->select('a.*');
+		$this->db->from($this->prefix.'options as a');	
+		$var_all = implode("','", $opt_val);
+		$this->db->where("a.option_var IN ('".$var_all."')");
+		
+		$available_opt = array();
+		$query = $this->db->get();
+		if($query->num_rows() > 0){
+			foreach($query->result() as $dt){
+				$available_opt[] = $dt->option_var;
+			}
+		}
+		
+		//sure available_opt
+		$opt_val_na = array();
+		foreach($opt_val as $dto){
+			if(!in_array($dto, $available_opt)){
+				$opt_val_na[] = $dto;
+			}
+		}
+		
+		$insert_opt = array();
+		if(!empty($opt_val_na)){
+			foreach($opt_val_na as $dt){
+				$insert_opt[] = array(
+					'option_var' 	=>  $dt,
+					'option_value'	=>  '',
+					'created'		=>	date('Y-m-d H:i:s'),
+					'createdby'		=>	$session_user,
+					'updated'		=>	date('Y-m-d H:i:s'),
+					'updatedby'		=>	$session_user,
+					'is_active'		=>	1
+				
+				);
+			}
+			
+			if(!empty($insert_opt)){
+				$this->db->insert_batch($this->prefix.'options', $insert_opt);
+			}
+		}
+		
+	}
+	
 	public function weposID($id = 1, $is_return = false)
 	{
 		$prefix = $this->prefix;
 		$this->table = $this->prefix.'clients';
 		$session_user = $this->session->userdata('user_username');
 		
+		$opt_var = array('wepos_tipe');
+		$get_opt = get_option_value($opt_var);
+		$merchant_tipe = $get_opt['wepos_tipe'];
+		
+		$this->db->from($this->table);
 		$this->db->where("id = $id");
-		$q = $this->db->get($this->table);
+		$q = $this->db->get();
 		
 		if($q->num_rows() > 0)  
         {  
@@ -326,22 +568,12 @@ class DataClient extends MY_Controller {
 			
 			$this->load->library('curl');
 			$mktime_dc = strtotime(date("d-m-Y H:i:s"));
-			//$client_url = 'http://mverify.wepos.id/client-info?_dc='.$mktime_dc;
-			$client_url = 'https://wepos.id/client-info?_dc='.$mktime_dc;
-			
-			/*$client_url .= '&client_code='.urlencode($dt->client_code);
-			$client_url .= '&merchant_xid='.urlencode($dt->merchant_xid);
-			$client_url .= '&client_name='.urlencode($dt->client_name);
-			$client_url .= '&client_phone='.urlencode($dt->client_phone);
-			$client_url .= '&client_email='.urlencode($dt->client_email);
-			$client_url .= '&programName='.urlencode($programName);
-			$client_url .= '&programVersion='.urlencode($programVersion);
-			$client_url .= '&programRelease='.urlencode($programRelease);
-			$client_url .= '&client_address='.urlencode($dt->client_address);*/
+			$client_url = config_item('website').'/client-info?_dc='.$mktime_dc;
 			
 			$post_data = array(
 				'client_code'	=> $dt->client_code,
 				'merchant_xid'	=> $dt->merchant_xid,
+				'merchant_tipe'	=> $merchant_tipe,
 				'client_name'	=> $dt->client_name,
 				'client_phone'	=> $dt->client_phone,
 				'client_email'	=> $dt->client_email,
@@ -363,21 +595,22 @@ class DataClient extends MY_Controller {
 			$this->curl->option('CAINFO', $wepos_crt);
 			$curl_ret = $this->curl->execute();
 			
+			//notifcheck
+			$this->notifcheck();
 			
-			//$curl_ret = $this->curl->simple_get($client_url);
 			$ret_data = json_decode($curl_ret, true);
 			
-			if(!empty($ret_data['success'] === true)){
+			if(!empty($ret_data['success'])){
 				
 				if(!empty($ret_data['merchant_xid'])){
 					$merchant_xid = $ret_data['merchant_xid'];
 					$merchant_verified = $ret_data['merchant_verified'];
 					
 					$var = array('fields'	=>	array(
-							'merchant_verified'  => 	$merchant_verified,
+							'merchant_verified'	=> 	$merchant_verified,
 							'merchant_xid'  	=> 	$merchant_xid,
-							'updated'		=>	date('Y-m-d H:i:s'),
-							'updatedby'		=>	'system'
+							'updated'			=>	date('Y-m-d H:i:s'),
+							'updatedby'			=>	'system'
 						),
 						'table'			=>  $this->table,
 						'primary_key'	=>  'id'
@@ -388,12 +621,79 @@ class DataClient extends MY_Controller {
 					if($merchant_verified == 'verified'){
 						$merchant_verified_show = '<font color="green"><b>'.ucwords($merchant_verified).'</b></font>';
 					}
+					
+					$force_update = false;
+					if($is_return == true){
+						$force_update = true;
+					}
 		
 					$return_data = array(
 						'merchant_xid'	=> $merchant_xid,
 						'merchant_verified'	=> $merchant_verified,
-						'merchant_verified_show'	=> $merchant_verified_show
+						'merchant_verified_show'	=> $merchant_verified_show,
+						'force_update'	=> $force_update,
 					);
+					
+					//data_option
+					if(!empty($ret_data['data_option'])){
+						$update_option = update_option($ret_data['data_option']);
+						$return_data['data_option'] = $ret_data['data_option'];
+					}
+					
+					if(!function_exists('wepos_log_update')){
+						$ret = $this->m->wepos_log_update($force_update);
+					}else{
+						$ret = wepos_log_update($force_update);
+					}
+					
+					if($is_return){
+						return $return_data;
+					}
+					
+				}else{
+					
+					$merchant_xid = $ret_data['merchant_xid'];
+					$merchant_verified = $ret_data['merchant_verified'];
+					
+					$var = array('fields'	=>	array(
+							'merchant_verified'	=> 	$merchant_verified,
+							'merchant_xid'  	=> 	$merchant_xid,
+							'updated'			=>	date('Y-m-d H:i:s'),
+							'updatedby'			=>	'system'
+						),
+						'table'			=>  $this->table,
+						'primary_key'	=>  'id'
+					);
+					$update = $this->m->save($var, $id);
+					
+					$merchant_verified_show = '<font color="red"><b>'.ucwords($merchant_verified).'</b></font>';
+					if($merchant_verified == 'verified'){
+						$merchant_verified_show = '<font color="green"><b>'.ucwords($merchant_verified).'</b></font>';
+					}
+					
+					$force_update = false;
+					if($is_return == true){
+						$force_update = true;
+					}
+		
+					$return_data = array(
+						'merchant_xid'	=> $merchant_xid,
+						'merchant_verified'	=> $merchant_verified,
+						'merchant_verified_show'	=> $merchant_verified_show,
+						'force_update'	=> $force_update,
+					);
+					
+					//data_option
+					if(!empty($ret_data['data_option'])){
+						$update_option = update_option($ret_data['data_option']);
+						$return_data['data_option'] = $ret_data['data_option'];
+					}
+					
+					if(!function_exists('wepos_log_update')){
+						$ret = $this->m->wepos_log_update($force_update);
+					}else{
+						$ret = wepos_log_update($force_update);
+					}
 					
 					if($is_return){
 						return $return_data;

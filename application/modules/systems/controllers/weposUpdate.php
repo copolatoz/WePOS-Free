@@ -82,13 +82,8 @@ class WeposUpdate extends MY_Controller {
 		);
 		
 		$get_data = '';
-		//$get_data = '&client_code='.$data_client['client_code'];
-		//$get_data .= '&client_name='.$data_client['client_name'];
-		//$get_data .= '&curr_version='.$current_version;
-		//$get_data .= '&curr_version2='.$current_version2;
 		
-		$client_url = 'https://wepos.id/wepos_update/check?_dc='.$mktime_dc.$get_data;
-		//$curl_ret = $this->curl->simple_post($client_url, $post_data);
+		$client_url = config_item('website').'/wepos_update/check?_dc='.$mktime_dc.$get_data;
 		
 		$wepos_crt = ASSETS_PATH.config_item('wepos_crt_file');
 		$this->curl->create($client_url);
@@ -172,6 +167,69 @@ class WeposUpdate extends MY_Controller {
 		);
 		
 		
+		die(json_encode($r));
+	}
+	
+	public function checkClient()
+	{
+		$this->table = $this->prefix.'clients';
+		$opt_var = array(
+			'merchant_key',
+			'merchant_last_check',
+			'merchant_cor_token',
+			'merchant_acc_token',
+			'merchant_mkt_token',
+			'produk_nama',
+			'produk_expired'
+		);
+		$get_opt = get_option_value($opt_var);
+		
+		if(empty($get_opt['merchant_key'])){
+			$get_opt['merchant_key'] = '';
+		}
+		if(empty($get_opt['merchant_cor_token'])){
+			$get_opt['merchant_cor_token'] = '';
+		}
+		if(empty($get_opt['merchant_acc_token'])){
+			$get_opt['merchant_acc_token'] = '';
+		}
+		if(empty($get_opt['merchant_mkt_token'])){
+			$get_opt['merchant_mkt_token'] = '';
+		}
+		if(empty($get_opt['produk_nama'])){
+			$get_opt['produk_nama'] = 'Gratis / Free';
+		}
+		if(empty($get_opt['merchant_last_check'])){
+			$get_opt['merchant_last_check'] = '0';
+		}
+		
+		$this->db->from($this->table);
+		$this->db->where("id = 1");
+		$q = $this->db->get();
+		if($q->num_rows() > 0)  
+        { 
+			$dt = $q->row();
+			
+		}else{
+			$r = array('success' => true); 
+			die(json_encode($r));
+		}
+		
+		$post_dt = array(
+			'merchant_key' 			=> $get_opt['merchant_key'],
+			'merchant_last_check'	=> $get_opt['merchant_last_check'],
+			'merchant_cor_token'	=> $get_opt['merchant_cor_token'],
+			'merchant_acc_token'	=> $get_opt['merchant_acc_token'],
+			'merchant_mkt_token'	=> $get_opt['merchant_mkt_token'],
+			'produk_nama'			=> $get_opt['produk_nama'],
+			'produk_expired'		=> $get_opt['produk_expired'],
+			'merchant_verified'		=> $dt->merchant_verified,
+			'merchant_xid'			=> $dt->merchant_xid
+		);
+		
+		$this->m->checkClient($post_dt);
+		
+		$r = array('success' => true); 
 		die(json_encode($r));
 	}
 	

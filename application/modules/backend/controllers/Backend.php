@@ -144,7 +144,8 @@ class Backend extends MY_Controller {
         var date_today  = "'.date('d/m/Y').'";	
 		';
 		
-		$opt_var = array('include_tax','include_service',
+		$opt_var = array('merchant_tipe','merchant_key','produk_nama','produk_key','produk_expired',
+		'include_tax','include_service',
 		'default_tax_percentage','default_service_percentage',
 		'takeaway_no_tax','takeaway_no_service','role_id_kasir',
 		'auto_logout_time','show_multiple_print_qc', 'show_multiple_print_billing',
@@ -161,6 +162,10 @@ class Backend extends MY_Controller {
 				
 				if($key == 'auto_logout_time'){
 					$dt = $dt*1000;
+				}
+				
+				if($key == 'merchant_tipe'){
+					$dt = strtoupper($dt);
 				}
 				
 				if($key == 'spv_access_active'){
@@ -657,6 +662,7 @@ class Backend extends MY_Controller {
 			}
 		}
 		
+		$main_app = '';
 		echo "
 		var CurrMe = [];
 		var ConfModule = {

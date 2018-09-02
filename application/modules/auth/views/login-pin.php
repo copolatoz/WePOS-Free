@@ -122,6 +122,9 @@
 				
 				// Check fields
 				var loginUsernamePin = $('#loginUsernamePin').val();
+				var view_multiple_store = $('#view_multiple_store').val();
+				var store_data = $('#store_data').val();
+				var mkey = $('#mkey').val();
 				
 				if (!loginUsernamePin || loginUsernamePin.length == 0)
 				{
@@ -145,10 +148,11 @@
 					// Request
 					var data = {
 						a: $('#a').val(),
-						view_multiple_store: $('#view_multiple_store').val(),
-						store_data: $('#store_data').val(),
 						type_login: 'pin',
-						loginUsernamePin: loginUsernamePin
+						loginUsernamePin: loginUsernamePin,
+						view_multiple_store: view_multiple_store,
+						store_data: store_data,
+						mkey: mkey
 					};
 					
 					var redirect 	= appUrl+'backend';
@@ -241,7 +245,13 @@
             <div class="grid" style="">
                 <div class="row">
                     <div class="span4">
-                        <h1 class="icon-user-3 fg-color-darken" > LOGIN</h1>
+                        <?php
+						if(!empty($cloud_data)){
+							echo '<h2 class="icon-user-3 fg-color-darken" > LOGIN MERCHANT</h2>';
+						}else{
+							echo '<h1 class="icon-user-3 fg-color-darken" > LOGIN</h1>';
+						}
+						?>
                     </div>
                 </div>               
             </div>
@@ -273,6 +283,7 @@
 									echo '<input type="hidden" name="view_multiple_store" id="view_multiple_store" value="0" />';
 								}
 								?>
+								<input type="hidden" name="mkey" id="mkey" value="<?php echo $mkey; ?>" />
 								
 								<div class="input-control text loginUsernamePin">
 									<input type="password" id="loginUsernamePin" name="loginUsernamePin" class="with-helper" tabindex="0" placeholder="PIN"/>
@@ -292,8 +303,17 @@
 						<div class="clearfix"></div>
 						<br/>
 						<div class="footer_login">
-							<p><?php echo config_item('program_name'); ?></p>
-							<?php echo config_item('copyright'); ?><br/>
+							
+							<?php
+							if(!empty($cloud_data)){
+								echo '<p>'.$cloud_data['merchant_nama'].'</p>';
+							}else{
+								echo '<p>'.config_item('program_name').'</p>';
+							}
+							
+							echo config_item('copyright'); 
+							?>
+							<br/>
 							
 						</div>
                     </div>

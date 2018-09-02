@@ -55,8 +55,9 @@ $route['default_controller'] = "backend";
 //BACKEND
 $route['logout.html'] = 'auth/login/logout';
 $route['logout'] = 'auth/login/logout';
-$route['login.html'] = 'auth/login';
-$route['login'] = 'auth/login';
+$route['login.html'] = 'auth/login/index';
+$route['login'] = 'auth/login/index';
+$route['login/(:any)'] = 'auth/login/index/$1';
 $route['backend'] = 'backend';
 
 //FIXBUGS
