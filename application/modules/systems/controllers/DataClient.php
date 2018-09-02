@@ -391,6 +391,11 @@ class DataClient extends MY_Controller {
 		{  
 			if($verify == true){
 				
+				if(empty($client_code)){
+					$r = array('success' => false, "info" => "Merchant Key Tidak Boleh Kosong!");
+					die(json_encode($r));
+				}
+				
 				$verified = $this->weposID($id, true);
 				
 				$produk_nama = 'Gratis / Free';
