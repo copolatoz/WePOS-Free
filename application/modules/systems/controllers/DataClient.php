@@ -255,6 +255,7 @@ class DataClient extends MY_Controller {
 			'produk_nama',
 			'produk_expired',
 			'share_membership');
+			
 		$get_opt = get_option_value($opt_var);
 		
 		$merchant_tipe = $get_opt['wepos_tipe'];
@@ -283,7 +284,8 @@ class DataClient extends MY_Controller {
 		}
 		
 		$data_client = array(
-			'client_code'  	=> 	'MERCHANT-CODE',
+			'client_code'  	=> 	'FREE',
+			'client_code_show'  	=> 	'FREE',
 			'client_name'  	=> 	$client_name,
 			'client_email'	=>	'',
 			'client_phone'	=>	'',
@@ -315,6 +317,7 @@ class DataClient extends MY_Controller {
 			
 			$data_client = array(
 				'client_code'  	=> 	$dt->client_code,
+				'client_code_show'  => 	$dt->client_code,
 				'client_name'  	=> 	$dt->client_name,
 				'client_email'	=>	$dt->client_email,
 				'client_phone'	=>	$dt->client_phone,
@@ -570,6 +573,7 @@ class DataClient extends MY_Controller {
 			$programName = config_item('program_name_short');
 			$programVersion = config_item('program_version');
 			$programRelease = config_item('program_release');
+			$cloud_access = config_item('cloud_access');
 			
 			$this->load->library('curl');
 			$mktime_dc = strtotime(date("d-m-Y H:i:s"));
@@ -586,6 +590,7 @@ class DataClient extends MY_Controller {
 				'programVersion'	=> $programVersion,
 				'programRelease'	=> $programRelease,
 				'client_address'	=> $dt->client_address,
+				'cloud_access'		=> $cloud_access
 			);
 			
 			$wepos_crt = ASSETS_PATH.config_item('wepos_crt_file');
