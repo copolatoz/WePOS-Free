@@ -31,7 +31,6 @@ class Backend extends MY_Controller {
 		
 		if($comp_assets){
 			
-			
 			$this->load->library('Minifier');
 			
 			//MERGE STYLE - DESKTOP	
@@ -95,7 +94,6 @@ class Backend extends MY_Controller {
 			
 			//MINIFY STYLE - DESKTOP		
 			$apps_css = $this->minifier->minify( $merge_app_css, 'assets/desktop/css/alldesktop.min.css', config_item('program_version') );
-			
 			
 			//MINIFY-APPS
 			$apps_js = $this->minifier->minify( $merge_apps_js, 'apps.min/core/application.min.js', config_item('program_version') );

@@ -4123,7 +4123,6 @@ class BillingCashier extends MY_Controller {
 				$order_qc_id = array();
 				$all_update_id_order = array();
 				
-				//update 2018-01-24
 				//trim prod name
 				$max_text = 18; //44
 				$max_number_1 = 9;
