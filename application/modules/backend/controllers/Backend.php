@@ -101,7 +101,11 @@ class Backend extends MY_Controller {
 			$apps_js = $this->minifier->minify( $merge_apps_js, 'apps.min/core/application.min.js', config_item('program_version') );
 		}
 		
+		$opt_var = array('hide_tanya_wepos');
+		$get_opt = get_option_value($opt_var);
+		
 		$data_post = array(
+			'get_opt'	=> $get_opt,
 			'apps_css'	=> $apps_css,
 			'apps_js'	=> $apps_js
 		);
