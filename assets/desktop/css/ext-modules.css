@@ -64,3 +64,6 @@
 .icon-list-order {
 	background-image:url(../icons/fam/table_edit.png) !important;
 }
+.btn-warning {
+	background-image:url(../icons/fam/bullet_error.png) !important;
+}

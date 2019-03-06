@@ -45,10 +45,12 @@ class ReportSalesByMenu extends MY_Controller {
 			'diskon_sebelum_pajak_service'	=> 0
 		);
 		
+
 		if(empty($groupCat)){
 			$groupCat = 0;
 		}
 		
+
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service','cashier_max_pembulatan',
 		'cashier_pembulatan_keatas','pembulatan_dinamis'));
 		if(!empty($get_opt['report_place_default'])){
@@ -88,7 +90,8 @@ class ReportSalesByMenu extends MY_Controller {
 			$this->db->select("a.*, b.billing_no, b.total_billing, b.discount_perbilling, b.payment_id,
 								b.discount_percentage as billing_discount_percentage, b.discount_total as billing_discount_total,
 								b.total_pembulatan as billing_total_pembulatan,
-								c.product_name, c.product_group, c.category_id, d.product_category_name as category_name");
+								c.product_code, c.product_name, c.product_group, c.category_id, 
+								d.product_category_code as category_code, d.product_category_name as category_name");
 			$this->db->from($this->table2." as a");
 			$this->db->join($this->prefix.'billing as b','b.id = a.billing_id','LEFT');
 			$this->db->join($this->prefix.'product as c','c.id = a.product_id','LEFT');
@@ -179,9 +182,12 @@ class ReportSalesByMenu extends MY_Controller {
 							$all_product_data[$keyID] = array(
 								'product_id'	=> $s['product_id'],
 								'product_name'	=> $s['product_name'],
+								'product_code'	=> $s['product_code'],
 								'product_group'	=> $s['product_group'],
+								'product_type'	=> $s['product_type'],
 								'category_id'	=> $s['category_id'],
 								'category_name'	=> $s['category_name'],
+								'category_code'	=> $s['category_code'],
 								'varian_id'		=> $s['varian_id'],
 								'varian_name'	=> '',
 								'total_qty'	=> 0,
@@ -816,7 +822,7 @@ class ReportSalesByMenu extends MY_Controller {
 			//echo 'TOTAL = '.count($all_product_data);
 			//die();
 
-			$data_varian = array();
+			$varian_name = array();
 			if(!empty($order_qty)){
 				if($order_qty == 3 OR $order_qty == 4){
 					$this->db->select("*");
@@ -824,7 +830,7 @@ class ReportSalesByMenu extends MY_Controller {
 					$get_varian = $this->db->get();
 					if($get_varian->num_rows() > 0){
 						foreach($get_varian->result() as $dt){
-							$data_varian[$dt->id] = $dt->varian_name;
+							$varian_name[$dt->id] = $dt->varian_name;
 						}
 					}
 				}
@@ -845,9 +851,9 @@ class ReportSalesByMenu extends MY_Controller {
 							$keyID = $dt['product_id']."_".$dt['varian_id'];
 							$keyID_sort = $dt['product_id']."_".$dt['varian_id'];
 							
-							if(!empty($data_varian[$dt['varian_id']])){
-								$dt['product_name'] = $dt['product_name'].' - '.$data_varian[$dt['varian_id']];
-								$dt['varian_name'] = $data_varian[$dt['varian_id']];
+							if(!empty($varian_name[$dt['varian_id']])){
+								//$dt['product_name'] = $dt['product_name'].' - '.$varian_name[$dt['varian_id']];
+								$dt['varian_name'] = $varian_name[$dt['varian_id']];
 							}
 							
 						}
@@ -982,11 +988,6 @@ class ReportSalesByMenu extends MY_Controller {
 				}
 			}
 			
-			//echo '<pre>';
-			//print_r($newData);
-			//echo 'TOTAL = '.count($all_product_data);
-			//die();
-			
 			arsort($sort_qty);	
 			$tipe_report = '';
 			if(!empty($order_qty)){
@@ -1024,38 +1025,123 @@ class ReportSalesByMenu extends MY_Controller {
 				if($order_qty == 3){
 					$tipe_report = 'VARIAN';
 					arsort($sort_qty);
-					$xnewData = array();
+					$new_GroupData = array();
 					foreach($sort_qty as $key => $dt){
-			
+						
 						if(!empty($newData[$key])){
-							foreach($newData[$key] as $varID => $dt){
-								if(!empty($newData[$key][$varID])){
-									$xnewData[] = $newData[$key][$varID];
+							foreach($newData[$key] as $varID => $dtx){
+								if(empty($new_GroupData[$dtx['varian_id']])){
+									$new_GroupData[$dtx['varian_id']] = array();
 								}
+									
+								$new_GroupData[$dtx['varian_id']][] = $dtx;
 							}
 						}
 							
 					}
-					$newData = $xnewData;
+					$newData = $new_GroupData;
 				}
 				
 				//VARIAN PROFIT
 				if($order_qty == 4){
 					$tipe_report = 'VARIAN PROFIT';
 					arsort($sort_profit);
-					$xnewData = array();
+					$new_GroupData = array();
 					foreach($sort_profit as $key => $dt){
-			
+						
 						if(!empty($newData[$key])){
-							foreach($newData[$key] as $varID => $dt){
-								if(!empty($newData[$key][$varID])){
-									$xnewData[] = $newData[$key][$varID];
+							foreach($newData[$key] as $varID => $dtx){
+								if(empty($new_GroupData[$dtx['varian_id']])){
+									$new_GroupData[$dtx['varian_id']] = array();
 								}
+									
+								$new_GroupData[$dtx['varian_id']][] = $dtx;
 							}
 						}
 							
 					}
-					$newData = $xnewData;
+					$newData = $new_GroupData;
+				}
+				
+				
+				//PACKAGE 
+				if($order_qty == 5){
+					$tipe_report = 'PACKAGE';
+					arsort($sort_qty);
+					$new_GroupData = array();
+					
+					foreach($sort_qty as $key => $dt){
+						$dtx = $newData[$key];
+						
+						if(empty($new_GroupData[$dtx['product_type']])){
+							$new_GroupData[$dtx['product_type']] = array();
+						}
+							
+						$new_GroupData[$dtx['product_type']][] = $dtx;
+					}
+					$newData = $new_GroupData;
+				}
+				
+				//PACKAGE PROFIT
+				if($order_qty == 6){
+					$tipe_report = 'PACKAGE PROFIT';
+					arsort($sort_profit);
+					$new_GroupData = array();
+					foreach($sort_profit as $key => $dt){
+						$dtx = $newData[$key];
+						
+						if(empty($new_GroupData[$dtx['product_type']])){
+							$new_GroupData[$dtx['product_type']] = array();
+						}
+							
+						$new_GroupData[$dtx['product_type']][] = $dtx;
+					}
+					$newData = $new_GroupData;
+				}
+				
+				//TAXSERVICE
+				if($order_qty == 7){
+					$tipe_report = 'TAXSERVICE';
+					arsort($sort_qty);
+					$new_GroupData = array();
+					
+					foreach($sort_qty as $key => $dt){
+						$dtx = $newData[$key];
+						
+						$is_taxservice = 0;
+						if(!empty($dtx['tax_total'])){
+							$is_taxservice = 1;
+						}
+						
+						if(empty($new_GroupData[$is_taxservice])){
+							$new_GroupData[$is_taxservice] = array();
+						}
+							
+						$new_GroupData[$is_taxservice][] = $dtx;
+					}
+					$newData = $new_GroupData;
+				}
+				
+				//TAXSERVICE PROFIT
+				if($order_qty == 8){
+					$tipe_report = 'TAXSERVICE PROFIT';
+					arsort($sort_profit);
+					$new_GroupData = array();
+					foreach($sort_profit as $key => $dt){
+						$dtx = $newData[$key];
+						
+						$is_taxservice = 0;
+						if(!empty($dtx['tax_total'])){
+							$is_taxservice = 1;
+						}
+						
+						if(empty($new_GroupData[$is_taxservice])){
+							$new_GroupData[$is_taxservice] = array();
+						}
+							
+						$new_GroupData[$is_taxservice][] = $dtx;
+					}
+					$newData = $new_GroupData;
 				}
 				
 			}else{
@@ -1079,17 +1165,30 @@ class ReportSalesByMenu extends MY_Controller {
 				}
 			}
 			
+			//category_name
+			$category_name = array();
+			$category_code = array();
+			$this->db->select('*');
+			$this->db->from($this->prefix.'product_category');
+			$get_dt_p = $this->db->get();
+			if($get_dt_p->num_rows() > 0){
+				foreach($get_dt_p->result_array() as $dtP){
+					$category_name[$dtP['id']] = strtoupper($dtP['product_category_name']);
+					$category_code[$dtP['id']] = strtoupper($dtP['product_category_code']);
+				}
+			}
+			
 
 
 			//GROUPING
 			$new_GroupData = array();
 			if(!empty($groupCat)){
 				foreach($newData as $dt){
-					if(empty($new_GroupData[$dt['category_name']])){
-						$new_GroupData[$dt['category_name']] = array();
+					if(empty($new_GroupData[$dt['category_id']])){
+						$new_GroupData[$dt['category_id']] = array();
 					}
 						
-					$new_GroupData[$dt['category_name']][] = $dt;
+					$new_GroupData[$dt['category_id']][] = $dt;
 				}
 				
 				ksort($new_GroupData);
@@ -1097,8 +1196,12 @@ class ReportSalesByMenu extends MY_Controller {
 				$newData = $new_GroupData;
 			}
 			
+				
 			$data_post['report_data'] = $newData;
 			$data_post['payment_data'] = $dt_payment_name;
+			$data_post['category_name'] = $category_name;
+			$data_post['category_code'] = $category_code;
+			$data_post['varian_name'] = $varian_name;
 						
 		}
 		
@@ -1118,12 +1221,35 @@ class ReportSalesByMenu extends MY_Controller {
 				$data_post['report_name'] = 'SALES PRODUCT/MENU BY QTY';
 			}
 			
-			if($tipe_report == 'VARIAN'){
-				$data_post['report_name'] = 'SALES PRODUCT/MENU BY VARIAN';
-			}
-			
 			if($do == 'excel'){
 				$useview = 'excel_reportSalesByMenu';
+			}
+			
+			if($tipe_report == 'VARIAN'){
+				$data_post['report_name'] = 'SALES PRODUCT/MENU BY VARIAN';
+				$useview = 'print_reportSalesByMenuVarian';
+				
+				if($do == 'excel'){
+					$useview = 'excel_reportSalesByMenuVarian';
+				}
+			}
+			
+			if($tipe_report == 'PACKAGE'){
+				$data_post['report_name'] = 'SALES PRODUCT/MENU PACKAGE';
+				$useview = 'print_reportSalesByMenuPackage';
+				
+				if($do == 'excel'){
+					$useview = 'excel_reportSalesByMenuPackage';
+				}
+			}
+			
+			if($tipe_report == 'TAXSERVICE'){
+				$data_post['report_name'] = 'SALES BY TAX &amp; SERVICE';
+				$useview = 'print_reportSalesByTaxService';
+				
+				if($do == 'excel'){
+					$useview = 'excel_reportSalesByTaxService';
+				}
 			}
 			
 		}else{
@@ -1137,12 +1263,35 @@ class ReportSalesByMenu extends MY_Controller {
 				$data_post['report_name'] = 'SALES PROFIT BY PRODUCT/MENU PROFIT';
 			}
 			
-			if($tipe_report == 'VARIAN PROFIT'){
-				$data_post['report_name'] = 'SALES PROFIT BY PRODUCT/MENU VARIAN';
-			}
-			
 			if($do == 'excel'){
 				$useview = 'excel_reportProfitSalesByMenu';
+			}
+			
+			if($tipe_report == 'VARIAN PROFIT'){
+				$data_post['report_name'] = 'SALES PROFIT BY PRODUCT/MENU VARIAN';
+				$useview = 'print_reportProfitSalesByMenuVarian';
+			
+				if($do == 'excel'){
+					$useview = 'excel_reportProfitSalesByMenuVarian';
+				}
+			}
+			
+			if($tipe_report == 'PACKAGE PROFIT'){
+				$data_post['report_name'] = 'SALES PROFIT BY PRODUCT/MENU PACKAGE';
+				$useview = 'print_reportProfitSalesByMenuPackage';
+			
+				if($do == 'excel'){
+					$useview = 'excel_reportProfitSalesByMenuPackage';
+				}
+			}
+			
+			if($tipe_report == 'TAXSERVICE PROFIT'){
+				$data_post['report_name'] = 'SALES PROFIT BY TAX &amp; SERVICE';
+				$useview = 'print_reportProfitSalesByTaxService';
+			
+				if($do == 'excel'){
+					$useview = 'excel_reportProfitSalesByTaxService';
+				}
 			}
 			
 		}
@@ -1150,10 +1299,11 @@ class ReportSalesByMenu extends MY_Controller {
 
 		if(!empty($groupCat)){
 			
-			if($groupCat == 'subcat'){
+			if($groupCat == 'subcat' OR $groupCat == 'subcat_profit'){
 				
-				if($useview == 'print_reportProfitSalesBySubMenuCategory'){
+				if($groupCat == 'subcat_profit'){
 					
+					$useview = 'print_reportProfitSalesBySubMenuCategory';
 					$data_post['report_name'] = 'SALES PROFIT REPORT BY SUB MENU CATEGORY';
 					
 					if($do == 'excel'){
@@ -1172,8 +1322,8 @@ class ReportSalesByMenu extends MY_Controller {
 			}else
 			{
 				
-				if($useview == 'print_reportProfitSalesByMenuCategory'){
-					
+				if($groupCat == 'cat_profit'){
+					$useview = 'print_reportProfitSalesByMenuCategory';
 					$data_post['report_name'] = 'SALES PROFIT REPORT BY MENU CATEGORY';
 					
 					if($do == 'excel'){

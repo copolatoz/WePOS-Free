@@ -650,11 +650,11 @@ class DataBilling extends MY_Controller {
 								a.is_takeaway, a.takeaway_no_tax, a.takeaway_no_service, a.is_compliment,
 								a.order_status, a.order_notes, a.is_active, a.retur_type, a.retur_qty, a.retur_reason,
 								a.is_promo, a.promo_id, a.promo_tipe, a.promo_percentage, a.promo_price, a.promo_desc,
-								a.is_buyget, a.buyget_id, a.buyget_tipe, a.buyget_desc, a.buyget_qty, a.buyget_percentage, a.buyget_total, 
+								a.is_buyget, a.buyget_id, a.buyget_tipe, a.buyget_desc, a.buyget_qty, a.buyget_percentage, a.buyget_total,
 								a.buyget_item, a.free_item, a.package_item, a.ref_order_id, a.use_stok_kode_unik, a.data_stok_kode_unik, a.product_price_real,
 								a.is_kerjasama, a.supplier_id, a.persentase_bagi_hasil, a.total_bagi_hasil,
 								b.product_name, b.product_chinese_name, b.has_varian, b.product_desc, b.product_type, b.product_image, 
-								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code",
+								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code, b.product_code",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table2.' as a',
 			'join'			=> array(
@@ -719,10 +719,13 @@ class DataBilling extends MY_Controller {
 				$s['product_price_show'] = 'Rp '.priceFormat($s['product_price']);		
 				$s['order_total_show'] = 'Rp '.priceFormat($s['order_total']);		
 				
-				if(!empty($s['item_code'])){
-					$s['product_name'] = $s['item_code'].'<br/>'.$s['product_name'];
+				if(empty($s['product_code'])){
+
+					$s['product_code'] = $s['item_code'];
 				}
-				$s['product_detail_info'] = $s['product_name'];
+
+				
+				$s['product_detail_info'] = $s['product_code'].'<br/>'.$s['product_name'];
 				
 				$additional_text = '';
 				if(!empty($s['product_chinese_name']) AND $s['product_chinese_name'] != '-'){
@@ -788,6 +791,7 @@ class DataBilling extends MY_Controller {
 				if($s['free_item'] == 1 AND $s['package_item'] == 0){
 					$s['product_name_show'] = $s['product_name'].' <font color="red">Free</font>';
 					$s['product_detail_info'] = '&#10146; '.$s['product_name'].$additional_text.' <font color="red">Free</font>';
+
 					$s['order_total'] = 0;
 					$s['product_price'] = 0;
 					$s['product_price_real'] = 0;
@@ -803,11 +807,14 @@ class DataBilling extends MY_Controller {
 					$s['product_price_real'] = 0;
 				}
 				
+
 				//update 2018-02-25
 				if(in_array($s['id'], $product_package)){
 					$s['order_status'] = 'done';
 				}
+
 					
+
 				$s['order_status_text'] = '<b style="color:orange;">'.ucwords($s['order_status']).'</b>';
 				if($s['order_status'] == 'done'){
 					$s['order_status_text'] = '<b style="color:green;">Print To<br/>';
@@ -850,7 +857,7 @@ class DataBilling extends MY_Controller {
 				}
 					
 				$s['order_subtotal'] = $s['order_total']-$s['discount_total'];		
-				$s['order_subtotal_show'] = priceFormat($s['order_subtotal']);		
+				$s['order_subtotal_show'] = priceFormat($s['order_subtotal']);
 				if(empty($s['order_subtotal'])){
 					$s['order_subtotal_show'] = '-';
 				}
@@ -906,6 +913,7 @@ class DataBilling extends MY_Controller {
 				}
 				
 				if($s['free_item'] == 1 AND $s['package_item'] == 0){
+
 					$s['discount_total_show'] = '-';
 					$s['order_subtotal_show'] = '<span style="color:red;">Free</span>';
 				}
@@ -1242,7 +1250,7 @@ class DataBilling extends MY_Controller {
 								a.is_kerjasama, a.supplier_id, a.persentase_bagi_hasil, a.total_bagi_hasil, 
 								a.buyget_item, a.free_item, a.ref_order_id,
 								b.product_name, b.product_chinese_name, b.has_varian, b.product_desc, b.product_type, b.product_image, 
-								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code",
+								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code, b.product_code",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table2.' as a',
 			'join'			=> array(
@@ -1292,7 +1300,11 @@ class DataBilling extends MY_Controller {
 				$s['product_price_show'] = 'Rp '.priceFormat($s['product_price']);		
 				$s['order_total_show'] = 'Rp '.priceFormat($s['order_total']);		
 				
-				$s['product_detail_info'] = $s['product_name'];
+				if(empty($s['product_code'])){
+					$s['product_code'] = $s['item_code'];
+				}
+				
+				$s['product_detail_info'] = $s['product_code'].'<br/>'.$s['product_name'];
 				
 				$additional_text = '';
 				if(!empty($s['product_chinese_name']) AND $s['product_chinese_name'] != '-'){
@@ -1453,7 +1465,7 @@ class DataBilling extends MY_Controller {
 								a.buyget_item, a.free_item, a.ref_order_id, a.use_stok_kode_unik, a.data_stok_kode_unik,
 								a.is_kerjasama, a.supplier_id, a.persentase_bagi_hasil, a.total_bagi_hasil,
 								b.product_name, b.product_chinese_name, b.has_varian, b.product_desc, b.product_type, b.product_image, 
-								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code",
+								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code, b.product_code",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table2.' as a',
 			'join'			=> array(
@@ -1586,7 +1598,11 @@ class DataBilling extends MY_Controller {
 				$s['product_price_show'] = 'Rp '.priceFormat($s['product_price']);		
 				$s['order_total_show'] = 'Rp '.priceFormat($s['order_total']);		
 				
-				$s['product_detail_info'] = $s['product_name'];
+				if(empty($s['product_code'])){
+					$s['product_code'] = $s['item_code'];
+				}
+				
+				$s['product_detail_info'] = $s['product_code'].'<br/>'.$s['product_name'];
 				
 				$additional_text = '';
 				if(!empty($s['product_chinese_name']) AND $s['product_chinese_name'] != '-'){
@@ -1910,10 +1926,10 @@ class DataBilling extends MY_Controller {
 								a.order_status, a.order_notes, a.is_active, a.retur_type, a.retur_qty, a.retur_reason,
 								a.is_promo, a.promo_id, a.promo_tipe, a.promo_percentage, a.promo_price, a.promo_desc,
 								a.is_buyget, a.buyget_id, a.buyget_tipe, a.buyget_desc, a.buyget_qty, a.buyget_percentage, a.buyget_total,
-								a.buyget_item, a.free_item, a.ref_order_id, a.ref_order_id, a.use_stok_kode_unik, a.data_stok_kode_unik,
+								a.buyget_item, a.free_item, a.ref_order_id, a.use_stok_kode_unik, a.data_stok_kode_unik,
 								a.is_kerjasama, a.supplier_id, a.persentase_bagi_hasil, a.total_bagi_hasil,
 								b.product_name, b.product_chinese_name, b.has_varian, b.product_desc, b.product_type, b.product_image, 
-								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code",
+								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code, b.product_cod",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table2.' as a',
 			'join'			=> array(
@@ -2010,7 +2026,11 @@ class DataBilling extends MY_Controller {
 				$s['product_price_show'] = 'Rp '.priceFormat($s['product_price']);		
 				$s['order_total_show'] = 'Rp '.priceFormat($s['order_total']);		
 				
-				$s['product_detail_info'] = $s['product_name'];
+				if(empty($s['product_code'])){
+					$s['product_code'] = $s['item_code'];
+				}
+				
+				$s['product_detail_info'] = $s['product_code'].'<br/>'.$s['product_name'];
 				
 				$additional_text = '';
 				if(!empty($s['product_chinese_name']) AND $s['product_chinese_name'] != '-'){
@@ -2335,7 +2355,7 @@ class DataBilling extends MY_Controller {
 		$params = array(
 			'fields'		=> "a.*, 
 								b.product_name, b.product_chinese_name, b.has_varian, b.product_desc, b.product_type, b.product_image, 
-								b.category_id, b.product_group, c.product_category_name, d.varian_name, e.item_code",
+								b.category_id, b.product_group, c.product_category_name, d.varian_name, e.item_code, b.product_code",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table2.' as a',
 			'join'			=> array(
@@ -2386,7 +2406,11 @@ class DataBilling extends MY_Controller {
 				$s['product_price_show'] = 'Rp '.priceFormat($s['product_price']);		
 				$s['order_total_show'] = 'Rp '.priceFormat($s['order_total']);		
 				
-				$s['product_detail_info'] = $s['product_name'];
+				if(empty($s['product_code'])){
+					$s['product_code'] = $s['item_code'];
+				}
+				
+				$s['product_detail_info'] = $s['product_code'].'<br/>'.$s['product_name'];
 				
 				$additional_text = '';
 				if(!empty($s['product_chinese_name']) AND $s['product_chinese_name'] != '-'){

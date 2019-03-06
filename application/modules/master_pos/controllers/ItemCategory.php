@@ -70,7 +70,8 @@ class itemCategory extends MY_Controller {
 				$s['item_category_code_name'] = $s['item_category_code'].' - '.$s['item_category_name'];
 				
 				if(empty($s['item_category_code'])){
-					$s['item_category_code_name'] = $s['item_category_name'];
+					//$s['item_category_code'] = substr($s['item_category_name'],0,3);
+					$s['item_category_code_name'] = substr($s['item_category_name'],0,3);
 				}
 				
 				array_push($newData, $s);

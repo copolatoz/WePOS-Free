@@ -6,12 +6,15 @@ class Model_stock extends DB_Model {
 	function __construct()
 	{
 		parent::__construct();	
+		$this->prefix_apps = config_item('db_prefix');
 		$this->prefix = config_item('db_prefix2');
 		$this->table_stock = $this->prefix.'stock';
 		$this->table_stock_rekap = $this->prefix.'stock_rekap';
 		$this->table_items = $this->prefix.'items';
 		$this->table_item_category = $this->prefix.'item_category';
 		$this->table_storehouse = $this->prefix.'storehouse';
+		$this->table_storehouse_access = $this->prefix.'storehouse_users';
+		$this->table_user = $this->prefix_apps.'users';
 	}
 	
 	function get_primary_storehouse(){
@@ -26,17 +29,47 @@ class Model_stock extends DB_Model {
 			$storehouse_id = $get_opt['warehouse_primary'];
 		}
 		
+		$this->db->from($this->table_storehouse);
+		$this->db->where("is_primary = 1");
+		$get_primary_storehouse = $this->db->get();
+		
 		if(empty($storehouse_id)){
-			$this->db->from($this->table_storehouse);
-			$this->db->where("is_primary = 1");
-			$get_primary_storehouse = $this->db->get();
 			if($get_primary_storehouse->num_rows() > 0){
 				$storehouse_dt = $get_primary_storehouse->row();
 				$storehouse_id = $storehouse_dt->id;
 			}
+		}else{
+			if($get_primary_storehouse->num_rows() == 0){
+				$storehouse_id = 0;
+			}
 		}
 		
 		return $storehouse_id;
+		
+	}
+	
+	function cek_storehouse_access($storehouse_id = 0){
+		
+		$session_user = $this->session->userdata('user_username');
+		
+		$return_access = false;
+		if(!empty($storehouse_id) AND !empty($session_user)){
+			$this->db->select("a.id, b.user_username");
+			$this->db->from($this->table_storehouse_access." as a");
+			$this->db->join($this->table_user." as b","b.id = a.user_id","LEFT");
+			$this->db->where("a.storehouse_id = ".$storehouse_id);
+			$this->db->where("b.user_username = '".$session_user."'");
+			$cek_storehouse_access = $this->db->get();
+			if($cek_storehouse_access->num_rows() > 0){
+				$return_access = true;
+			}
+		}
+		
+		if($return_access == false){
+			$r = array('success' => false, 'info' => 'User Tidak Mempunyai Akses Ke Gudang!');
+			die(json_encode($r));
+		}
+		
 		
 	}
 	
@@ -53,29 +86,29 @@ class Model_stock extends DB_Model {
 		//$getStock
 		
 		if(empty($storehouse)){
-			$ret_data = array('info'	=> 'Warehouse unidentified!');
+			$ret_data = array('info'	=> 'Warehouse Tidak dikenali!');
 			return $ret_data;
 		}
 		
 		if(empty($storehouse_item)){
-			$ret_data = array('info'	=> 'Detail unidentified!');
+			$ret_data = array('info'	=> 'Detail Tidak dikenali!');
 			return $ret_data;
 		}
 		
 		if(empty($storehouse_item_qty)){
-			$ret_data = array('info'	=> 'Detail Qty unidentified!');
+			$ret_data = array('info'	=> 'Detail Qty Tidak dikenali!');
 			return $ret_data;
 		}
 		
 		//storehouse_item_qty_before --> edit
 		
 		if(empty($getStock)){
-			$ret_data = array('info'	=> 'Data Stock unidentified!');
+			$ret_data = array('info'	=> 'Data Stock Tidak dikenali!');
 			return $ret_data;
 		}
 		
 		if(empty($tipe)){
-			$ret_data = array('info'	=> 'Tipe check stock unidentified!');
+			$ret_data = array('info'	=> 'Tipe check stock Tidak dikenali!');
 			return $ret_data;
 		}
 		
@@ -893,8 +926,8 @@ class Model_stock extends DB_Model {
 			}
 			
 			$update_stock_storehouse_item = array();
-			//if(!empty($all_item_id)){
-				//$all_item_id_txt = implode(",", $all_item_id);
+			if(!empty($all_item_id)){
+				$all_item_id_txt = implode(",", $all_item_id);
 			
 				//UPDATE
 				$this->db->select("a.*");
@@ -935,7 +968,7 @@ class Model_stock extends DB_Model {
 						
 					}
 				}
-			//}
+			}
 				
 			//echo '<pre>';
 			//print_r($update_stock_storehouse_item);

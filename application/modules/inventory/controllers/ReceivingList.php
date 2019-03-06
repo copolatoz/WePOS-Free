@@ -332,6 +332,9 @@ class ReceivingList extends MY_Controller {
 			die(json_encode($r));
 		}
 		
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
+		
 		$supplier_id = $this->input->post('supplier_id');
 		$receive_date = $this->input->post('receive_date');
 		$receive_memo = $this->input->post('receive_memo');
@@ -349,6 +352,10 @@ class ReceivingList extends MY_Controller {
 		
 		if(empty($storehouse_id)){
 			$storehouse_id = $this->stock->get_primary_storehouse();
+		}
+		
+		if(!empty($storehouse_id)){
+			$this->stock->cek_storehouse_access($storehouse_id);
 		}
 		
 		if(empty($storehouse_id)){
@@ -505,32 +512,6 @@ class ReceivingList extends MY_Controller {
 			if($save_data)
 			{  
 				$id = $insert_id;
-				
-				
-				/*
-				$r = array('success' => true, 'id' => $insert_id, 'receive_number'	=> '-', 'det_info' => array());
-				$q_det = $this->m2->receiveDetail($receiveDetail, $insert_id, $update_stok);
-				if(!empty($q_det['dtReceive']['receive_number'])){
-					$r['receive_number'] = $q_det['dtReceive']['receive_number'];
-				}
-				$r['det_info'] = $q_det;
-				
-				
-				if(!empty($q_det['update_stock'])){
-					
-					$post_params = array(
-						'storehouse_item'	=> $q_det['update_stock']
-					);
-					
-					$updateStock = $this->stock->update_stock_rekap($post_params);
-					
-				}
-				
-				
-				$updatePO = $this->m4->update_status_PO($po_id);
-				*/
-				
-				
 			}
       		
 		}else
@@ -645,12 +626,12 @@ class ReceivingList extends MY_Controller {
 						$r = array('success' => false, 'info' => 'Tidak boleh update status ke Progress<br/>Silahkan Cek Status AP/Hutang: '.$dt_ap->ap_no.',<br/>AP/Hutang sudah selesai s/d pembayaran'); 
 						die(json_encode($r));
 					}else{
-						$r = array('success' => false, 'info' => 'Tidak boleh update status ke Progress<br/>Silahkan Cek Status AP/Hutang: '.$dt_ap->ap_no.',<br/>AP/Hutang sudah sampai tahap Jurnal/Posting ke Bag.Keuangan'); 
+						$r = array('success' => false, 'info' => 'Tidak boleh update status ke Progress<br/>Silahkan Cek Status AP/Hutang: '.$dt_ap->ap_no.', <br/>AP/Hutang sudah sampai tahap Jurnal/Posting ke Bag.Keuangan'); 
 						die(json_encode($r));
 					}
 					
 					
-				}	
+				}
 			}
 			
 			$this->lib_trans->begin();
@@ -763,6 +744,9 @@ class ReceivingList extends MY_Controller {
 	public function delete()
 	{
 		
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
+		
 		$this->table = $this->prefix.'receiving';
 		$this->table2 = $this->prefix.'receive_detail';
 		
@@ -863,6 +847,8 @@ class ReceivingList extends MY_Controller {
 	
 	public function deleteDetail()
 	{
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
 		
 		$this->table = $this->prefix.'receive_detail';
 		

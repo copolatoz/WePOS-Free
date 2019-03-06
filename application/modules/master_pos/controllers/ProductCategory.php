@@ -45,7 +45,7 @@ class ProductCategory extends MY_Controller {
 		
 		if(!empty($is_dropdown)){
 			$params['order'] = array('product_category_desc' => 'ASC');
-			$params['where'] = array('parent_id != 0');
+			//$params['where'] = array('parent_id != 0');
 		}
 		if(!empty($searching)){
 			$params['where'][] = "(product_category_name LIKE '%".$searching."%' OR product_category_desc LIKE '%".$searching."%')";
@@ -60,11 +60,11 @@ class ProductCategory extends MY_Controller {
   		$newData = array();
 		
 		if(!empty($show_all_text)){
-			$dt = array('id' => '-1', 'product_category_name' => 'Choose All Category');
+			$dt = array('id' => '-1', 'product_category_name' => 'Pilih Semua', 'product_category_code_name' => 'Pilih Semua');
 			array_push($newData, $dt);
 		}else{
 			if(!empty($show_choose_text)){
-				$dt = array('id' => '', 'product_category_name' => 'Choose Category');
+				$dt = array('id' => '', 'product_category_name' => 'Pilih', 'product_category_code_name' => 'Pilih');
 				array_push($newData, $dt);
 			}
 		}
@@ -72,6 +72,12 @@ class ProductCategory extends MY_Controller {
 		if(!empty($get_data['data'])){
 			foreach ($get_data['data'] as $s){
 				$s['is_active_text'] = ($s['is_active'] == '1') ? '<span style="color:green;">Active</span>':'<span style="color:red;">Inactive</span>';
+				$s['product_category_code_name'] = $s['product_category_code'].' - '.$s['product_category_name'];
+				
+				if(empty($s['product_category_code'])){
+					//$s['product_category_code'] = substr($s['product_category_name'],0,3);
+					$s['product_category_code_name'] = substr($s['product_category_name'],0,3);
+				}
 				
 				array_push($newData, $s);
 			}
@@ -89,6 +95,7 @@ class ProductCategory extends MY_Controller {
 		$session_user = $this->session->userdata('user_username');
 		
 		$product_category_name = $this->input->post('product_category_name');
+		$product_category_code = $this->input->post('product_category_code');
 		$product_category_desc = $this->input->post('product_category_desc');
 		
 		if(empty($product_category_name)){
@@ -100,13 +107,33 @@ class ProductCategory extends MY_Controller {
 		if(empty($is_active)){
 			$is_active = 0;
 		}
-			
+		
+		//CHECK CODE
+		if(!empty($product_category_code)){
+			$id = $this->input->post('id', true);
+			$this->db->from($this->table);
+			$this->db->where("product_category_code = '".$product_category_code."'");
+			if(!empty($id)){
+				$this->db->where("id != ".$id);
+			}
+			$this->db->where("is_deleted = 0");
+			$get_last = $this->db->get();
+			if($get_last->num_rows() > 0){
+				
+				//available
+				$r = array('success' => false, 'info' => 'Kode sudah digunakan!'); 
+				die(json_encode($r));
+		
+			}
+		}
+		
 		$r = '';
 		if($this->input->post('form_type_productCategory', true) == 'add')
 		{
 			$var = array(
 				'fields'	=>	array(
 				    'product_category_name'  	=> 	$product_category_name,
+				    'product_category_code'  	=> 	$product_category_code,
 					'product_category_desc'	=>	$product_category_desc,
 					'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
@@ -136,6 +163,7 @@ class ProductCategory extends MY_Controller {
 		if($this->input->post('form_type_productCategory', true) == 'edit'){
 			$var = array('fields'	=>	array(
 				    'product_category_name'  	=> 	$product_category_name,
+				    'product_category_code'  	=> 	$product_category_code,
 					'product_category_desc'	=>	$product_category_desc,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,

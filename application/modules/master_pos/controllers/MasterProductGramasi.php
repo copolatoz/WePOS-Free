@@ -56,9 +56,9 @@ class MasterProductGramasi extends MY_Controller {
 		}
 		
 		if(!empty($varian_id)){
-			$params['where'][] = "(e.has_varian = 1 AND varian_id = ".$varian_id.")";
+			$params['where'][] = "(e.has_varian = 1 AND a.varian_id = ".$varian_id.")";
 		}else{
-			$params['where'][] = "(e.has_varian = 0 AND (varian_id IS NULL OR varian_id =0))";
+			$params['where'][] = "(e.has_varian = 0 AND (a.varian_id IS NULL OR a.varian_id =0))";
 		}
 		
 		//get data -> data, totalCount
@@ -69,6 +69,10 @@ class MasterProductGramasi extends MY_Controller {
 			foreach ($get_data['data'] as $s){
 				
 				$s['item_price_acuan'] = 'Rp '.priceFormat($s['item_price_acuan']);
+				
+				$s['total_item_price'] = round($s['item_qty']*$s['item_price'],2);
+				$s['total_item_price_show'] = priceFormat($s['total_item_price'],2);
+				
 				array_push($newData, $s);
 			}
 		}
@@ -84,13 +88,13 @@ class MasterProductGramasi extends MY_Controller {
 		$this->table = $this->prefix.'product_gramasi';				
 		$session_user = $this->session->userdata('user_username');
 		
-		
 		$product_id = $this->input->post('product_id');
 		$item_id = $this->input->post('item_id');
 		$item_price = $this->input->post('item_price');
 		$item_qty = $this->input->post('item_qty');		
 		$varian_id = $this->input->post('varian_id');		
 		$product_varian_id = $this->input->post('product_varian_id');		
+		$has_varian = $this->input->post('has_varian');		
 		
 		if(empty($product_id) OR empty($product_id)){
 			$r = array('success' => false);
@@ -104,6 +108,13 @@ class MasterProductGramasi extends MY_Controller {
 		if(empty($varian_id)){
 			$varian_id = 0;
 		}	
+		
+		if(!empty($has_varian)){
+			if(empty($product_varian_id) OR empty($varian_id)){
+				$r = array('success' => false, 'info' => 'Silahkan Pilih Varian!');
+				die(json_encode($r));
+			}
+		}
 			
 		
 		$id = $this->input->post('id', true);
@@ -113,12 +124,17 @@ class MasterProductGramasi extends MY_Controller {
 		{
 			$this->db->select("*");
 			$this->db->from($this->table);
-			$this->db->where("product_id = ".$product_id." AND product_varian_id = ".$product_varian_id." AND varian_id = ".$varian_id." AND is_deleted = 1");
+			$this->db->where("product_id = ".$product_id." AND item_id = ".$item_id." AND product_varian_id = ".$product_varian_id." AND varian_id = ".$varian_id." AND is_deleted = 0");
 			$dt_varian = $this->db->get();
 			if($dt_varian->num_rows() > 0){
 				$get_prod_var = $dt_varian->row();
 				$id = $get_prod_var->id;
 				$active_old_data = true;
+			}
+			
+			if($dt_varian->num_rows() >= 2){
+				$r = array('success' => false, 'info' => 'Silahkan Hapus Item yang sama!');
+				die(json_encode($r));
 			}
 		}
 		
@@ -149,7 +165,15 @@ class MasterProductGramasi extends MY_Controller {
 			$this->lib_trans->commit();			
 			if($q)
 			{ 
-				$r = array('success' => true, 'id' => $insert_id); 				
+				$r = array('success' => true, 'id' => $insert_id); 	
+				
+				//update HPP product
+				$product_hpp = $this->m->product_hpp($product_id, $varian_id);
+				$r['product_hpp'] = $product_hpp['product_hpp'];
+				$r['varian_id'] = $product_hpp['varian_id'];
+							
+				$this->m->update_sales_price($product_id, $item_id, $varian_id);
+				
 			}  
 			else
 			{  				
@@ -181,6 +205,14 @@ class MasterProductGramasi extends MY_Controller {
 			if($update)
 			{  
 				$r = array('success' => true, 'id' => $id);
+				
+				//update HPP product
+				$product_hpp = $this->m->product_hpp($product_id, $varian_id);
+				$r['product_hpp'] = $product_hpp['product_hpp'];
+				$r['varian_id'] = $product_hpp['varian_id'];
+				
+				$this->m->update_sales_price($product_id, $item_id, $varian_id);
+							
 			}  
 			else
 			{ 				
@@ -203,6 +235,10 @@ class MasterProductGramasi extends MY_Controller {
 			$sql_Id = implode(',', $id);
 		}
 				
+		$this->db->from($this->table);
+		$this->db->where("id IN (".$sql_Id.")");
+		$get_product_gramasi = $this->db->get();
+		
 		//Delete
 		$data_update = array(
 			"is_deleted" => 1
@@ -213,6 +249,20 @@ class MasterProductGramasi extends MY_Controller {
 		if($q)  
         {  
             $r = array('success' => true, 'info' => 'Delete Product Success!'); 
+			
+			$product_id = 0;
+			$varian_id = 0;
+			if($get_product_gramasi->num_rows() > 0){
+				$dt_product_gramasi = $get_product_gramasi->row();
+				$product_id = $dt_product_gramasi->product_id;
+				$varian_id = $dt_product_gramasi->varian_id;
+			}
+			
+			//update HPP product
+			$product_hpp = $this->m->product_hpp($product_id, $varian_id);
+			$r['product_hpp'] = $product_hpp['product_hpp'];
+			$r['varian_id'] = $product_hpp['varian_id'];
+			
         }  
         else
         {  

@@ -12,6 +12,7 @@ $set_width = '800';
 	<!-- HEADER -->
 	<tr>
 		<td width="50">id</td>
+		<td width="200">product_code</td>
 		<td width="200">product_name</td>
 		<td width="200">product_desc</td>
 		<td width="150">normal_price</td>
@@ -22,6 +23,7 @@ $set_width = '800';
 		<td width="100">category_id</td>
 		<td width="100">use_tax</td>
 		<td width="100">use_service</td>
+		<td width="100">is_active</td>
 	</tr>
 <?php
 	$this->db->select('*');
@@ -38,6 +40,7 @@ $set_width = '800';
 			?>
 			<tr>
 				<td><?php echo $det['id']; ?></td>
+				<td><?php echo $det['product_code']; ?></td>
 				<td><?php echo $det['product_name']; ?></td>
 				<td><?php echo $det['product_desc']; ?></td>
 				<td><?php echo $det['normal_price']; ?></td>
@@ -48,6 +51,7 @@ $set_width = '800';
 				<td><?php echo $det['category_id']; ?></td>
 				<td><?php echo $det['use_tax']; ?></td>
 				<td><?php echo $det['use_service']; ?></td>
+				<td><?php echo $det['is_active']; ?></td>
 			</tr>
 			<?php
 		}

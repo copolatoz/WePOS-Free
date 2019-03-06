@@ -193,6 +193,9 @@ class StockOpname extends MY_Controller {
 			die(json_encode($r));
 		}
 		
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
+		
 		$sto_date = $this->input->post('sto_date');
 		$sto_memo = $this->input->post('sto_memo');		
 		$storehouse_id = $this->input->post('storehouse_id');		
@@ -200,11 +203,14 @@ class StockOpname extends MY_Controller {
 		$sto_status = $this->input->post('sto_status');		
 		$sto_status_old = $this->input->post('sto_status_old');		
 		
-		
 		if(empty($storehouse_id)){
 			$r = array('success' => false, 'info'	=> 'Please Select Warehouse!');
 			die(json_encode($r));
 		}		
+		
+		if(!empty($storehouse_id)){
+			$this->stock->cek_storehouse_access($storehouse_id);
+		}
 		
 		if(empty($sto_status_old)){
 			$sto_status_old = 'progress';
@@ -601,6 +607,10 @@ class StockOpname extends MY_Controller {
 	}
 	
 	public function saveDetail(){
+		
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
+		
 		$this->table = $this->prefix.'stock_opname';				
 		$this->table2 = $this->prefix.'stock_opname_detail';				
 		$this->table_items = $this->prefix.'items';				
@@ -752,7 +762,7 @@ class StockOpname extends MY_Controller {
 		$this->table_stock = $this->prefix.'stock';
 		$this->table_items = $this->prefix.'items';
 		
-		$this->db->select("a.*, x.item_id, x.storehouse_id, b.item_category_name, b.item_category_code, c.unit_name");
+		/*$this->db->select("a.*, x.item_id, x.storehouse_id, b.item_category_name, b.item_category_code, c.unit_name");
 		$this->db->from($this->table_stock." as x");
 		$this->db->join($this->table_items.' as a',"a.id = x.item_id");
 		$this->db->join($this->prefix.'item_category as b','a.category_id = b.id','LEFT');
@@ -783,8 +793,23 @@ class StockOpname extends MY_Controller {
 			if($get_data->num_rows() > 0){
 				$dt_item = $get_data->result_array();
 			}
-		}
+
+		}*/
   		
+		$dt_item = array();
+		//ASUMSI STOK AWAL - MASIH KOSONG
+		$this->db->select("a.*, b.item_category_name, b.item_category_code, c.unit_name");
+		$this->db->from($this->table_items.' as a');
+		$this->db->join($this->prefix.'item_category as b','a.category_id = b.id','LEFT');
+		$this->db->join($this->prefix.'unit as c','a.unit_id = c.id','LEFT');
+		$this->db->where('a.is_active', 1);
+		$this->db->where('a.is_deleted', 0);
+		$this->db->order_by('a.id', "ASC");
+		$get_data = $this->db->get();
+		if($get_data->num_rows() > 0){
+			$dt_item = $get_data->result_array();
+		}
+		
   		$newData = array();
 		
 		$cat_name = array();
@@ -1114,6 +1139,9 @@ class StockOpname extends MY_Controller {
 	public function delete()
 	{
 		
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
+		
 		$this->table = $this->prefix.'stock_opname';
 		$this->table2 = $this->prefix.'stock_opname_detail';
 		
@@ -1175,6 +1203,9 @@ class StockOpname extends MY_Controller {
 	
 	public function deleteDetail()
 	{
+		
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
 		
 		$this->table = $this->prefix.'stock_opname_detail';
 		

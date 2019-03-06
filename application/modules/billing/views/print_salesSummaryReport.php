@@ -833,7 +833,7 @@
 				<tr class="tbl-header">
 					<td class="first xcenter" width="50" rowspan="2">NO</td>
 					<td class="xcenter" width="130" rowspan="2">PACKAGE</td>
-					<td class="xcenter" width="80" rowspan="2">QTY BILLING</td>
+					<td class="xcenter" width="80" rowspan="2">QTY MENU</td>
 					<td class="xcenter" width="120" rowspan="2">SALES</td>
 					<?php
 					if($diskon_sebelum_pajak_service == 1){

@@ -59,7 +59,7 @@ class VarianMenu extends MY_Controller {
 			array_push($newData, $dt);
 		}else{
 			if(!empty($show_choose_text)){
-				$dt = array('id' => '', 'varian_name' => 'Pilih Ukuran/Porsi');
+				$dt = array('id' => '', 'varian_name' => 'Pilih Varian');
 				array_push($newData, $dt);
 			}
 		}

@@ -854,11 +854,20 @@ class SalesSummaryReport extends MY_Controller {
 						if(empty($s['bank_id'])){
 							$s['bank_id'] = 0;
 							
-							if($s['payment_id'] == 2 OR $s['payment_id'] == 3 OR $s['payment_id'] == 4){
-								if(!empty($default_payment_bank[$s['payment_id']])){
-									$s['bank_id'] = $default_payment_bank[$s['payment_id']];
-								}
-								
+							//update AR - 2019-02-15
+							if($s['payment_id'] == 2){
+								//if(!empty($default_payment_bank[$s['payment_id']])){
+								//	$s['bank_id'] = $default_payment_bank[$s['payment_id']];
+								//}
+								$s['bank_id'] = 'DEBIT';
+							}
+							
+							if($s['payment_id'] == 3){
+								$s['bank_id'] = 'CREDIT';
+							}
+							
+							if($s['payment_id'] == 4){
+								$s['bank_id'] = 'AR';
 							}
 							
 						}
@@ -870,13 +879,14 @@ class SalesSummaryReport extends MY_Controller {
 							if(!empty($bank_data[$s['bank_id']])){
 								$bank_name = $bank_data[$s['bank_id']];
 							}
+							
 							$payment_name = 'CASH';
 							if(!empty($dt_payment_name[$s['payment_id']])){
 								$payment_name = $dt_payment_name[$s['payment_id']];
 							}
 							
 							if($s['payment_id'] == 4){
-								$bank_name = 'Credit-AR/Piutang';
+								$bank_name = 'AR / PIUTANG';
 							}
 							
 							$summary_payment[$var_payment] = array(
@@ -948,6 +958,7 @@ class SalesSummaryReport extends MY_Controller {
 									//$tot_payment = $s['grand_total'];
 									//$tot_payment_show = $s['grand_total_show'];
 									
+									//update AR - 2019-02-15
 									if($key_id == 2 OR $key_id == 3 OR $key_id == 4){
 										$tot_payment = $s['total_credit'];	
 									}else{
@@ -1620,6 +1631,7 @@ class SalesSummaryReport extends MY_Controller {
 													//$tot_payment = $dt_bill['grand_total'];
 													//$tot_payment_show = $dt_bill['grand_total_show'];
 													
+													//update AR - 2019-02-15
 													if($key_id == 2 OR $key_id == 3 OR $key_id == 4){
 														$tot_payment = $dt_bill['total_credit'];	
 													}else{

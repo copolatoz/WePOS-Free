@@ -525,7 +525,8 @@ class PurchaseOrder extends MY_Controller {
 		$po_project = $this->input->post('po_project');
 		$supplier_from_ro = $this->input->post('supplier_from_ro');
 		
-		$get_opt = get_option_value(array("use_approval_po"));
+		$get_opt = get_option_value(array("use_approval_po","as_server_backup"));
+		cek_server_backup($get_opt);
 		
 		$use_approval_po = 0;
 		$approval_status = $this->input->post('approval_status');
@@ -910,6 +911,9 @@ class PurchaseOrder extends MY_Controller {
 	public function closing_PO()
 	{
 		
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
+		
 		$this->table = $this->prefix.'po';
 		
 		$get_id = $this->input->post('id', true);		
@@ -948,92 +952,10 @@ class PurchaseOrder extends MY_Controller {
 		die(json_encode($r));
 	}
 	
-	/* public function saveDetail(){
-		$this->table = $this->prefix.'po_detail';				
-		
-		$session_user = $this->session->userdata('user_username');
-		$session_client_id = $this->session->userdata('client_id');
-		
-		$po_id = $this->input->post('po_id');
-		$po_detail_id = $this->input->post('po_detail_id');
-		$item_id = $this->input->post('item_id');
-		$po_detail_qty = $this->input->post('po_detail_qty');
-		$po_detail_purchase = $this->input->post('po_detail_purchase');
-		$unit_id = $this->input->post('unit_id');
-		$ro_detail_id = $this->input->post('ro_detail_id');
-		
-		if(empty($po_id) OR empty($po_detail_qty) OR empty($item_id) OR empty($session_client_id)){
-			$r = array('success' => false, 'info' => 'Save Detail Failed!');
-			die(json_encode($r));
-		}		
-
-		$var = array('fields'	=>	array(
-				'po_id'			=> 	$po_id,
-				'item_id' 	=> 	$item_id,
-				'po_detail_qty' => 	$po_detail_qty,
-				'unit_id'	 	=> 	$unit_id,
-				'po_detail_purchase' => $po_detail_purchase,
-				'po_detail_total'	 => $po_detail_qty * $po_detail_purchase,
-				'ro_detail_id'	 	 => $ro_detail_id
-			),
-			'table'			=>  $this->table,
-			'primary_key'	=>  'id'
-		);
-		
-		//ADD/Edit		
-		$this->lib_trans->begin();
-			if(!empty($po_detail_id)){
-				$edit = $this->m2->save($var, $po_detail_id);
-			}else{
-				$edit = $this->m2->save($var);
-			}
-		$this->lib_trans->commit();
-		
-		if($edit)
-		{  
-			$po_total_qty = $this->get_total_qty($po_id);
-			$po_total_price = $this->get_total_price($po_id);
-			//UPDATE Total Qty
-			$var2 = array('fields'	=>	array(
-					'po_total_qty'  => $po_total_qty,
-					'po_total_price'  => $po_total_price
-				),
-				'table'			=>  $this->prefix.'po',
-				'primary_key'	=>  'id'
-			);
-			
-			$this->lib_trans->begin();
-				$update = $this->m->save($var2, $po_id);
-			$this->lib_trans->commit();
-			
-			
-			//UPDATE RO DETAIL
-			$var4 = array('fields'	=>	array(
-					'ro_detail_status'  => 'take',
-					'take_reff_id' => $po_id,
-					'take_reff_detail_id'  => $po_detail_id		
-				),
-				'table'			=>  $this->prefix.'ro_detail',
-				'primary_key'	=>  'id'
-			);
-		
-			$this->lib_trans->begin();
-				$update = $this->m->save($var4, $ro_detail_id);
-			$this->lib_trans->commit();
-			
-			
-			$r = array('success' => true, 'item_id' => $item_id, 'po_total_price' => $po_total_price);
-			
-		}  
-		else
-		{  
-			$r = array('success' => false, 'info' => 'Save Detail Failed!');
-		}
-		
-		die(json_encode(($r==null or $r=='')? array('success'=>false) : $r));
-	} */
-		
 	public function validation_used_PO($sql_Id = ''){
+		
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
 		
 		if(empty($sql_Id)){
 			return true;
@@ -1065,6 +987,9 @@ class PurchaseOrder extends MY_Controller {
 	
 	public function delete()
 	{
+		
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
 		
 		$this->table = $this->prefix.'po';
 		$this->table2 = $this->prefix.'po_detail';
@@ -1152,6 +1077,9 @@ class PurchaseOrder extends MY_Controller {
 	
 	public function deleteDetail()
 	{
+		
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
 		
 		$this->table = $this->prefix.'po_detail';
 		

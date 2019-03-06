@@ -9,7 +9,7 @@
 <body>
 	<?php
 		$set_width = 1290;
-		$total_cols = 12;
+		$total_cols = 13;
 		
 		$payment_data_content = '';
 		if(!empty($payment_data)){
@@ -37,7 +37,8 @@
 			<!-- HEADER -->
 			<tr class="tbl-header">
 				<td class="first xcenter" width="40" rowspan="2">NO</td>
-				<td class="xcenter" width="260" rowspan="2">PRODUCT</td>
+				<td class="xcenter" width="110" rowspan="2">CODE</td>
+				<td class="xcenter" width="260" rowspan="2">PRODUCT / ITEM</td>
 				<td class="xcenter" width="60" rowspan="2">TOTAL QTY</td>
 				<td class="xcenter" width="110" rowspan="2">TOTAL BILLING</td>
 				<?php
@@ -103,13 +104,14 @@
 						$det['product_name'] = '#'.$det['product_id'].' deleted';
 					}
 						
-					if(empty($det['item_code'])){
-						$det['item_code'] = 'N/A';
+					if(empty($det['product_code'])){
+						$det['product_code'] = 'N/A';
 					}
 					
 					?>
 					<tr class="tbl-data">
 						<td class="first xcenter"><?php echo $no; ?></td>
+						<td class="xleft"><?php echo $det['product_code']; ?></td>
 						<td class="xleft"><?php echo $det['product_name']; ?></td>
 						<td class="xcenter"><?php echo $det['total_qty']; ?></td>
 						<td class="xright"><?php echo $det['total_billing_show']; ?></td>
@@ -183,7 +185,7 @@
 				
 				?>
 				<tr class="tbl-data">
-					<td class="first xright xbold" colspan="<?php echo 2; ?>">TOTAL</td>
+					<td class="first xright xbold" colspan="<?php echo 3; ?>">TOTAL</td>
 					<td class="xcenter xbold"><?php echo priceFormat($total_qty); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_billing); ?></td>
 					<?php

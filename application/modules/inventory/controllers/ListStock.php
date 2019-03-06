@@ -255,21 +255,49 @@ class ListStock extends MY_Controller {
 			$storehouse_id = $this->stock->get_primary_storehouse();
 		}
 		
+		$category_id = $this->input->post('category_id');
+		if(!empty($category_id)){
+			if($category_id == -1){
+				$category_id = '';
+			}
+		}
+		
+		$alert_hpp_vs_sales = 0;
+		
 		// Default Parameter
-		$this->db->select('a.*, b.item_name, b.item_code, b.item_price, b.unit_id, c.unit_name');
+		$this->db->select('a.*, b.item_name, b.item_code, b.item_price, b.sales_price, b.unit_id, b.use_for_sales, c.unit_name');
 		$this->db->from($this->table_stock_rekap.' as a');
 		$this->db->join($this->table_items.' as b',"b.id = a.item_id","LEFT");
 		$this->db->join($this->table_unit.' as c',"c.id = b.unit_id","LEFT");
 		$this->db->where("a.trx_date", $tanggal);
 		$this->db->where("a.storehouse_id", $storehouse_id);
 		$this->db->where("b.is_deleted = 0");
+		
+		if(!empty($category_id)){
+			$this->db->where("b.category_id", $category_id);
+		}
+		
+		$keywords = $this->input->post('keywords');
+		if(!empty($keywords)){
+			$this->db->where("(b.item_code LIKE '%".$keywords."%' OR b.item_name LIKE '%".$keywords."%')");
+		}
+		
 		$this->db->order_by("b.item_code", "ASC");
 		$dt_closing = $this->db->get();
 		if($dt_closing->num_rows() > 0){
 			$all_data_detail = array();
+			$all_date_item = array();
 			foreach($dt_closing->result_array() as $dt){
 				
 				$dt['item_hpp_show'] = priceFormat($dt['item_hpp']);
+				$selisih = $dt['sales_price'] - $dt['item_hpp'];
+				$dt['sales_price_show'] = priceFormat($dt['sales_price']);
+				
+				if($selisih < 0 AND $dt['use_for_sales'] == 1){
+					$dt['sales_price_show'] = '<b style="color:red">'.$dt['sales_price_show'].'</b>';
+					$dt['item_hpp_show'] = '<b style="color:red">'.$dt['item_hpp_show'].'</b>';
+					$alert_hpp_vs_sales++;
+				}
 				
 				if($dt['total_stock'] < 0){
 					$dt['item_name'] = '<b style="color:red">'.$dt['item_name'].'</b>';
@@ -279,9 +307,13 @@ class ListStock extends MY_Controller {
 					$dt['total_stock_kemarin'] = '<b style="color:red">'.$dt['total_stock_kemarin'].'</b>';
 				}
 				
-				$all_data_detail[] = $dt;
+				$date_item = $dt['trx_date'].'_'.$dt['item_id'];
+				if(!in_array($date_item, $all_date_item)){
+					$all_date_item[] = $date_item;
+					$all_data_detail[] = $dt;
+				}
 			}
-			$get_data = array('data' => $all_data_detail, 'totalCount' => count($all_data_detail));
+			$get_data = array('data' => $all_data_detail, 'totalCount' => count($all_data_detail), 'alert_hpp_vs_sales' => $alert_hpp_vs_sales);
 			
 		}else{
 			$keterangan = array('id' => '', 'item_name' => 'No Data or Not Been Generated!');
@@ -293,6 +325,9 @@ class ListStock extends MY_Controller {
 	
 	public function generate()
 	{
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
+		
 		$this->table_closing = $this->prefix.'closing';
 		$this->table_stock_rekap = $this->prefix.'stock_rekap';
 		$session_client_id = $this->session->userdata('client_id');	
@@ -714,6 +749,175 @@ class ListStock extends MY_Controller {
 		$r = array('success' => true, 'info'	=> 'Warehouse: '.$storehouse_name_display.', Stok on Date From '.$date_from.' ~ '.$date_till.' Been Generated!', 'curr_date' => $date_from);
 		die(json_encode($r));
 				
+	}
+	
+	public function lastgenerate()
+	{
+		$this->table_closing = $this->prefix.'closing';
+		$this->table_stock_rekap = $this->prefix.'stock_rekap';
+		$session_client_id = $this->session->userdata('client_id');	
+		$session_user = $this->session->userdata('user_username');
+		
+		if(empty($session_user)){
+			$r = array('success' => false, 'info' => 'Sesi Login sudah habis, Silahkan Login ulang!');
+			die(json_encode($r));
+		}
+				
+		if(empty($session_client_id)){
+			$r = array('success' => false, 'info' => 'Sesi Login sudah habis, Silahkan Login ulang!');
+			die(json_encode($r));
+		}
+		
+		//CEK FIRST TO START DATE
+		$opt_value = array(
+			'stock_rekap_start_date'
+		);
+		$get_opt = get_option_value($opt_value);
+		
+		$stock_rekap_start_date = '';
+		$stock_rekap_start_date_mktime = 0;
+		if(!empty($get_opt['stock_rekap_start_date'])){
+			$stock_rekap_start_date_mktime = strtotime($get_opt['stock_rekap_start_date']);
+			$stock_rekap_start_date = date("Y-m-d", $stock_rekap_start_date_mktime);
+		}
+		
+		$limit_day = 100;
+		$tgl_mktime = strtotime(date("d-m-Y"));
+		$tanggal = date("Y-m-d", $tgl_mktime);
+		$tanggal_min30_mktime = $tgl_mktime-($limit_day*ONE_DAY_UNIX);
+		$tanggal_min30 = date("Y-m-d", $tanggal_min30_mktime);
+		
+		if($tanggal_min30_mktime <= $stock_rekap_start_date_mktime){
+			$tanggal_min30_mktime = $stock_rekap_start_date_mktime;
+			$tanggal_min30 = $stock_rekap_start_date;
+			
+			$limit_day = ($tgl_mktime-$tanggal_min30_mktime) / ONE_DAY_UNIX;
+		}
+		
+		$dt_tanggal = array();
+		$dt_tanggal_mktime = array();
+		for($i=0; $i<=$limit_day;$i++){
+			$tanggal_mk = ($tanggal_min30_mktime+($i*ONE_DAY_UNIX));
+			$tanggal_x = date("Y-m-d", $tanggal_mk);
+			if(!in_array($tanggal_x,$dt_tanggal)){
+				$dt_tanggal[] = $tanggal_x;
+				
+				$dt_tanggal_mktime[$tanggal_x] = $tanggal_mk;
+			}
+		}
+		
+		$storehouse_id = $this->input->post('storehouse_id');
+		if(empty($storehouse_id)){
+			$storehouse_id = $this->stock->get_primary_storehouse();
+		}
+		
+		$last_tanggal = '';
+		$na_tanggal = array();
+		
+		$session_user = $this->session->userdata();
+		//print_r($session_user);
+		
+		// Default Parameter
+		$this->db->select('a.trx_date, a.storehouse_id');
+		$this->db->from($this->table_stock_rekap.' as a');
+		$this->db->where("a.storehouse_id", $storehouse_id);
+		$this->db->where("a.trx_date >= '".$tanggal_min30."'");
+		$this->db->order_by("a.trx_date", "DESC");
+		$this->db->group_by("a.trx_date");
+		$dt_closing = $this->db->get();
+		
+		if($dt_closing->num_rows() > 0){
+			$dt_tanggal_rekap = array();
+			
+			$is_gap_date = 0;
+			$last_date_db = 0;
+			$db_mktime_from = 0;
+			foreach($dt_closing->result() as $dtR){
+				if(!in_array($dtR->trx_date,$dt_tanggal_rekap)){
+					$dt_tanggal_rekap[] = $dtR->trx_date;
+					
+					if($last_date_db == 0){
+						$last_date_db = strtotime($dtR->trx_date);
+						$db_mktime_from = strtotime($dtR->trx_date);
+						
+						//cek gap hari
+						$gap_date = (($last_date_db-$tanggal_min30_mktime) / ONE_DAY_UNIX) +1;
+						
+						if($dt_closing->num_rows() != $gap_date){
+							//echo '$tanggal_min30_mktime = '.date("d-m-Y", $tanggal_min30_mktime).'<br/>';
+							//echo '$last_date_db = '.date("d-m-Y", $last_date_db).'<br/>';
+							//echo $gap_date.' != '.$dt_closing->num_rows().'<br/>';
+							$is_gap_date = 1;
+						}
+						
+					}
+					
+					
+					//echo $dtR->trx_date.'<br/>';
+				}
+			}
+			
+			$count_na = 0;
+			foreach($dt_tanggal as $tanggal_x){
+				if(!in_array($tanggal_x, $dt_tanggal_rekap) AND $count_na == 0){
+					//$na_tanggal[] = $tanggal_x;
+					$count_na++;
+				}
+				
+				if(!empty($count_na)){
+					if(!empty($stock_rekap_start_date_mktime)){
+						
+						if(!empty($dt_tanggal_mktime[$tanggal_x])){
+							$get_mk = $dt_tanggal_mktime[$tanggal_x];
+							
+							if($stock_rekap_start_date_mktime <= $get_mk){
+								$na_tanggal[] = $tanggal_x;
+							}
+							
+						}
+						
+					}else{
+						$na_tanggal[] = $tanggal_x;
+					}
+					
+				}
+				
+				$last_tanggal = $tanggal_x;
+			}
+			
+			$dt_last = $dt_closing->row();
+			
+			if(!empty($na_tanggal)){
+				$r = array('success' => true, 'generated' => 0, 'last' => $last_tanggal, 'na_tanggal' => $na_tanggal, 't_na_tanggal' => count($na_tanggal), 'info' => 'Generate Stok: '.$last_tanggal);
+			}else{
+				$r = array('success' => true, 'generated' => 1, 'last' => $last_tanggal, 'na_tanggal' => $na_tanggal, 't_na_tanggal' => count($na_tanggal), 'info' => 'Generate Stok: '.$tanggal);
+			}
+			
+		}else{
+			
+			if($tanggal_min30_mktime <= $stock_rekap_start_date_mktime){
+				$tanggal_min30_mktime = $stock_rekap_start_date_mktime;
+				$tanggal_min30 = $stock_rekap_start_date;
+			}
+			$last_tanggal = $tanggal_min30;
+			
+			$na_tanggal = array();
+			foreach($dt_tanggal as $tanggal_x){
+				if(!empty($dt_tanggal_mktime[$tanggal_x])){
+					$get_mk = $dt_tanggal_mktime[$tanggal_x];
+					
+					if($stock_rekap_start_date_mktime <= $get_mk){
+						$na_tanggal[] = $tanggal_x;
+					}
+					
+				}
+			}
+			
+			$r = array('success' => true, 'generated' => 1, 'last' => $last_tanggal, 'na_tanggal' => $na_tanggal, 't_na_tanggal' => count($na_tanggal), 'info' => 'Generate Stok: '.$tanggal);
+		}
+		
+		die(json_encode($r));
+		
 	}
 	
 }

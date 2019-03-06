@@ -31,6 +31,7 @@ class Backend extends MY_Controller {
 		
 		if($comp_assets){
 			
+			
 			$this->load->library('Minifier');
 			
 			//MERGE STYLE - DESKTOP	
@@ -95,6 +96,7 @@ class Backend extends MY_Controller {
 			//MINIFY STYLE - DESKTOP		
 			$apps_css = $this->minifier->minify( $merge_app_css, 'assets/desktop/css/alldesktop.min.css', config_item('program_version') );
 			
+			
 			//MINIFY-APPS
 			$apps_js = $this->minifier->minify( $merge_apps_js, 'apps.min/core/application.min.js', config_item('program_version') );
 		}
@@ -154,9 +156,10 @@ class Backend extends MY_Controller {
 		'account_payable_non_accounting','account_receivable_non_accounting','cashflow_non_accounting',
 		'spv_access_active','receiving_select_warehouse',
 		'print_qc_then_order','supervisor_pin_mode','default_discount_payment','print_qc_order_when_payment',
-		'use_item_sku','reservation_cashier','autohold_create_billing',
+		'use_item_sku','reservation_cashier','salesorder_cashier','autohold_create_billing',
 		'hide_button_invoice','hide_button_halfpayment','hide_button_mergebill','hide_button_splitbill',
-		'hide_button_logoutaplikasi','min_noncash','autobackup_on_settlement','no_hold_billing','print_preview_billing');
+		'hide_button_logoutaplikasi','min_noncash','autobackup_on_settlement','no_hold_billing',
+		'print_preview_billing','opsi_no_print_when_payment','must_choose_customer');
 		
 		$get_opt = get_option_value($opt_var);
 		if(!empty($get_opt)){

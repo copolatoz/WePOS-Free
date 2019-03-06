@@ -81,17 +81,10 @@ class ReportSales extends MY_Controller {
 			$this->db->where("a.is_deleted", 0);
 			$this->db->where($add_where);
 			
-
-
-
-
-
-
 			if(empty($sorting)){
 				$this->db->order_by("payment_date","ASC");
 			}else{
 				$this->db->order_by($sorting,"ASC");
-
 			}
 			
 			$get_dt = $this->db->get();
@@ -1881,22 +1874,23 @@ class ReportSales extends MY_Controller {
 			
 		);
 		
-		if(empty($groupCat)){
-			$groupCat = 0;
+		if(empty($retail_warehouse)){
+			$this->db->from($this->prefix."storehouse_users");
+			$this->db->where("is_retail_warehouse = 1");
+			$get_retail_warehouse = $this->db->get();
+			if($get_retail_warehouse->num_rows() > 0){
+				$dt_retail_warehouse = $get_retail_warehouse->row();
+				$retail_warehouse = $dt_retail_warehouse->storehouse_id;
+			}
 		}
 		
-		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service','cashier_max_pembulatan','cashier_pembulatan_keatas'));
+		if(empty($retail_warehouse)){
+			die('Retail Warehouse Not Found!');
+		}
+		
+		$get_opt = get_option_value(array('report_place_default'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
-		}
-		if(!empty($get_opt['diskon_sebelum_pajak_service'])){
-			$data_post['diskon_sebelum_pajak_service'] = $get_opt['diskon_sebelum_pajak_service'];
-		}
-		if(empty($get_opt['cashier_max_pembulatan'])){
-			$get_opt['cashier_max_pembulatan'] = 0;
-		}
-		if(empty($get_opt['cashier_pembulatan_keatas'])){
-			$get_opt['cashier_pembulatan_keatas'] = 0;
 		}
 		
 		if(empty($date_from) OR empty($date_till)){
@@ -1915,18 +1909,10 @@ class ReportSales extends MY_Controller {
 			
 			$add_where = "(b.payment_date >= '".$qdate_from." 07:00:00' AND b.payment_date <= '".$qdate_till_max." 06:00:00')";
 			
-			//b.tax_total, b.service_total,
-			//b.include_tax, b.tax_percentage, b.include_service, b.service_percentage, b.is_compliment,
-			$this->db->select("a.*, b.billing_no, b.total_billing,b.discount_perbilling, b.discount_percentage as billing_discount_percentage, b.discount_total as billing_discount_total,
-								c.product_name, c.product_group, c.category_id, d.product_category_name as category_name");
-			$this->db->from($this->table2." as a");
-			$this->db->join($this->prefix.'billing as b','b.id = a.billing_id','LEFT');
-			$this->db->join($this->prefix.'product as c','c.id = a.product_id','LEFT');
-			$this->db->join($this->prefix.'product_category as d','d.id = c.category_id','LEFT');
-			$this->db->where("a.is_deleted", 0);
+			$this->db->select("b.billing_no");
+			$this->db->from($this->prefix."billing as b");
 			$this->db->where("b.is_deleted", 0);
-			$this->db->where("b.billing_status", "paid");			
-			$this->db->order_by("c.product_name", 'ASC');
+			$this->db->where("b.billing_status", "paid");
 			$this->db->where($add_where);
 			
 			if(empty($sorting)){
@@ -1936,120 +1922,102 @@ class ReportSales extends MY_Controller {
 			}
 			
 			$get_dt = $this->db->get();
+			
+			$all_sales_no = array();
 			if($get_dt->num_rows() > 0){
-				$data_post['report_data'] = $get_dt->result_array();
-				
-			}
-			
-			//echo $this->db->last_query();
-			
-			$all_product_id = array();
-			$all_product_data = array();
-			$sort_qty = array();
-			$newData = array();
-			$no = 1;
-			if(!empty($data_post['report_data'])){
-				foreach ($data_post['report_data'] as $s){
+				foreach ($get_dt->result_array() as $s){
 					
-					$s['item_no'] = $no;
-					
-					if(!in_array($s['product_id'], $all_product_id)){
-						$all_product_id[] = $s['product_id'];
+					if(!in_array($s['billing_no'], $all_sales_no)){
+						$all_sales_no[] = $s['billing_no'];
 					}
-					
-					if(empty($all_product_data[$s['product_id']])){
-						
-						$all_product_data[$s['product_id']] = array(
-							'product_id'	=> $s['product_id'],
-							'product_name'	=> $s['product_name'],
-							'product_group'	=> $s['product_group'],
-							'category_id'	=> $s['category_id'],
-							'category_name'	=> $s['category_name'],
-							'total_qty'		=> 0
-						);
-						
-						$no++;
-						
-					}
-					
-					$all_product_data[$s['product_id']]['total_qty'] += $s['order_qty'];
-					
-					//if(empty($sort_qty[$s['product_id']])){
-					//	$sort_qty[$s['product_id']] = 0;
-					//}
-					//$sort_qty[$s['product_id']] += $s['order_qty'];
-					
 					
 				}
 			}
 			
-			//GRAMASI
-			$item_product = array();
-			if(!empty($all_product_id)){
-				$all_product_id_txt = implode(",", $all_product_id);
-			}else{
-				$all_product_id_txt = '-1';
-			}
-			
-			$this->db->select("a.*, b.item_name,
-								c.item_category_name as category_name, d.unit_name");
-			$this->db->from($this->prefix."product_gramasi as a");
-			$this->db->join($this->prefix.'items as b','b.id = a.item_id','LEFT');
-			$this->db->join($this->prefix.'item_category as c','c.id = b.category_id','LEFT');
-			$this->db->join($this->prefix.'unit as d','d.id = b.unit_id','LEFT');
-			$this->db->where("a.product_id IN (".$all_product_id_txt.")");
+			//Usage Waste
+			$add_where = "(b.uw_date >= '".$qdate_from."' AND b.uw_date <= '".$qdate_till_max."')";
+			$this->db->select("b.uw_number");
+			$this->db->from($this->prefix."usagewaste as b");
+			$this->db->where("b.is_deleted", 0);
+			$this->db->where("b.uw_sales", 1);
+			$this->db->where("b.uw_status", "done");
+			$this->db->where($add_where);
 			$get_dt = $this->db->get();
+			
+			$all_uw_no = array();
 			if($get_dt->num_rows() > 0){
-				foreach($get_dt->result_array() as $s){
+				foreach ($get_dt->result_array() as $s){
 					
-					//ITEM PRODUCT
-					if(empty($item_product[$s['product_id']])){
-						$item_product[$s['product_id']] = array();
+					if(!in_array($s['uw_number'], $all_uw_no)){
+						$all_uw_no[] = $s['uw_number'];
 					}
-						
-					if(!in_array($s['item_id'], $item_product[$s['product_id']])){
-						$item_product[$s['product_id']][] = $s['item_id'];
-					}
-					
-					if(empty($newData[$s['item_id']])){
-						
-						$newData[$s['item_id']] = array(
-							'item_id'		=> $s['item_id'],
-							'item_name'		=> $s['item_name'],
-							'item_price'	=> $s['item_price'],
-							'unit_name'		=> $s['unit_name'],
-							'category_name'	=> $s['category_name'],
-							'item_qty'		=> $s['item_qty'],
-							'total_order'	=> 0,
-							'total_qty'		=> 0,
-							'item_qty_average'	=> 0
-						);
-						
-						$no++;
-						
-					}
-					
 					
 				}
-				
 			}
 			
-			//CALCULATE
-			if(!empty($all_product_data)){
-				foreach($all_product_data as $prod_id => $dtP){
-					if(!empty($item_product[$prod_id])){
-						foreach($item_product[$prod_id] as $dtI){
-							if(!empty($newData[$dtI])){
-								$newData[$dtI]['total_order'] += $dtP['total_qty'];
-								$newData[$dtI]['total_qty'] += ($newData[$dtI]['item_qty']*$dtP['total_qty']);
-								$newData[$dtI]['item_qty_average'] = ($newData[$dtI]['item_qty']+$newData[$dtI]['item_qty_average'])/2;
-								
-								if(empty($sort_qty[$dtI])){
-									$sort_qty[$dtI] = 0;
-								}
-								$sort_qty[$dtI] += ($newData[$dtI]['item_qty']*$dtP['total_qty']);
-							}
+			
+			$item_data = array();
+			$sort_qty = array();
+			if(!empty($all_sales_no) OR !empty(!empty($all_uw_no))){
+				
+				$all_sales_no_sql = '';
+				if(!empty($all_sales_no)){
+					$all_sales_no_sql = implode("','", $all_sales_no);
+				}
+				
+				$all_uw_no_sql = '';
+				if(!empty($all_uw_no)){
+					$all_uw_no_sql = implode("','", $all_uw_no);
+				}
+				
+				$this->db->select("a.*, b.item_code, b.item_name, c.item_category_name as category_name, d.unit_name, d.unit_code");
+				$this->db->from($this->prefix."stock as a");
+				$this->db->join($this->prefix.'items as b','b.id = a.item_id','LEFT');
+				$this->db->join($this->prefix.'item_category as c','c.id = b.category_id','LEFT');
+				$this->db->join($this->prefix.'unit as d','d.id = b.unit_id','LEFT');
+				
+				if(!empty($all_sales_no_sql) AND !empty($all_uw_no_sql)){
+					$this->db->where("(a.trx_note = 'SALES' AND a.trx_type = 'out' AND a.trx_ref_data IN ('".$all_sales_no_sql."')) OR (a.trx_note = 'Usage Waste' AND a.trx_type = 'out' AND a.trx_ref_data IN ('".$all_uw_no_sql."'))");
+				}else{
+					if(!empty($all_sales_no_sql)){
+						$this->db->where("(a.trx_note = 'SALES' AND a.trx_type = 'out' AND a.trx_ref_data IN ('".$all_sales_no_sql."'))");
+					}
+					if(!empty($all_uw_no_sql)){
+						$this->db->where("(a.trx_note = 'Usage Waste' AND a.trx_type = 'out' AND a.trx_ref_data IN ('".$all_uw_no_sql."'))");
+					}
+				}
+				
+				
+				
+				$get_dt = $this->db->get();
+				if($get_dt->num_rows() > 0){
+					
+					foreach($get_dt->result_array() as $s){
+						
+						//ITEM PRODUCT
+						if(empty($item_data[$s['item_id']])){
+							$item_data[$s['item_id']] = array(
+								'item_id'		=> $s['item_id'],
+								'item_code'		=> $s['item_code'],
+								'item_name'		=> $s['item_name'],
+								'unit_name'		=> $s['unit_name'],
+								'unit_code'		=> $s['unit_code'],
+								'category_name'	=> $s['category_name'],
+								'total_order'	=> 0,
+								'total_qty'		=> 0,
+								'qty_average'	=> 0
+							);
 						}
+						
+						$item_data[$s['item_id']]['total_order'] += $s['trx_nominal'];
+						$item_data[$s['item_id']]['total_qty'] += $s['trx_qty'];
+						$item_data[$s['item_id']]['qty_average'] += ($s['trx_qty']+$item_data[$s['item_id']]['qty_average'])/2;
+							
+						if(empty($sort_qty[$s['item_id']])){
+							$sort_qty[$s['item_id']] = 0;
+						}
+						$sort_qty[$s['item_id']] += ($dtP['trx_qty']);
+						
 					}
 				}
 			}
@@ -2063,25 +2031,22 @@ class ReportSales extends MY_Controller {
 				//RANK QTY
 				if($order_qty == 1){
 					arsort($sort_qty);
-					$xnewData = array();
+					$newData = array();
 					foreach($sort_qty as $key => $dt){
 			
-						if(!empty($newData[$key])){
-							$xnewData[] = $newData[$key];
+						if(!empty($item_data[$key])){
+							$newData[] = $item_data[$key];
 						}
 							
 					}
-					$newData = $xnewData;
 				}
 				
 			}else{
 				$order_qty = 0;
-				$xnewData = array();
-				foreach($newData as $dt){
-					$xnewData[] = $dt;
+				$newData = array();
+				foreach($item_data as $dt){
+					$newData[] = $dt;
 				}
-					
-				$newData = $xnewData;
 			}
 			
 			$data_post['report_data'] = $newData;

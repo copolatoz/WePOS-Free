@@ -24,7 +24,7 @@ class SetupAplikasi extends MY_Controller {
 		$opt_val = array(
 			'wepos_tipe','timezone_default','report_place_default','warehouse_primary','retail_warehouse','spv_access_active',
 			'use_login_pin','supervisor_pin_mode','auto_logout_time','input_chinese_text','management_systems',
-			'ipserver_management_systems','view_multiple_store','autobackup_on_settlement',
+			'ipserver_management_systems','view_multiple_store','autobackup_on_settlement','use_wms','as_server_backup',
 			
 			'role_id_kasir','include_tax','include_service','default_tax_percentage','default_service_percentage',
 			'set_ta_table_ta','takeaway_no_tax','takeaway_no_service','diskon_sebelum_pajak_service',
@@ -35,12 +35,13 @@ class SetupAplikasi extends MY_Controller {
 		
 			'print_order_peritem_kitchen','print_order_peritem_bar','print_order_peritem_other','print_chinese_text','show_multiple_print_qc',
 			'multiple_print_qc','show_multiple_print_billing','multiple_print_billing',
-			'printMonitoring_qc','printMonitoring_kitchen','printMonitoring_bar','printMonitoring_other','print_qc_then_order','print_qc_order_when_payment',
+			'printMonitoring_qc','printMonitoring_kitchen','printMonitoring_bar','printMonitoring_other','print_qc_then_order',
+			'print_qc_order_when_payment','opsi_no_print_when_payment',
 			
 			'use_approval_po','approval_change_payment_po_done','purchasing_request_order','auto_add_supplier_item_when_purchasing','auto_add_supplier_ap','receiving_select_warehouse',
 			'stock_rekap_start_date','persediaan_barang',
 			'auto_item_code','item_code_separator','item_code_format','item_no_length','so_count_stock','ds_count_stock','ds_auto_terima','hide_empty_stock_on_report',
-			'use_item_sku','item_sku_from_code','autocut_stok_sales_to_usage','reservation_cek_stok',
+			'use_item_sku','item_sku_from_code','autocut_stok_sales_to_usage','reservation_cek_stok','using_item_average_as_hpp',
 			
 			'closing_sales_start_date','autoclosing_generate_sales','autoclosing_closing_sales','autoclosing_auto_cancel_billing','closing_purchasing_start_date',
 			'autoclosing_generate_purchasing','autoclosing_closing_purchasing','autoclosing_auto_cancel_receiving',
@@ -96,7 +97,7 @@ class SetupAplikasi extends MY_Controller {
 		$opt_val = array(
 			'wepos_tipe','timezone_default','report_place_default','warehouse_primary','retail_warehouse','spv_access_active',
 			'use_login_pin','supervisor_pin_mode','auto_logout_time','input_chinese_text','management_systems',
-			'ipserver_management_systems','view_multiple_store','autobackup_on_settlement',
+			'ipserver_management_systems','view_multiple_store','autobackup_on_settlement','use_wms','as_server_backup',
 			
 			'role_id_kasir','include_tax','include_service','default_tax_percentage','default_service_percentage',
 			'set_ta_table_ta','takeaway_no_tax','takeaway_no_service','diskon_sebelum_pajak_service',
@@ -107,12 +108,13 @@ class SetupAplikasi extends MY_Controller {
 			
 			'print_order_peritem_kitchen','print_order_peritem_bar','print_order_peritem_other','print_chinese_text','show_multiple_print_qc',
 			'multiple_print_qc','show_multiple_print_billing','multiple_print_billing',
-			'printMonitoring_qc','printMonitoring_kitchen','printMonitoring_bar','printMonitoring_other','print_qc_then_order','print_qc_order_when_payment',
+			'printMonitoring_qc','printMonitoring_kitchen','printMonitoring_bar','printMonitoring_other','print_qc_then_order',
+			'print_qc_order_when_payment','opsi_no_print_when_payment',
 			
 			'use_approval_po','approval_change_payment_po_done','purchasing_request_order','auto_add_supplier_item_when_purchasing','auto_add_supplier_ap','receiving_select_warehouse',
 			'stock_rekap_start_date','persediaan_barang',
 			'auto_item_code','item_code_separator','item_code_format','item_no_length','so_count_stock','ds_count_stock','ds_auto_terima','hide_empty_stock_on_report',
-			'use_item_sku','item_sku_from_code','autocut_stok_sales_to_usage','reservation_cek_stok',
+			'use_item_sku','item_sku_from_code','autocut_stok_sales_to_usage','reservation_cek_stok','using_item_average_as_hpp',
 			
 			'autoclosing_generate_timer','autoclosing_closing_time',
 			'closing_sales_start_date','autoclosing_generate_sales','autoclosing_closing_sales','autoclosing_auto_cancel_billing','closing_purchasing_start_date',
@@ -138,10 +140,12 @@ class SetupAplikasi extends MY_Controller {
 			'supervisor_pin_mode'			=> 0,
 			'auto_logout_time'				=> 0, //3600000
 			'input_chinese_text'			=> 0,
-			'management_systems'			=> '',
+			'management_systems'			=> 0,
 			'ipserver_management_systems' 	=> '',
 			'view_multiple_store' 			=> 0,
 			'autobackup_on_settlement' 		=> 0,
+			'use_wms' 						=> 0,
+			'as_server_backup' 				=> 0,
 			
 			'role_id_kasir'					=> '1,2,3',
 			'include_tax'					=> 0,
@@ -172,8 +176,9 @@ class SetupAplikasi extends MY_Controller {
 			'cashier_credit_ar'				=> 0,
 			'min_noncash'					=> 0,
 			'no_hold_billing'				=> 0,
+			'default_tipe_billing'				=> 0,
 			'print_preview_billing'			=> 0,
-			'default_tipe_billing'			=> 0,
+
 					
 			'print_order_peritem_kitchen'	=> 0,
 			'print_order_peritem_bar'		=> 0,
@@ -189,6 +194,7 @@ class SetupAplikasi extends MY_Controller {
 			'printMonitoring_other'			=> 0,
 			'print_qc_then_order'			=> 0,
 			'print_qc_order_when_payment'	=> 0,
+			'opsi_no_print_when_payment'	=> 0,
 						
 			'use_approval_po'				=> 0,
 			'approval_change_payment_po_done' => 0,
@@ -196,7 +202,7 @@ class SetupAplikasi extends MY_Controller {
 			'auto_add_supplier_item_when_purchasing'=> 0,
 			'auto_add_supplier_ap'			=> 0,
 			'receiving_select_warehouse'	=> 0,
-			'stock_rekap_start_date'		=> '01/'.date("m/Y"),
+			'stock_rekap_start_date'		=> '01-'.date("m-Y"),
 			'persediaan_barang'				=> 'average',
 			'auto_item_code'				=> 0,
 			'item_code_separator'			=> '.',
@@ -209,25 +215,26 @@ class SetupAplikasi extends MY_Controller {
 			'use_item_sku'					=> 0,
 			'item_sku_from_code'			=> 0,
 			'autocut_stok_sales_to_usage'	=> 0,
+			'using_item_average_as_hpp'		=> 0,
 			
 			'autoclosing_generate_timer'			=> 600000,
 			'autoclosing_closing_time'				=>'03:00',
-			'closing_sales_start_date'				=> '01/'.date("m/Y"),
+			'closing_sales_start_date'				=> '01-'.date("m-Y"),
 			'autoclosing_generate_sales'			=> 0,
 			'autoclosing_closing_sales'				=> 0,
 			'autoclosing_auto_cancel_billing'		=> 0,
-			'closing_purchasing_start_date'			=> '01/'.date("m/Y"),
+			'closing_purchasing_start_date'			=> '01-'.date("m-Y"),
 			'autoclosing_generate_purchasing'		=> 0,
 			'autoclosing_closing_purchasing'		=> 0,
 			'autoclosing_auto_cancel_receiving'		=> 0,
-			'closing_inventory_start_date'			=> '01/'.date("m/Y"),
+			'closing_inventory_start_date'			=> '01-'.date("m-Y"),
 			'autoclosing_generate_inventory'		=> 0,
 			'autoclosing_generate_stock'			=> 0,
 			'autoclosing_closing_inventory'			=> 0,
 			'autoclosing_auto_cancel_distribution'	=> 0,
 			'autoclosing_auto_cancel_production'	=> 0,
 						
-			'closing_accounting_start_date'			=> '01/'.date("m/Y"),
+			'closing_accounting_start_date'			=> '01-'.date("m-Y"),
 			'autoclosing_generate_accounting'		=> 0,
 			'autoclosing_closing_accounting'		=> 0,
 			'autoclosing_skip_open_jurnal'			=> 0,

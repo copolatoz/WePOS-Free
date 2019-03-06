@@ -8,7 +8,7 @@ header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
 header("Cache-Control: private",false);
 
 $set_width = 1290;
-$total_cols = 12;
+$total_cols = 13;
 
 $payment_data_content = '';
 if(!empty($payment_data)){
@@ -41,7 +41,8 @@ if(!empty($payment_data)){
 			</tr>
 			<tr>
 				<td class="tbl_head_td_first_xcenter" width="40" rowspan="2">NO</td>
-				<td class="tbl_head_td_xcenter" width="260" rowspan="2">PRODUCT</td>
+				<td class="tbl_head_td_xcenter" width="110" rowspan="2">CODE</td>
+				<td class="tbl_head_td_xcenter" width="260" rowspan="2">PRODUCT / ITEM</td>
 				<td class="tbl_head_td_xcenter" width="60" rowspan="2">TOTAL QTY</td>
 				<td class="tbl_head_td_xcenter" width="110" rowspan="2">TOTAL BILLING</td>
 				<?php
@@ -110,13 +111,14 @@ if(!empty($payment_data)){
 					$det['product_name'] = '#'.$det['product_id'].' deleted';
 				}
 						
-				if(empty($det['item_code'])){
-					$det['item_code'] = 'N/A';
+				if(empty($det['product_code'])){
+					$det['product_code'] = 'N/A';
 				}
 				
 				?>
 				<tr>
 					<td class="tbl_data_td_first_xcenter"><?php echo $no; ?></td>
+					<td class="tbl_data_td"><?php echo $det['product_code']; ?></td>
 					<td class="tbl_data_td"><?php echo $det['product_name']; ?></td>
 					<td class="tbl_data_td_xcenter"><?php echo $det['total_qty']; ?></td>
 					<td class="tbl_data_td_xright">Rp. <?php echo $det['total_billing_show']; ?></td>
@@ -189,7 +191,7 @@ if(!empty($payment_data)){
 			
 			?>
 			<tr>
-				<td class="tbl_summary_td_first_xright" colspan="<?php echo 2; ?>">TOTAL</td>
+				<td class="tbl_summary_td_first_xright" colspan="<?php echo 3; ?>">TOTAL</td>
 				<td class="tbl_summary_td_xright"><?php echo priceFormat($total_qty); ?></td>
 				<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_billing); ?></td>
 				<?php

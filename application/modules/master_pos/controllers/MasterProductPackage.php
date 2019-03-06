@@ -17,6 +17,8 @@ class MasterProductPackage extends MY_Controller {
 		
 		//package_id
 		$package_id = $this->input->post('package_id');
+		$product_varian_id = $this->input->post('product_varian_id');
+		$varian_id = $this->input->post('varian_id');
 		
 		if(empty($package_id)){
 			$r = array('success' => false);
@@ -38,7 +40,7 @@ class MasterProductPackage extends MY_Controller {
 									array( 
 										array($this->prefix.'product as b','b.id = a.product_id','LEFT'),
 										array($this->prefix.'product_category as c','c.id = b.category_id','LEFT'),
-										array($this->prefix.'varian as d','d.id = a.varian_id','LEFT')
+										array($this->prefix.'varian as d','d.id = a.varian_id_item','LEFT'),
 									) 
 								),
 			'where'			=> array('a.is_deleted' => 0),
@@ -49,7 +51,13 @@ class MasterProductPackage extends MY_Controller {
 		);		
 		
 		if(!empty($package_id)){
-			$params['where'] = array('package_id' => $package_id);
+			$params['where'][] = array('a.package_id' => $package_id);
+		}
+		
+		if(!empty($varian_id)){
+			$params['where'][] = "(a.varian_id = ".$varian_id.")";
+		}else{
+			$params['where'][] = "(a.varian_id IS NULL OR a.varian_id =0)";
 		}
 		
 		//get data -> data, totalCount
@@ -67,6 +75,11 @@ class MasterProductPackage extends MY_Controller {
 				$s['normal_price_show'] = priceFormat($s['normal_price'],2);
 				$s['product_price_show'] = priceFormat($s['product_price'],2);
 				$s['product_hpp_show'] = priceFormat($s['product_hpp'],2);
+				
+				$s['total_product_price'] = round($s['product_qty']*$s['product_price'],2);
+				$s['total_product_hpp'] = round($s['product_qty']*$s['product_hpp'],2);
+				$s['total_product_price_show'] = priceFormat($s['total_product_price'],2);
+				$s['total_product_hpp_show'] = priceFormat($s['total_product_hpp'],2);
 				
 				array_push($newData, $s);
 			}
@@ -177,31 +190,83 @@ class MasterProductPackage extends MY_Controller {
 		
 		$package_id = $this->input->post('package_id');
 		$product_id = $this->input->post('product_id');
+		$product_qty = $this->input->post('product_qty');
 		$normal_price = $this->input->post('normal_price');
 		$product_price = $this->input->post('product_price');
 		$product_hpp = $this->input->post('product_hpp');		
 		$has_varian = $this->input->post('has_varian');		
 		$varian_id = $this->input->post('varian_id');		
 		$product_varian_id = $this->input->post('product_varian_id');		
+		$varian_id_item = $this->input->post('varian_id_item');		
+		$product_varian_id_item = $this->input->post('product_varian_id_item');		
 		
 		if(empty($product_id) OR empty($package_id)){
 			$r = array('success' => false);
 			die(json_encode($r));
+		}		
+		
+		if(empty($product_varian_id)){
+			$product_varian_id = 0;
 		}	
+		
+		if(empty($varian_id)){
+			$varian_id = 0;
+		}		
+		
+		/*if(!empty($has_varian)){
+			if(empty($product_varian_id) OR empty($varian_id)){
+				$r = array('success' => false, 'info' => 'Silahkan Pilih Varian!');
+				die(json_encode($r));
+			}
+		}*/
 			
-		$r = '';
+		
+		if(!empty($has_varian)){
+			if(empty($product_varian_id_item) OR empty($varian_id_item)){
+				$r = array('success' => false, 'info' => 'Silahkan Pilih Varian Product/Item!');
+				die(json_encode($r));
+			}
+		}
+		
+
+		$id = $this->input->post('id', true);
+			
+		$active_old_data = false;
 		if($this->input->post('form_type_masterProductPackage', true) == 'add')
+		{
+			$this->db->select("*");
+			$this->db->from($this->table);
+			$this->db->where("package_id = ".$package_id." AND product_id = ".$product_id." AND product_varian_id = ".$product_varian_id." AND varian_id = ".$varian_id." AND is_deleted = 0");
+			$dt_varian = $this->db->get();
+			if($dt_varian->num_rows() > 0){
+				$get_prod_var = $dt_varian->row();
+				$id = $get_prod_var->id;
+				$active_old_data = true;
+			}
+			
+			if($dt_varian->num_rows() >= 2){
+				$r = array('success' => false, 'info' => 'Silahkan Hapus Produk yang sama!');
+				die(json_encode($r));
+			}
+			
+		}
+				
+		$r = '';
+		if($this->input->post('form_type_masterProductPackage', true) == 'add' AND $active_old_data == false)
 		{
 			$var = array(
 				'fields'	=>	array(
 				    'package_id'  => 	$package_id,
 				    'product_id'  => 	$product_id,
+				    'product_qty'  => 	$product_qty,
 					'normal_price'	=>	$normal_price,
 					'product_price'	=>	$product_price,
 					'product_hpp'	=>	$product_hpp,
-					'has_varian'	=>	$has_varian,
 					'varian_id'		=>	$varian_id,
 					'product_varian_id'	=>	$product_varian_id,
+					'has_varian'	=>	$has_varian,
+					'varian_id_item'		=>	$varian_id_item,
+					'product_varian_id_item'	=>	$product_varian_id_item,
 					'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
@@ -221,9 +286,11 @@ class MasterProductPackage extends MY_Controller {
 				$r = array('success' => true, 'id' => $insert_id); 		
 				
 				//update HPP product
-				$product_hpp = $this->m->product_hpp($package_id);
+				$product_hpp = $this->m->product_hpp($package_id, $varian_id);
 				$r['product_hpp'] = $product_hpp['product_hpp'];
 				$r['normal_price'] = $product_hpp['normal_price'];
+				$r['product_price'] = $product_hpp['product_price'];
+				$r['varian_id'] = $product_hpp['varian_id'];
 				
 			}  
 			else
@@ -232,25 +299,28 @@ class MasterProductPackage extends MY_Controller {
 			}
       		
 		}else
-		if($this->input->post('form_type_masterProductPackage', true) == 'edit'){
+		if($this->input->post('form_type_masterProductPackage', true) == 'edit' OR $active_old_data == true){
 			$var = array('fields'	=>	array(
-				    'package_id'  => 	$package_id,
+				    //'package_id'  => 	$package_id,
 				    'product_id'  => 	$product_id,
+				    'product_qty'  => 	$product_qty,
 					'normal_price'	=>	$normal_price,
 					'product_price'	=>	$product_price,
 					'product_hpp'	=>	$product_hpp,
 					'has_varian'	=>	$has_varian,
 					'varian_id'		=>	$varian_id,
 					'product_varian_id'	=>	$product_varian_id,
+					'varian_id_item'		=>	$varian_id_item,
+					'product_varian_id_item'	=>	$product_varian_id_item,
 					'updated'		=>	date('Y-m-d H:i:s'),
-					'updatedby'		=>	$session_user
+					'updatedby'		=>	$session_user,
+					'is_deleted'	=>	0,
 				),
 				'table'			=>  $this->table,
 				'primary_key'	=>  'id'
 			);
 								
 			//UPDATE
-			$id = $this->input->post('id', true);
 			$this->lib_trans->begin();
 				$update = $this->m->save($var, $id);
 			$this->lib_trans->commit();
@@ -260,9 +330,11 @@ class MasterProductPackage extends MY_Controller {
 				$r = array('success' => true, 'id' => $id);
 				
 				//update HPP product
-				$product_hpp = $this->m->product_hpp($package_id);
+				$product_hpp = $this->m->product_hpp($package_id, $varian_id);
 				$r['product_hpp'] = $product_hpp['product_hpp'];
 				$r['normal_price'] = $product_hpp['normal_price'];
+				$r['product_price'] = $product_hpp['product_price'];
+				$r['varian_id'] = $product_hpp['varian_id'];
 				
 			}  
 			else
@@ -293,12 +365,12 @@ class MasterProductPackage extends MY_Controller {
 		
 				
 		//Delete
-		//$data_update = array(
-		//	"is_deleted" => 1
-		//);
-		//$q = $this->db->update($this->table, $data_update, "id IN (".$sql_Id.")");
+		$data_update = array(
+			"is_deleted" => 1
+		);
+		$q = $this->db->update($this->table, $data_update, "id IN (".$sql_Id.")");
 		
-		$q = $this->db->delete($this->table, "id IN (".$sql_Id.")");
+		//$q = $this->db->delete($this->table, "id IN (".$sql_Id.")");
 		
 		$r = '';
 		if($q)  
@@ -306,15 +378,19 @@ class MasterProductPackage extends MY_Controller {
             $r = array('success' => true); 
 			
 			$package_id = 0;
+			$varian_id = 0;
 			if($get_product_package->num_rows() > 0){
 				$dt_product_package = $get_product_package->row();
 				$package_id = $dt_product_package->package_id;
+				$varian_id = $dt_product_package->varian_id;
 			}
 			
 			//update HPP product
-			$product_hpp = $this->m->product_hpp($package_id);
+			$product_hpp = $this->m->product_hpp($package_id, $varian_id);
 			$r['product_hpp'] = $product_hpp['product_hpp'];
 			$r['normal_price'] = $product_hpp['normal_price'];
+			$r['product_price'] = $product_hpp['product_price'];
+			$r['varian_id'] = $product_hpp['varian_id'];
         }  
         else
         {  

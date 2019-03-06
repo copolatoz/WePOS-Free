@@ -183,7 +183,7 @@ class Merchant extends MX_Controller {
 			
 		}
 		
-		if(!empty($mkey)){
+		if(!empty($mkey) AND empty(config_item('cloud_access'))){
 			
 			$this->load->library('curl');
 			$mktime_dc = strtotime(date("d-m-Y H:i:s"));

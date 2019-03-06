@@ -30,14 +30,15 @@ class MasterProduct extends MY_Controller {
 		
 		// Default Parameter
 		$params = array(
-			'fields'		=> 'a.*, b.product_category_name, c.id as item_id, c.item_code',
+			'fields'		=> 'a.*, b.product_category_name,  b.product_category_code, c.id as item_id, c.item_code, d.unit_name, d.unit_code',
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table.' as a',
 			'join'			=> array(
 									'many', 
-									array( 
+									array(  
 										array($this->prefix.'product_category as b','b.id = a.category_id','LEFT'),
-										array($this->prefix.'items as c','c.id = a.id_ref_item','LEFT')
+										array($this->prefix.'items as c','c.id = a.id_ref_item','LEFT'),
+										array($this->prefix.'unit as d','d.id = a.unit_id','LEFT'),
 									) 
 								),
 			'where'			=> array('a.is_deleted' => 0),
@@ -65,7 +66,7 @@ class MasterProduct extends MY_Controller {
 			$params['order'] = array('a.product_desc' => 'ASC');
 		}
 		if(!empty($searching)){
-			$params['where'][] = "(a.product_name LIKE '%".$searching."%' OR b.product_category_name LIKE '%".$searching."%' OR c.item_code LIKE '%".$searching."%')";
+			$params['where'][] = "(a.product_name LIKE '%".$searching."%' OR b.product_category_name LIKE '%".$searching."%' OR a.product_code LIKE '%".$searching."%' OR c.item_code LIKE '%".$searching."%')";
 		}
 		if(!empty($category_id)){
 			$params['where'][] = "a.category_id = ".$category_id;
@@ -290,10 +291,50 @@ class MasterProduct extends MY_Controller {
 			}
 		}
 		
+		//CHECK PACKAGE ACTIVE
+		$get_package_id = array();
+		if(!empty($get_data['data'])){
+			foreach ($get_data['data'] as $s){
+				
+				if($s['product_type'] == 'package'){
+					if(!in_array($s['id'], $get_package_id)){
+						$get_package_id[] = $s['id'];
+					}
+				}
+				
+			}
+		}
+		
+		if(!empty($get_package_id)){
+			$get_package_id_sql = implode(",", $get_package_id);
+			$this->db->select('a.*, b.is_deleted as product_deleted, b.is_active as product_active');
+			$this->db->from($this->prefix.'product_package as a');
+			$this->db->join($this->table.' as b',"b.id = a.product_id","LEFT");
+			$this->db->where("package_id IN (".$get_package_id_sql.")");
+			$get_package_detail = $this->db->get();
+			if($get_package_detail->num_rows() > 0){
+				foreach($get_package_detail->result() as $dt){
+					
+					if($dt->product_deleted == 1 OR $dt->product_active == 0 OR in_array($dt->product_id, $ooo_menu)){
+						if(!in_array($dt->package_id, $ooo_menu)){
+							$ooo_menu[] = $dt->package_id;
+						}
+						if(!in_array($dt->product_id, $ooo_menu)){
+							$ooo_menu[] = $dt->product_id;
+						}
+					}
+					
+				}
+			}
+		}
 		
   		$newData = array();
 		if(!empty($get_data['data'])){
 			foreach ($get_data['data'] as $s){
+				
+				if(empty($s['item_code'])){
+					$s['item_code'] = $s['product_code'];
+				}
 				
 				if(empty($s['product_image'])){
 					$s['product_image'] = 'no-image.jpg';
@@ -420,7 +461,7 @@ class MasterProduct extends MY_Controller {
 		
 		// Default Parameter
 		$params = array(
-			'fields'		=> 'a.*, b.product_category_name, c.id as item_id, c.item_code',
+			'fields'		=> 'a.*, b.product_category_name, b.product_category_code, c.id as item_id, c.item_code',
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table.' as a',
 			'join'			=> array(
@@ -453,7 +494,7 @@ class MasterProduct extends MY_Controller {
 			$params['order'] = array('a.product_desc' => 'ASC');
 		}
 		if(!empty($searching)){
-			$params['where'][] = "(a.product_name LIKE '%".$searching."%' OR b.product_category_name LIKE '%".$searching."%' OR c.item_code LIKE '%".$searching."%')";
+			$params['where'][] = "(a.product_name LIKE '%".$searching."%' OR b.product_category_name LIKE '%".$searching."%' OR a.product_code LIKE '%".$searching."%' OR c.item_code LIKE '%".$searching."%')";
 		}
 		if(!empty($category_id)){
 			$params['where'][] = "a.category_id = ".$category_id;
@@ -513,6 +554,58 @@ class MasterProduct extends MY_Controller {
 		if(!empty($get_opt['default_service_percentage'])){
 			$default_service_percentage = $get_opt['default_service_percentage'];
 		}	
+		
+		//OOO Menu/Product
+		$this->db->select('*');
+		$this->db->from($this->prefix.'ooo_menu');
+		$this->db->where("tanggal = '".date("Y-m-d")."' AND is_deleted = 0");
+		$get_ooo = $this->db->get();
+		
+		$ooo_menu = array();
+		if($get_ooo->num_rows() > 0){
+			foreach($get_ooo->result() as $dt){
+				if(!in_array($dt->product_id, $ooo_menu)){
+					$ooo_menu[] = $dt->product_id;
+				}
+			}
+		}
+		
+		//CHECK PACKAGE ACTIVE
+		$get_package_id = array();
+		if(!empty($get_data['data'])){
+			foreach ($get_data['data'] as $s){
+				
+				if($s['product_type'] == 'package'){
+					if(!in_array($s['id'], $get_package_id)){
+						$get_package_id[] = $s['id'];
+					}
+				}
+				
+			}
+		}
+		
+		if(!empty($get_package_id)){
+			$get_package_id_sql = implode(",", $get_package_id);
+			$this->db->select('a.*, b.is_deleted as product_deleted, b.is_active as product_active');
+			$this->db->from($this->prefix.'product_package as a');
+			$this->db->join($this->table.' as b',"b.id = a.product_id","LEFT");
+			$this->db->where("package_id IN (".$get_package_id_sql.")");
+			$get_package_detail = $this->db->get();
+			if($get_package_detail->num_rows() > 0){
+				foreach($get_package_detail->result() as $dt){
+					
+					if($dt->product_deleted == 1 OR $dt->product_active == 0 OR in_array($dt->product_id, $ooo_menu)){
+						if(!in_array($dt->package_id, $ooo_menu)){
+							$ooo_menu[] = $dt->package_id;
+						}
+						if(!in_array($dt->product_id, $ooo_menu)){
+							$ooo_menu[] = $dt->product_id;
+						}
+					}
+					
+				}
+			}
+		}
 		
 		if(!empty($get_data['data'])){
 			foreach ($get_data['data'] as $s){
@@ -594,7 +687,15 @@ class MasterProduct extends MY_Controller {
 				$s['tax_price'] = $tax_total;
 				$s['service_price'] = $service_total;
 				
-				array_push($newData, $s);
+				$allow_prod = true;
+				if(in_array($s['id'], $ooo_menu)){
+					$allow_prod = false;
+				}
+				
+				if($allow_prod == true){
+					array_push($newData, $s);
+				}
+				
 			}
 		}
 		
@@ -609,9 +710,14 @@ class MasterProduct extends MY_Controller {
 	{
 		$this->table = $this->prefix.'product';				
 		$this->table2 = $this->prefix.'product_package';				
+		$this->table_gramasi = $this->prefix.'product_gramasi';				
 		$this->table_product_varian = $this->prefix.'product_varian';				
 		$session_user = $this->session->userdata('user_username');
 		
+		$product_code = $this->input->post('product_code');
+		if($product_code == '- AUTO -'){
+			$product_code = '';
+		}
 		
 		$product_name = $this->input->post('product_name');
 		$product_chinese_name = $this->input->post('product_chinese_name');
@@ -620,12 +726,14 @@ class MasterProduct extends MY_Controller {
 		$normal_price = $this->input->post('normal_price');
 		$product_hpp = $this->input->post('product_hpp');
 		$category_id = $this->input->post('category_id');
+		$unit_id = $this->input->post('unit_id');
 		$product_type = $this->input->post('product_type');
 		$old_product_type = $this->input->post('old_product_type');
 		$product_image = $this->input->post('product_image');
 		$product_group = $this->input->post('product_group');
 		//$use_tax = $this->input->post('use_tax');
 		//$use_service = $this->input->post('use_service');
+		$tipe = $this->input->post('tipe');
 		
 		/*CONTENT IMAGE UPLOAD SIZE*/		
 		$this->product_img_url = RESOURCES_URL.'product/';		
@@ -725,8 +833,42 @@ class MasterProduct extends MY_Controller {
 		$r = '';
 		if($this->input->post('form_type_masterProduct', true) == 'add')
 		{
+			$get_product_code = array('product_code' => '', 'product_no' => 1);
+			
+			if(empty($product_code)){
+				
+				//cek item code
+				$get_product_code = $this->generate_product_code($tipe);
+				$product_code = $get_product_code['product_code'];
+				
+			}
+			
+			$this->db->from($this->table);
+			$this->db->where("product_code = '".$product_code."'");
+			$this->db->where("is_deleted = 0");
+			$get_last = $this->db->get();
+			if($get_last->num_rows() > 0){
+				
+				//available
+				$r = array('success' => false, 'info' => 'Kode sudah digunakan!'); 
+				
+				//suggestion
+				if(!empty($item_category_code)){
+					$get_product_code = $this->generate_product_code($tipe);
+					$r = array('success' => false, 'info' => 'Kode sudah digunakan!<br/>Gunakan Kode Berikut: '.$get_product_code['product_code']); 
+				}
+				
+				die(json_encode($r));
+		
+			}else{
+				$get_product_code['product_code'] = $product_code;
+				$get_product_code['product_no'] = 1;
+			}
+			
 			$var = array(
 				'fields'	=>	array(
+				    'product_code' => 	$get_product_code['product_code'],
+				    'product_no' => 	$get_product_code['product_no'],
 				    'product_name'  => 	$product_name,
 				    'product_chinese_name'  => 	$product_chinese_name,
 					'product_desc'	=>	$product_desc,
@@ -739,6 +881,7 @@ class MasterProduct extends MY_Controller {
 					'use_service'	=>	$use_service,
 					'has_varian'	=>	$has_varian,
 					'category_id'	=>	$category_id,
+					'unit_id'		=>	$unit_id,
 					'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
@@ -778,6 +921,8 @@ class MasterProduct extends MY_Controller {
 					do_thumb($data_upload_temp, $this->product_img_path_big, $this->product_img_path_tiny, '', $tiny_size_width, $tiny_size_height, TRUE, 'height');
 				}
 				
+				$this->m->update_sales_price($insert_id);
+				
 				$r = array('success' => true, 'id' => $insert_id); 				
 			}  
 			else
@@ -793,6 +938,36 @@ class MasterProduct extends MY_Controller {
       		
 		}else
 		if($this->input->post('form_type_masterProduct', true) == 'edit'){
+			
+			$set_code = false;
+			if(empty($product_code)){
+				
+				$r = array('success' => false, 'info' => 'Kode Produk tidak boleh kosong!'); 
+				die(json_encode($r));
+				/*
+				//cek item code
+				$get_product_code = $this->generate_product_code($tipe);
+				$product_code = $get_product_code['product_code'];
+			
+				$this->db->from($this->table);
+				$this->db->where("product_code = '".$product_code."'");
+				$this->db->where("is_deleted = 0");
+				$get_last = $this->db->get();
+				if($get_last->num_rows() > 0){
+					
+					$r = array('success' => false, 'info' => 'Kode Produk tidak boleh kosong!'); 
+					die(json_encode($r));
+			
+				}else{
+					$get_product_code['product_code'] = $product_code;
+					$get_product_code['product_no'] = 1;
+				}
+				
+				$set_code = false;
+				*/
+				
+			}
+			
 			$var = array('fields'	=>	array(
 				    'product_name'  => 	$product_name,
 				    'product_chinese_name'  => 	$product_chinese_name,
@@ -806,6 +981,7 @@ class MasterProduct extends MY_Controller {
 					'use_service'	=>	$use_service,
 					'has_varian'	=>	$has_varian,
 					'category_id'	=>	$category_id,
+					'unit_id'		=>	$unit_id,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,
 					'is_active'		=>	$is_active
@@ -813,6 +989,10 @@ class MasterProduct extends MY_Controller {
 				'table'			=>  $this->table,
 				'primary_key'	=>  'id'
 			);
+			
+			if($set_code){
+				$var['fields']['product_code'] = $product_code;
+			}
 						
 			if($is_upload_file){
 				
@@ -847,8 +1027,14 @@ class MasterProduct extends MY_Controller {
 			{  
 				if($old_product_type == 'package' AND $old_product_type != $product_type){	
 					//remove all package item					
-					$this->db->where("package_id", $id);
-					$del_package = $this->db->delete($this->table2);
+					$delete_data = array("is_deleted" => 0);
+					$del_package = $this->db->update($this->table2,$delete_data,"package_id = ".$id);
+				}
+				
+				if($old_product_type == 'item' AND $old_product_type != $product_type){	
+					//remove all gramasi item					
+					$delete_data = array("is_deleted" => 0);
+					$del_package = $this->db->update($this->table_gramasi,$delete_data,"product_id = ".$id);
 				}
 				
 				if($is_upload_file){					
@@ -865,6 +1051,8 @@ class MasterProduct extends MY_Controller {
 						@unlink($this->product_img_path_tiny.$product_image);
 					}
 				}
+				
+				$this->m->update_sales_price($id);
 				
 				$r = array('success' => true, 'id' => $id);
 			}  
@@ -943,7 +1131,192 @@ class MasterProduct extends MY_Controller {
 		die(json_encode($r));
 	}
 	
-	public function importHarga()
+	public function updateCode(){
+		$this->table = $this->prefix.'product';	
+		
+		$id = $this->input->post('id');
+		$product_code = $this->input->post('product_code');
+		$product_category_code = $this->input->post('product_category_code');
+		$tipe = $this->input->post('tipe');
+		
+		$r = array('success' => false, 'info' => 'Update Code Failed!'); 
+		if(empty($id) OR empty($product_code) OR empty($tipe)){
+			die(json_encode($r));
+		}
+		
+		$this->db->from($this->table);
+		$this->db->where("product_code = '".$product_code."' AND id != ".$id);
+		$this->db->where("is_deleted = 0");
+		$get_last = $this->db->get();
+		if($get_last->num_rows() > 0){
+			
+			//available
+			$r = array('success' => false, 'info' => 'Kode sudah digunakan!'); 
+			
+			//suggestion
+			if(!empty($product_category_code)){
+				$get_product_code = $this->generate_product_code($tipe);
+				$r = array('success' => false, 'info' => 'Kode sudah digunakan!<br/>Coba Kode Berikut: '.$get_product_code['product_code']); 
+			}
+	
+		}else{
+			
+			$product_code_format = '{Cat}{ItemNo}';
+			$product_no_length = 5;
+			
+			$repl_attr = array(
+				"{Cat}"		=> $product_category_code
+			);
+			
+			$product_code_format = strtr($product_code_format, $repl_attr);
+			$get_exp = explode("{ItemNo}", $product_code_format);
+			$first_format = '';
+			$product_no = 0;
+			if(!empty($get_exp[0])){
+				$first_format = $get_exp[0];
+				$first_format_length_code = strlen($first_format);
+				$get_product_no = substr($product_code, $first_format_length_code, $product_no_length);
+				$product_no = (int) $get_product_no;
+			}
+			//update 
+			$update_code = array('product_code' => $product_code,'product_no' => $product_no);
+			
+			$this->db->update($this->table, $update_code, "id = ".$id);
+			$r = array('success' => true, 'product_code' => $product_code, 'product_no' => $product_no);
+			
+		}
+		
+		die(json_encode($r));
+	}
+	
+	public function generate_product_code($tipe = ''){
+		
+		$this->table = $this->prefix.'product';		
+
+		$getDate = date("ym");
+		
+		$product_category_code = $this->input->post('product_category_code');
+		
+		$product_name = $this->input->post('product_name');
+		$product_sku = $this->input->post('product_sku');
+		
+		$opt_value = array(
+			'product_code_format',
+			'product_code_separator',
+			'product_no_length',
+			'product_sku_from_code'
+		);
+		
+		$get_opt = get_option_value($opt_value);
+		
+		$product_code_format = '{Cat}{ItemNo}';
+		$product_no_length = 5;
+		
+		$repl_attr = array(
+			"{SKU}"		=> $product_sku,
+			"{Cat}"		=> $product_category_code
+		);
+		
+		$product_code_format = strtr($product_code_format, $repl_attr);
+		$get_exp = explode("{ItemNo}", $product_code_format);
+		$first_format = '';
+		if(!empty($get_exp[0])){
+			$first_format = $get_exp[0];
+			
+			$this->db->from($this->table);
+			$this->db->where("product_code LIKE '".$first_format."%' AND product_name = '".$product_name."'");
+			$this->db->where("is_deleted = 0");
+			$this->db->order_by('product_no', 'DESC');
+			$this->db->order_by('product_code', 'DESC');
+			$get_last = $this->db->get();
+			if($get_last->num_rows() > 0){
+				$data_product_code = $get_last->row();
+				$first_format_length_code = strlen($first_format);
+				$product_code = substr($data_product_code->product_code, $first_format_length_code, $product_no_length);
+				$product_no = (int) $product_code;
+				
+				if(!empty($data_product_code->product_no)){
+					$product_no = $data_product_code->product_no;
+				}		
+		
+			}else{
+				
+				$this->db->from($this->table);
+				$this->db->where("product_code LIKE '".$first_format."%'");
+				$this->db->where("is_deleted = 0");
+				$this->db->order_by('product_no', 'DESC');
+				$this->db->order_by('product_code', 'DESC');
+				$get_last = $this->db->get();
+				if($get_last->num_rows() > 0){
+					$data_product_code = $get_last->row();
+					$first_format_length_code = strlen($first_format);
+					$product_code = substr($data_product_code->product_code, $first_format_length_code, $product_no_length);
+					$product_no = (int) $product_code;
+				
+					if(!empty($data_product_code->product_no)){
+						$product_no = $data_product_code->product_no;
+					}		
+					
+				}else{
+					$product_no = 0;
+				}
+				
+				$product_no++;
+			
+			}
+			
+			$length_no = strlen($product_no);
+			if($length_no <= $product_no_length){
+				$gapTxt = $product_no_length - $length_no;
+				$product_code = str_repeat("0", $gapTxt).$product_no;
+			}
+			
+			$repl_attr = array(
+				"{ItemNo}"		=> $product_code
+			);
+			
+			$product_code_format = strtr($product_code_format, $repl_attr);
+		
+			
+		}else
+		{
+			$this->db->from($this->table);
+			$this->db->where("is_deleted = 0");
+			$this->db->order_by('product_no', 'DESC');
+			$this->db->order_by('product_code', 'DESC');
+			$get_last = $this->db->get();
+			if($get_last->num_rows() > 0){
+				$data_product_code = $get_last->row();
+				//$product_code = substr($data_product_code->product_code, 0, $product_no_length);
+				$product_code = substr($data_product_code->product_code, $product_no_length*-1);
+				$product_no = (int) $product_code;	
+					
+				if(!empty($data_product_code->product_no)){
+					$product_no = $data_product_code->product_no;
+				}				
+			}else{
+				$product_no = 0;
+			}
+			
+			$product_no++;
+			$length_no = strlen($product_no);
+			if($length_no <= $product_no_length){
+				$gapTxt = $product_no_length - $length_no;
+				$product_code = str_repeat("0", $gapTxt).$product_no;
+			}
+		}
+		
+		$repl_productno = array(
+			"{ItemNo}"		=> $product_code
+		);
+		
+		$product_code = strtr($product_code_format, $repl_productno);	
+		
+		return array('product_no' => $product_no, 'product_code' => $product_code);				
+	}
+	
+	public function importDataProduct()
+
 	{
 		$this->table = $this->prefix.'product';		
 		$session_user = $this->session->userdata('user_username');
@@ -1016,20 +1389,19 @@ class MasterProduct extends MY_Controller {
 						//print_r($xls->sheets[$i]['cells'][$row_num]);
 						//die();
 						
-						//id	product_name	product_desc	product_price	product_hpp	product_type	product_group	category_id
-						
-						$id = $xls->sheets[$i]['cells'][$row_num][1];								
-						$product_name = $xls->sheets[$i]['cells'][$row_num][2];								
-						$product_desc = $xls->sheets[$i]['cells'][$row_num][3];																
-						$normal_price = $xls->sheets[$i]['cells'][$row_num][4];								
-						$product_price = $xls->sheets[$i]['cells'][$row_num][5];														
-						$product_hpp = $xls->sheets[$i]['cells'][$row_num][6];							
-						$product_type = $xls->sheets[$i]['cells'][$row_num][7];									
-						$product_group = $xls->sheets[$i]['cells'][$row_num][8];									
-						$category_id = $xls->sheets[$i]['cells'][$row_num][9];		
-						$use_tax = $xls->sheets[$i]['cells'][$row_num][10];		
-						$use_service = $xls->sheets[$i]['cells'][$row_num][11];		
-						$is_active = $xls->sheets[$i]['cells'][$row_num][12];		
+						$id = $xls->sheets[$i]['cells'][$row_num][1];									
+						$product_code = $xls->sheets[$i]['cells'][$row_num][2];	
+						$product_name = $xls->sheets[$i]['cells'][$row_num][3];								
+						$product_desc = $xls->sheets[$i]['cells'][$row_num][4];																
+						$normal_price = $xls->sheets[$i]['cells'][$row_num][5];								
+						$product_price = $xls->sheets[$i]['cells'][$row_num][6];														
+						$product_hpp = $xls->sheets[$i]['cells'][$row_num][7];							
+						$product_type = $xls->sheets[$i]['cells'][$row_num][8];									
+						$product_group = $xls->sheets[$i]['cells'][$row_num][9];									
+						$category_id = $xls->sheets[$i]['cells'][$row_num][10];		
+						$use_tax = $xls->sheets[$i]['cells'][$row_num][11];		
+						$use_service = $xls->sheets[$i]['cells'][$row_num][12];		
+						$is_active = $xls->sheets[$i]['cells'][$row_num][13];		
 						
 						if(empty($product_type)){
 							$product_type = 'item';							
