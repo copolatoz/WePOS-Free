@@ -394,6 +394,12 @@ class BackupTrx extends MY_Controller {
 			$last_update = $return_data['last_update'];
 		}
 		
+		if(!empty($only_backup)){
+			if($only_backup == 'sales'){
+				$only_backup = array('sales','billing','billing_detail','billing_log');
+			}
+		}
+		
 		$total_data_lokal = array(
 			'sales' => 0,
 			'billing' => 0,
@@ -910,7 +916,7 @@ class BackupTrx extends MY_Controller {
 			
 			$allow_backup_list = false;
 			if(!empty($only_backup)){
-				if($val == $only_backup){
+				if(in_array($val, $only_backup)){
 					$allow_backup_list = true;
 				}
 				
@@ -1276,6 +1282,8 @@ class BackupTrx extends MY_Controller {
 			'total_data_on_backup' => $total_data_on_backup,
 			'limit_backup_data' => $limit_backup_data
 		);
+		
+		$has_next = 0;
 		
 		//LOAD DATA
 		$backup_text = '';
