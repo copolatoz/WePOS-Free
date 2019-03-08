@@ -2852,11 +2852,11 @@ INSERT INTO `pos_storehouse_users` (`id`, `storehouse_id`, `user_id`, `createdby
 
 CREATE TABLE IF NOT EXISTS `pos_supplier` (
   `id` int(11) unsigned NOT NULL,
-  `supplier_code` varchar(10) CHARACTER SET utf8 DEFAULT NULL,
-  `supplier_name` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `supplier_contact_person` varchar(40) CHARACTER SET utf8 DEFAULT NULL,
-  `supplier_address` varchar(255) CHARACTER SET utf8 DEFAULT NULL,
-  `supplier_phone` varchar(100) CHARACTER SET utf8 DEFAULT NULL,
+  `supplier_code` varchar(10) DEFAULT NULL,
+  `supplier_name` varchar(255) NOT NULL,
+  `supplier_contact_person` varchar(40) DEFAULT NULL,
+  `supplier_address` varchar(255) DEFAULT NULL,
+  `supplier_phone` varchar(100) DEFAULT NULL,
   `supplier_fax` varchar(100) DEFAULT NULL,
   `supplier_email` varchar(100) DEFAULT NULL,
   `createdby` varchar(50) DEFAULT NULL,

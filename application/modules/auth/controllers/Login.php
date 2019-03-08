@@ -182,7 +182,7 @@ class Login extends MX_Controller {
 			
 		}
 		
-		if(!empty($mkey) AND empty(config_item('cloud_access'))){
+		if(!empty($mkey)){
 			
 			$this->load->library('curl');
 			$mktime_dc = strtotime(date("d-m-Y H:i:s"));

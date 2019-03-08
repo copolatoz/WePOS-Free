@@ -23,6 +23,7 @@ class MY_Controller extends MX_Controller{
 		$this->id_user	= $this->session->userdata('id_user');
 		$this->view_multiple_store	= $this->session->userdata('view_multiple_store');
 		$this->timezone_default	= $this->session->userdata('timezone_default');
+		$this->is_cloud	= $this->session->userdata('is_cloud');
 		
 		//Timezone
 		if(!empty($this->timezone_default)){
@@ -32,7 +33,9 @@ class MY_Controller extends MX_Controller{
 		}
 		date_default_timezone_set($timezone_default);
 		
-		if(!empty($this->view_multiple_store)){
+		$cloud_access = config_item('cloud_access');
+		
+		if((!empty($this->view_multiple_store) OR !empty($this->is_cloud)) AND !empty($cloud_access)){
 			
 			$this->client_ip	= $this->session->userdata('client_ip');
 			$this->mysql_user	= $this->session->userdata('mysql_user');
