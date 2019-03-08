@@ -312,23 +312,18 @@ class WeposUpdate extends MY_Controller {
 			die(json_encode($r));
 		}else{
 			@$update_DB = $this->db->query($data_update);
-			if($update_DB){
-				
-				//remove options sql
-				$this->db->delete($this->prefix.'options',"option_var = 'wepos_update_".$get_opt['wepos_update_version']."'");
-				
-				$new_opt = array();
-				$new_opt['wepos_update_version'] = $get_opt['wepos_update_next_version'];
-				$new_opt['wepos_update_version2'] = $get_opt['wepos_update_next_version2'];
-				$update_option = update_option($new_opt);
-				
-				$r = array('success' => true, 'info' => 'Sudah Ter-Update ke v.'.$get_opt['wepos_update_next_version2']);
-				die(json_encode($r));
-				
-			}else{
-				$r = array('success' => false, 'info' => 'Update Gagal!<br/>Data Update tidak ditemukan');
-				die(json_encode($r));
-			}
+			
+			//remove options sql
+			$this->db->delete($this->prefix.'options',"option_var = 'wepos_update_".$get_opt['wepos_update_version']."'");
+			
+			$new_opt = array();
+			$new_opt['wepos_update_version'] = $get_opt['wepos_update_next_version'];
+			$new_opt['wepos_update_version2'] = $get_opt['wepos_update_next_version2'];
+			$update_option = update_option($new_opt);
+			
+			$r = array('success' => true, 'info' => 'Sudah Ter-Update ke v.'.$get_opt['wepos_update_next_version2']);
+			die(json_encode($r));
+			
 		}
 		
 		
