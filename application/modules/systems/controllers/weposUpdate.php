@@ -312,7 +312,6 @@ class WeposUpdate extends MY_Controller {
 			die(json_encode($r));
 		}else{
 			@$update_DB = $this->db->query($data_update);
-			
 			//remove options sql
 			$this->db->delete($this->prefix.'options',"option_var = 'wepos_update_".$get_opt['wepos_update_version']."'");
 			
@@ -323,7 +322,6 @@ class WeposUpdate extends MY_Controller {
 			
 			$r = array('success' => true, 'info' => 'Sudah Ter-Update ke v.'.$get_opt['wepos_update_next_version2']);
 			die(json_encode($r));
-			
 		}
 		
 		

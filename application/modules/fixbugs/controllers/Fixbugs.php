@@ -15,7 +15,7 @@ class Fixbugs extends MY_Controller {
 			//check files
 			//echo 'checking file.. '.MODULE_PATH.'fixbugs/models/'. $call_tools.'.php';
 			if(file_exists(MODULE_PATH.'fixbugs/models/'. $call_tools.'.php')){
-				echo ' CALLED TOOLS '.$call_tools.' --> OK ..<br/>';
+				echo ' CALLED TOOLS -OK ..<br/>';
 				$this->load->model($call_tools, 'get_tools');
 				$this->get_tools->generate($var2);
 			}else{

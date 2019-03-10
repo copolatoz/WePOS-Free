@@ -93,8 +93,8 @@ $total_cols = 10;
 						<td class="tbl_data_td_xcenter"><?php echo $total_stock_in; ?></td>
 						<td class="tbl_data_td_xcenter"><?php echo $total_stock_out; ?></td>
 						<td class="tbl_data_td_xcenter"><?php echo $total_stock; ?></td>
-						<td class="tbl_data_td_xright"><?php echo $det['item_hpp']; ?></td>
-						<td class="tbl_data_td_xright"><?php echo ($det['item_hpp']*$total_stock); ?></td>
+						<td class="tbl_data_td_xright">Rp. <?php echo priceFormat($det['item_hpp']); ?></td>
+						<td class="tbl_data_td_xright">Rp. <?php echo priceFormat($det['item_hpp']*$total_stock); ?></td>
 					</tr>
 					<?php	
 					$all_total_stock_kemarin += $total_stock_kemarin;
@@ -115,7 +115,7 @@ $total_cols = 10;
 					<td class="tbl_summary_td_xcenter"><?php echo priceFormat($all_total_stock_out); ?></td>
 					<td class="tbl_summary_td_xcenter"><?php echo priceFormat($all_total_stock); ?></td>
 					<td class="tbl_summary_td_xright">&nbsp;</td>
-					<td class="tbl_summary_td_xright"><?php echo ($all_total_harga); ?></td>
+					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($all_total_harga); ?></td>
 					
 				</tr>
 				<?php	
