@@ -8,7 +8,7 @@ $config['program_name_short'] 	=	'WePOS.Cafe';
 $config['copyright']			=	$config['program_name_short'].' v'.$config['program_version'].' &copy copyright '.$config['program_release'];
 $config['client_name']			=	'WePOS.Client';
 $config['program_author']		=	'WePOS.Dev';
-$config['website']				=	'http://wepos.id';
+$config['website']				=	'https://wepos.id';
 
 /*Common config*/
 $config['db_prefix']	= 'apps_';
