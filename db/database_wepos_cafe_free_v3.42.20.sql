@@ -638,7 +638,7 @@ CREATE TABLE IF NOT EXISTS `apps_options` (
   `updatedby` varchar(50) DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=220;
+) ENGINE=InnoDB AUTO_INCREMENT=221;
 
 INSERT INTO `apps_options` (`id`, `option_var`, `option_value`, `option_description`, `created`, `createdby`, `updated`, `updatedby`, `is_active`, `is_deleted`) VALUES
 (1, 'timezone_default', 'Asia/Jakarta', 'Timezone Asia/Jakarta', '2019-02-08 16:12:43', 'administrator', NULL, 'administrator', 1, 0),
@@ -858,7 +858,8 @@ INSERT INTO `apps_options` (`id`, `option_var`, `option_value`, `option_descript
 (216, 'as_server_backup', '0', NULL, '2019-03-06 17:00:01', 'administrator', NULL, NULL, 1, 0),
 (217, 'use_wms', '0', NULL, '2019-02-28 17:00:07', 'administrator', NULL, NULL, 1, 0),
 (218, 'opsi_no_print_when_payment', '0', NULL, '2019-03-06 17:00:01', 'administrator', NULL, NULL, 1, 0),
-(219, 'using_item_average_as_hpp', '1', NULL, '2019-03-06 17:00:01', 'administrator', NULL, NULL, 1, 0);
+(219, 'using_item_average_as_hpp', '1', NULL, '2019-03-06 17:00:01', 'administrator', NULL, NULL, 1, 0),
+(220, 'wepos_version', '3.42.20', NULL, '2019-03-06 17:00:01', 'administrator', NULL, NULL, 1, 0);
 
 CREATE TABLE IF NOT EXISTS `apps_roles` (
   `id` smallint(6) NOT NULL,

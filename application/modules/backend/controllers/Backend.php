@@ -148,7 +148,7 @@ class Backend extends MY_Controller {
         var date_today  = "'.date('d/m/Y').'";	
 		';
 		
-		$opt_var = array('merchant_tipe','merchant_key','produk_nama','produk_key','produk_expired',
+		$opt_var = array('merchant_tipe','merchant_key','produk_nama','produk_key','produk_expired','wepos_version',
 		'include_tax','include_service',
 		'default_tax_percentage','default_service_percentage',
 		'takeaway_no_tax','takeaway_no_service','role_id_kasir',
@@ -162,7 +162,36 @@ class Backend extends MY_Controller {
 		'print_preview_billing','opsi_no_print_when_payment','must_choose_customer');
 		
 		$get_opt = get_option_value($opt_var);
+		
+		$update_var = array();
 		if(!empty($get_opt)){
+			
+			//delete soon - update for v.3.42.17 to v.3.42.20
+			if(empty($get_opt['merchant_tipe'])){
+				$get_opt['merchant_tipe'] = 'cafe';
+				$update_var['merchant_tipe'] = 'cafe';
+			}
+			if(empty($get_opt['produk_nama'])){
+				$get_opt['produk_nama'] = '';
+				$update_var['produk_nama'] = '';
+			}
+			if(empty($get_opt['merchant_key'])){
+				$get_opt['merchant_key'] = '';
+				$update_var['merchant_key'] = '';
+			}
+			if(empty($get_opt['produk_key'])){
+				$get_opt['produk_key'] = '';
+				$update_var['produk_key'] = '';
+			}
+			if(empty($get_opt['produk_expired'])){
+				$get_opt['produk_expired'] = '';
+				$update_var['produk_expired'] = '';
+			}
+			if(empty($get_opt['wepos_version'])){
+				$get_opt['wepos_version'] = '';
+				$update_var['wepos_version'] = '3.42.19';
+			}
+			
 			foreach($get_opt as $key => $dt){
 				
 				if($key == 'auto_logout_time'){
@@ -187,6 +216,10 @@ class Backend extends MY_Controller {
 				}
 				
 			}
+		}
+		
+		if(!empty($update_var)){
+			update_option($update_var);
 		}
 		
 		//AS CASHIER

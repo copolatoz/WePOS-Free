@@ -9,21 +9,19 @@ WePOS - Cafe: v3.42.19 ke v3.42.20
 */
 
 
-INSERT  INTO `apps_options`(`option_var`,`option_value`,`option_description`,`created`,`createdby`,`updated`,`updatedby`,`is_active`,`is_deleted`) VALUES 
-('store_connected_name','',NULL,'2019-03-07 00:00:01','administrator',NULL,NULL,'1','0'),
-('store_connected_email','',NULL,'2019-03-07 00:00:01','administrator',NULL,NULL,'1','0'),
-('as_server_backup','0',NULL,'2019-03-07 00:00:01','administrator',NULL,NULL,1,0),
-('use_wms','0',NULL,'2019-03-01 00:00:07','administrator',NULL,NULL,1,0),
-('opsi_no_print_when_payment','0',NULL,'2019-03-07 00:00:01','administrator',NULL,NULL,1,0),
-('using_item_average_as_hpp','1',NULL,'2019-03-07 00:00:01','administrator',NULL,NULL,1,0);
-
 UPDATE apps_options SET option_value = '01-03-2019', updated = '2019-03-07 00:00:01' WHERE option_var IN ('closing_sales_start_date','stock_rekap_start_date','closing_purchasing_start_date','closing_inventory_start_date','closing_accounting_start_date');
-
+#
+UPDATE apps_options SET option_value = '0', updated = '2019-03-07 00:00:01' WHERE option_var IN ('view_multiple_store');
+#
+UPDATE apps_options SET option_value = 'https://wepos.id', updated = '2019-03-07 00:00:01' WHERE option_var IN ('ipserver_management_systems');
+#
 UPDATE apps_modules SET module_name = 'Backup Master Data' WHERE module_name = 'Syncronize Master Data Store';
+#
 UPDATE apps_modules SET module_name = 'Backup Data Transaksi' WHERE module_name = 'Backup Transaksi Store';
+#
 UPDATE apps_modules SET is_active = 0 WHERE module_name = 'Sync & Backup';
-
-
+#
+DROP TABLE IF EXISTS `pos_reservation`;
 CREATE TABLE `pos_reservation` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `reservation_number` varchar(20) NOT NULL,
@@ -67,39 +65,40 @@ CREATE TABLE `pos_reservation` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `pr_number_idx` (`reservation_number`)
 ) ENGINE=InnoDB;
-
-
+#
+DROP TABLE IF EXISTS `pos_reservation_detail`;
+#
 CREATE TABLE `pos_reservation_detail` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `reservation_id` int(11) NOT NULL,
-  `product_id` int(11) NOT NULL,
-  `has_varian` tinyint(1) DEFAULT '0',
-  `use_tax` tinyint(1) DEFAULT '0',
-  `use_service` tinyint(1) DEFAULT '0',
-  `tax_price` double DEFAULT '0',
-  `service_price` double DEFAULT '0',
-  `varian_id` int(11) DEFAULT NULL,
-  `product_varian_id` int(11) DEFAULT '0',
-  `resd_qty` float DEFAULT '0',
-  `resd_hpp` double DEFAULT '0',
-  `resd_price` double DEFAULT '0',
-  `resd_tax` double DEFAULT '0',
-  `resd_service` double DEFAULT '0',
-  `resd_potongan` double DEFAULT '0',
-  `resd_total` double DEFAULT '0',
-  `resd_grandtotal` double DEFAULT '0',
-  `supplier_id` int(11) DEFAULT '0',
-  `is_kerjasama` tinyint(1) DEFAULT '0',
-  `persentase_bagi_hasil` float DEFAULT '0',
-  `total_bagi_hasil` double DEFAULT NULL,
-  `resd_status` tinyint(1) NOT NULL DEFAULT '0',
-  `grandtotal_bagi_hasil` double DEFAULT '0',
-  `resd_notes` char(100) DEFAULT NULL,
+  `id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `reservation_id` INT(11) NOT NULL,
+  `product_id` INT(11) NOT NULL,
+  `has_varian` TINYINT(1) DEFAULT '0',
+  `use_tax` TINYINT(1) DEFAULT '0',
+  `use_service` TINYINT(1) DEFAULT '0',
+  `tax_price` DOUBLE DEFAULT '0',
+  `service_price` DOUBLE DEFAULT '0',
+  `varian_id` INT(11) DEFAULT NULL,
+  `product_varian_id` INT(11) DEFAULT '0',
+  `resd_qty` FLOAT DEFAULT '0',
+  `resd_hpp` DOUBLE DEFAULT '0',
+  `resd_price` DOUBLE DEFAULT '0',
+  `resd_tax` DOUBLE DEFAULT '0',
+  `resd_service` DOUBLE DEFAULT '0',
+  `resd_potongan` DOUBLE DEFAULT '0',
+  `resd_total` DOUBLE DEFAULT '0',
+  `resd_grandtotal` DOUBLE DEFAULT '0',
+  `supplier_id` INT(11) DEFAULT '0',
+  `is_kerjasama` TINYINT(1) DEFAULT '0',
+  `persentase_bagi_hasil` FLOAT DEFAULT '0',
+  `total_bagi_hasil` DOUBLE DEFAULT NULL,
+  `resd_status` TINYINT(1) NOT NULL DEFAULT '0',
+  `grandtotal_bagi_hasil` DOUBLE DEFAULT '0',
+  `resd_notes` CHAR(100) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB;
-
-
+) ENGINE=INNODB;
+#
 DROP TABLE IF EXISTS `pos_retur`;
+#
 CREATE TABLE `pos_retur` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `retur_number` varchar(20) NOT NULL,
@@ -123,8 +122,9 @@ CREATE TABLE `pos_retur` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `retur_number_idx` (`retur_number`)
 ) ENGINE=InnoDB;
-
+#
 DROP TABLE IF EXISTS `pos_retur_detail`;
+#
 CREATE TABLE `pos_retur_detail` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `retur_id` bigint(20) NOT NULL,
@@ -142,11 +142,22 @@ CREATE TABLE `pos_retur_detail` (
   `use_stok_kode_unik` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
-
-
-insert  into `pos_payment_type`(`id`,`payment_type_name`,`payment_type_desc`,`createdby`,`created`,`updatedby`,`updated`,`is_active`,`is_deleted`) values 
-(4,'AR / Piutang','Paid By AR','administrator','2019-02-14 03:32:50','administrator','2019-02-14 03:32:50',1,0);
-
+#
+DROP TABLE IF EXISTS `pos_notify_log`;
+#
+CREATE TABLE `pos_notify_log` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `log_date` DATE DEFAULT NULL,
+  `log_type` ENUM('master_data','inventory','sales','finance','accounting','app') DEFAULT NULL,
+  `log_info` VARCHAR(255) DEFAULT NULL,
+  `log_data` MEDIUMTEXT NOT NULL,
+  `createdby` VARCHAR(50) DEFAULT NULL,
+  `created` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=INNODB;
+#
+DROP TABLE IF EXISTS `pos_notify_log`;
+#
 CREATE TABLE `pos_notify_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `log_date` date DEFAULT NULL,
@@ -157,8 +168,9 @@ CREATE TABLE `pos_notify_log` (
   `created` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
-
-
+#
+DROP TABLE IF EXISTS `acc_autoposting_detail`;
+#
 CREATE TABLE `acc_autoposting_detail` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `autoposting_id` int(11) DEFAULT NULL,
@@ -172,8 +184,9 @@ CREATE TABLE `acc_autoposting_detail` (
   `is_deleted` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
-
-
+#
+DROP TABLE IF EXISTS `acc_periode_laporan`;
+#
 CREATE TABLE `acc_periode_laporan` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `kd_periode_laporan` varchar(5) NOT NULL DEFAULT '',
@@ -188,7 +201,7 @@ CREATE TABLE `acc_periode_laporan` (
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
-
+#
 insert  into `acc_periode_laporan`(`id`,`kd_periode_laporan`,`ket_periode_laporan`,`kd_periode_kalender`,`nama_bulan_kalender`,`createdby`,`created`,`updatedby`,`updated`,`is_active`,`is_deleted`) values 
 (1,'01','Januari','01','Januari','administrator','2014-10-21 17:29:20','administrator','2014-10-21 17:31:02',0,0),
 (2,'02','Februari','02','Februari','administrator','2014-10-21 17:31:30','administrator','2014-10-21 17:31:30',0,0),
@@ -202,41 +215,52 @@ insert  into `acc_periode_laporan`(`id`,`kd_periode_laporan`,`ket_periode_lapora
 (10,'10','Oktober','10','Oktober','administrator','2014-10-21 17:35:30','administrator','2014-10-21 17:35:30',0,0),
 (11,'11','November','11','November','administrator','2014-10-21 17:35:46','administrator','2014-10-21 17:35:46',0,0),
 (12,'12','Desember','12','Desember','administrator','2014-10-21 17:36:01','administrator','2014-10-21 17:36:01',0,0);
-
-
+#
+INSERT  INTO `apps_options`(`option_var`,`option_value`,`option_description`,`created`,`createdby`,`updated`,`updatedby`,`is_active`,`is_deleted`) VALUES 
+('store_connected_name','',NULL,'2019-03-07 00:00:01','administrator',NULL,NULL,'1','0'),
+('store_connected_email','',NULL,'2019-03-07 00:00:01','administrator',NULL,NULL,'1','0'),
+('as_server_backup','0',NULL,'2019-03-07 00:00:01','administrator',NULL,NULL,1,0),
+('use_wms','0',NULL,'2019-03-01 00:00:07','administrator',NULL,NULL,1,0),
+('opsi_no_print_when_payment','0',NULL,'2019-03-07 00:00:01','administrator',NULL,NULL,1,0),
+('using_item_average_as_hpp','1',NULL,'2019-03-07 00:00:01','administrator',NULL,NULL,1,0),
+('wepos_version','3.42.20',NULL,'2019-03-07 00:00:01','administrator',NULL,NULL,1,0);
+#
+insert  into `pos_payment_type`(`id`,`payment_type_name`,`payment_type_desc`,`createdby`,`created`,`updatedby`,`updated`,`is_active`,`is_deleted`) values 
+(4,'AR / Piutang','Paid By AR','administrator','2019-02-14 03:32:50','administrator','2019-02-14 03:32:50',1,0);
+#
 ALTER TABLE `acc_account_receivable`
 MODIFY `ref_id` int(11) DEFAULT 0;
-
+#
 ALTER TABLE `acc_kontrabon` 
 MODIFY `created` timestamp NULL DEFAULT NULL,
 MODIFY `updated` timestamp NULL DEFAULT NULL;
-
+#
 ALTER TABLE `pos_billing_detail` 
 ADD `storehouse_id` int(11) DEFAULT 0,
 MODIFY `data_stok_kode_unik` text;
-
+#
 ALTER TABLE `pos_billing_detail_split` 
 MODIFY `data_stok_kode_unik` text;
-
+#
 ALTER TABLE `pos_po` 
 MODIFY `po_memo` tinytext;
-
+#
 ALTER TABLE `pos_production` 
 MODIFY `pr_memo` tinytext,
 MODIFY `createdby` varchar(50) DEFAULT NULL;
-
+#
 ALTER TABLE `pos_receive_detail` 
 MODIFY `data_stok_kode_unik` text;
-
+#
 ALTER TABLE `pos_receiving` 
 MODIFY `receive_memo` tinytext;
-
+#
 ALTER TABLE `pos_ro` 
 MODIFY `ro_memo` tinytext;
-
+#
 ALTER TABLE `pos_usagewaste` 
 MODIFY `uw_memo` tinytext;
-
+#
 ALTER TABLE `apps_clients` 
 MODIFY `id` tinyint(4) NOT NULL AUTO_INCREMENT,
 MODIFY `client_code` varchar(50) NOT NULL,
@@ -255,7 +279,7 @@ MODIFY `client_notes` char(100) DEFAULT NULL,
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `created` timestamp NULL DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
-
+#
 ALTER TABLE `apps_clients_structure`
 MODIFY `id` smallint(6) NOT NULL AUTO_INCREMENT,
 MODIFY `client_structure_name` char(100) NOT NULL,
@@ -267,14 +291,14 @@ MODIFY `client_id` tinyint(4) DEFAULT NULL,
 MODIFY `client_unit_id` tinyint(4) DEFAULT NULL,
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
-  
+#
 ALTER TABLE `apps_clients_unit`
 MODIFY `id` tinyint(4) NOT NULL AUTO_INCREMENT,
 MODIFY `client_unit_name` char(50) NOT NULL,
 MODIFY `client_id` tinyint(4) NOT NULL,
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
-
+#
 ALTER TABLE `apps_modules_method`
 MODIFY `id` smallint(6) NOT NULL AUTO_INCREMENT,
 MODIFY `method_function` char(100) NOT NULL,
@@ -282,7 +306,7 @@ MODIFY `module_id` smallint(6) NOT NULL,
 MODIFY `method_description` char(100) DEFAULT NULL,
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
-  
+#
 ALTER TABLE `apps_modules_preload`
 MODIFY `id` smallint(6) NOT NULL AUTO_INCREMENT,
 MODIFY `preload_filename` char(50) NOT NULL,
@@ -291,10 +315,10 @@ MODIFY `module_id` smallint(6) NOT NULL,
 MODIFY `preload_description` char(100) DEFAULT NULL,
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
-  
+#
 ALTER TABLE `apps_options` 
 MODIFY `option_value` mediumtext NOT NULL;
-  
+#
 ALTER TABLE `apps_roles_module`
 MODIFY `id` smallint(6) NOT NULL AUTO_INCREMENT,
 MODIFY `role_id` smallint(6) NOT NULL,
@@ -303,31 +327,31 @@ MODIFY `start_menu_path` char(100) DEFAULT NULL,
 MODIFY `module_order` smallint(6) DEFAULT '0',
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
-  
+#
 ALTER TABLE `apps_roles_widget`
 MODIFY `id` smallint(6) NOT NULL AUTO_INCREMENT,
 MODIFY `role_id` smallint(6) NOT NULL,
 MODIFY `widget_id` smallint(6) NOT NULL,
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
-  
+#
 ALTER TABLE `apps_supervisor`
 MODIFY `id` smallint(6) NOT NULL AUTO_INCREMENT,
 MODIFY `user_id` smallint(6) NOT NULL,
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
-  
+#
 ALTER TABLE `apps_supervisor_access`
 MODIFY `id` smallint(6) NOT NULL AUTO_INCREMENT,
 MODIFY `supervisor_id` smallint(6) NOT NULL,
 MODIFY `supervisor_access` char(50) NOT NULL,
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
-  
+#
 ALTER TABLE `apps_supervisor_log` 
 MODIFY `supervisor_id` smallint(6) NOT NULL,
 MODIFY `supervisor_access` char(100) DEFAULT NULL;
-  
+#
 ALTER TABLE `apps_users`
 MODIFY `id` smallint(6) NOT NULL AUTO_INCREMENT,
 MODIFY `user_username` char(50) NOT NULL,
@@ -344,7 +368,7 @@ MODIFY `client_structure_id` smallint(6) NOT NULL,
 MODIFY `avatar` char(255) DEFAULT NULL,
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
-
+#
 ALTER TABLE `apps_users_desktop`
 MODIFY `id` smallint(6) NOT NULL AUTO_INCREMENT,
 MODIFY `user_id` smallint(6) NOT NULL,
@@ -352,21 +376,21 @@ MODIFY `wallpaper` char(50) NOT NULL DEFAULT 'default.jpg',
 MODIFY `wallpaper_id` tinyint(4) NOT NULL DEFAULT '1',
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
-  
+#
 ALTER TABLE `apps_users_quickstart`
 MODIFY `id` smallint(6) NOT NULL AUTO_INCREMENT,
 MODIFY `user_id` smallint(6) NOT NULL,
 MODIFY `module_id` smallint(6) NOT NULL,
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
- 
+#
 ALTER TABLE `apps_users_shortcut`
 MODIFY `id` smallint(6) NOT NULL AUTO_INCREMENT,
 MODIFY `user_id` smallint(6) NOT NULL,
 MODIFY `module_id` smallint(6) NOT NULL,
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
-
+#
 ALTER TABLE `apps_widgets`
 MODIFY `id` smallint(6) NOT NULL AUTO_INCREMENT,
 MODIFY `widget_name` char(50) NOT NULL,
@@ -377,47 +401,47 @@ MODIFY `widget_controller` char(50) NOT NULL,
 MODIFY `widget_order` smallint(6) DEFAULT '0',
 MODIFY `createdby` char(50) DEFAULT NULL,
 MODIFY `updatedby` char(50) DEFAULT NULL;
-
+#
 ALTER TABLE `pos_billing_log` 
 MODIFY `log_data` mediumtext NOT NULL;
-  
+#
 ALTER TABLE `pos_item_category`
 MODIFY `item_category_code` char(6) DEFAULT NULL;
-  
+#
 ALTER TABLE `pos_items` 
 MODIFY `item_code` varchar(50) DEFAULT NULL,
 MODIFY `item_price` double DEFAULT '0';
-  
+#
 ALTER TABLE `pos_po_detail`
 MODIFY `po_detail_total` double DEFAULT '0';
- 
+#
 ALTER TABLE `pos_print_monitoring`
 MODIFY `receiptTxt` mediumtext NOT NULL;
- 
+#
 ALTER TABLE `pos_product`
 ADD `product_code` varchar(100) DEFAULT NULL,
 ADD `product_no` smallint(6) DEFAULT '0',
 ADD `unit_id` int(11) DEFAULT '0';
-  
+#
 ALTER TABLE `pos_product_category`
 ADD `product_category_code` char(6) DEFAULT NULL;
-
+#
 ALTER TABLE `pos_product_package`
 ADD `product_qty` float DEFAULT '1',
 ADD `product_varian_id_item` int(11) DEFAULT '0',
 ADD `varian_id_item` int(11) DEFAULT '0';
-  
+#
 ALTER TABLE `pos_stock_opname`
 MODIFY `createdby` varchar(50) NOT NULL,
 MODIFY `updated` datetime DEFAULT NULL;
- 
-
+#
 UPDATE pos_product SET product_code = CONCAT('P',(category_id*1000)+id) WHERE (product_code IS NULL OR product_code = '');
+#
 UPDATE pos_product_category SET product_category_code = CONCAT('C',(100)+id) WHERE (product_category_code IS NULL OR product_category_code = '');
-
+#
 ALTER TABLE `pos_product` 
 ADD UNIQUE KEY `item_product_idx` (`product_code`);
-
+#
 UPDATE pos_items SET item_code = CONCAT('I',(category_id*1000)+id) WHERE (item_code IS NULL OR item_code = '');
 
  
