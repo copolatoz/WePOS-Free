@@ -85,15 +85,15 @@ class BackupTrx extends MY_Controller {
 		$is_connected = 0;
 		$mktime_dc = strtotime(date("d-m-Y H:i:s"));
 		
-		if(!strstr("http://", $ipserver_management_systems)){
-			$ipserver_management_systems = 'http://'.$ipserver_management_systems;
-		}
+		$ipserver_management_systems = prep_url($ipserver_management_systems);
 		
 		if($use_wms == 1){
 			
 			$client_url = $ipserver_management_systems.'/systems/masterStore/cekClient?_dc='.$mktime_dc;
 			$post_data = array(
-				'client_code' => $data_client['client_code']
+				'client_code' => $data_client['client_code'],
+				'client_name' => $data_client['client_name'],
+				'client_email' => $data_client['client_email']
 			);
 			
 			$crt_file = ASSETS_PATH.config_item('wms_crt_file');
@@ -161,7 +161,7 @@ class BackupTrx extends MY_Controller {
 			
 			
 		}else{
-			$r = array('success' => false, 'info' => 'Data Store/Client Tidak teridentifikasi di Server!');
+			$r = array('success' => false, 'info' => 'Data Store/Client: <b>'.$data_client['client_code'].' &mdash; '.$data_client['client_name'].'</b> Tidak teridentifikasi di Server!');
 			die(json_encode($r));
 		}
 		
@@ -313,9 +313,7 @@ class BackupTrx extends MY_Controller {
 		
 		$mktime_dc = strtotime(date("d-m-Y H:i:s"));
 		
-		if(!strstr("http://", $ipserver_management_systems)){
-			$ipserver_management_systems = 'http://'.$ipserver_management_systems;
-		}
+		$ipserver_management_systems = prep_url($ipserver_management_systems);
 		
 		if($use_wms == 1){
 			
@@ -337,6 +335,7 @@ class BackupTrx extends MY_Controller {
 			'client_code' => $client_code,
 			'client_name' => $client_name,
 			'client_email' => $client_email,
+			'only_backup' => $only_backup,
 			'limit' => 9999,
 			'page' 	=> 1,
 			'start' => 0,
@@ -508,6 +507,10 @@ class BackupTrx extends MY_Controller {
 			$last_id_lokal['reservation_detail'] = 0;
 		}
 		
+		$today_mk = strtotime(date("d-m-Y 06:00:00"));
+		$today_date = date("Y-m-d H:i:s", $today_mk);
+		$today_date_plus1_mk = $today_mk+ONE_DAY_UNIX;
+		$today_date_plus1 = date("Y-m-d H:i:s", $today_date_plus1_mk);
 		
 		//SALES --------------------------
 		$last_id_lokal["sales"] = 0;
@@ -515,6 +518,10 @@ class BackupTrx extends MY_Controller {
 		
 		//SALES - BILLING
 		$get_store_sales = $this->db->query("SELECT id FROM ".$this->prefix_pos."billing ORDER BY id DESC");
+		if($only_backup == 'sales'){
+			$get_store_sales = $this->db->query("SELECT id FROM ".$this->prefix_pos."billing WHERE created <= '".$today_date_plus1."' ORDER BY id DESC");
+		}
+		
 		if($get_store_sales->num_rows() > 0){
 			$dt_store_sales = $get_store_sales->row();
 			$last_id_lokal["billing"] = $dt_store_sales->id;
@@ -523,6 +530,10 @@ class BackupTrx extends MY_Controller {
 		
 		//BILLING DETAIL
 		$get_store_billing_detail = $this->db->query("SELECT id FROM ".$this->prefix_pos."billing_detail ORDER BY id DESC");
+		if($only_backup == 'sales'){
+			$get_store_billing_detail = $this->db->query("SELECT id FROM ".$this->prefix_pos."billing_detail WHERE created <= '".$today_date_plus1."' ORDER BY id DESC");
+		}
+		
 		if($get_store_billing_detail->num_rows() > 0){
 			$dt_store_billing_detail = $get_store_billing_detail->row();
 			$last_id_lokal["billing_detail"] = $dt_store_billing_detail->id;
@@ -531,6 +542,10 @@ class BackupTrx extends MY_Controller {
 		
 		//BILLING LOG
 		$get_store_billing_log = $this->db->query("SELECT id FROM ".$this->prefix_pos."billing_log ORDER BY id DESC");
+		if($only_backup == 'sales'){
+			$get_store_billing_log = $this->db->query("SELECT id FROM ".$this->prefix_pos."billing_log WHERE created <= '".$today_date_plus1."' ORDER BY id DESC");
+		}
+		
 		if($get_store_billing_log->num_rows() > 0){
 			$dt_store_billing_log = $get_store_billing_log->row();
 			$last_id_lokal["billing_log"] = $dt_store_billing_log->id;
@@ -995,6 +1010,7 @@ class BackupTrx extends MY_Controller {
 		$client_name = $this->input->post('client_name');
 		$client_email = $this->input->post('client_email');
 		$backup_type = $this->input->post('backup_type');
+		$only_backup = $this->input->post('only_backup');
 		$session_user = $this->session->userdata('user_username');
 		
 		if(empty($session_user)){
@@ -1246,10 +1262,7 @@ class BackupTrx extends MY_Controller {
 		
 		$mktime_dc = strtotime(date("d-m-Y H:i:s"));
 		
-		if(!strstr("http://", $ipserver_management_systems)){
-			$ipserver_management_systems = 'http://'.$ipserver_management_systems;
-		}
-		
+		$ipserver_management_systems = prep_url($ipserver_management_systems);
 		
 		//DATA BACKUP
 		if($use_wms == 1){
@@ -1274,6 +1287,7 @@ class BackupTrx extends MY_Controller {
 			'client_email' => $client_email,
 			'curr_backup_data' => $curr_backup_data,
 			'backup_type' => $backup_type,
+			'only_backup' => $only_backup,
 			'backup_masterdata' => 0,
 			'current_total' => $current_total,
 			'backup_data' => json_encode($backup_data),
@@ -1284,6 +1298,12 @@ class BackupTrx extends MY_Controller {
 		);
 		
 		$has_next = 0;
+		
+		$today_mk = strtotime(date("d-m-Y 06:00:00"));
+		$today_date = date("Y-m-d H:i:s", $today_mk);
+		$today_date_plus1_mk = $today_mk+ONE_DAY_UNIX;
+		$today_date_plus1 = date("Y-m-d H:i:s", $today_date_plus1_mk);
+		
 		
 		//LOAD DATA
 		$backup_text = '';
@@ -1304,6 +1324,11 @@ class BackupTrx extends MY_Controller {
 				$last_id_billing_store = 0;
 				$total_data_store = 0;
 				$get_all_store_billing = $this->db->query("SELECT id FROM ".$this->prefix_pos."billing ORDER BY id DESC");
+				
+				if($only_backup == 'sales'){
+					$get_all_store_billing = $this->db->query("SELECT id FROM ".$this->prefix_pos."billing WHERE created <= '".$today_date_plus1."' ORDER BY id DESC");
+				}
+				
 				if($get_all_store_billing->num_rows() > 0){
 					$dt_all_billing_store = $get_all_store_billing->row();
 					$last_id_billing_store = $dt_all_billing_store->id;
@@ -1323,6 +1348,12 @@ class BackupTrx extends MY_Controller {
 				$billing_store = array();
 				$all_billing = array();
 				$get_store_billing = $this->db->query("SELECT * FROM ".$this->prefix_pos."billing WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+				
+				if($only_backup == 'sales'){
+					$get_store_billing = $this->db->query("SELECT * FROM ".$this->prefix_pos."billing WHERE id > ".$last_id_on_backup." AND created <= '".$today_date_plus1."' ORDER BY id ASC LIMIT ".$limit_backup_data);
+				}
+				
+				
 				if($get_store_billing->num_rows() > 0){
 					
 					foreach($get_store_billing->result() as $dt){
@@ -1362,6 +1393,11 @@ class BackupTrx extends MY_Controller {
 				$last_id_billing_detail_store = 0;
 				$total_data_store = 0;
 				$get_all_store_billing_detail = $this->db->query("SELECT id FROM ".$this->prefix_pos."billing_detail ORDER BY id DESC");
+				
+				if($only_backup == 'sales'){
+					$get_all_store_billing_detail = $this->db->query("SELECT id FROM ".$this->prefix_pos."billing_detail WHERE created <= '".$today_date_plus1."' ORDER BY id DESC");
+				}
+				
 				if($get_all_store_billing_detail->num_rows() > 0){
 					$dt_all_billing_detail_store = $get_all_store_billing_detail->row();
 					$last_id_billing_detail_store = $dt_all_billing_detail_store->id;
@@ -1381,6 +1417,11 @@ class BackupTrx extends MY_Controller {
 				$billing_detail_store = array();
 				$all_billing_detail = array();
 				$get_store_billing_detail = $this->db->query("SELECT * FROM ".$this->prefix_pos."billing_detail WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+				
+				if($only_backup == 'sales'){
+					$get_store_billing_detail = $this->db->query("SELECT * FROM ".$this->prefix_pos."billing_detail WHERE id > ".$last_id_on_backup." AND created <= '".$today_date_plus1."' ORDER BY id ASC LIMIT ".$limit_backup_data);
+				}
+				
 				if($get_store_billing_detail->num_rows() > 0){
 					
 					foreach($get_store_billing_detail->result() as $dt){
@@ -1419,6 +1460,11 @@ class BackupTrx extends MY_Controller {
 				$last_id_billing_log_store = 0;
 				$total_data_store = 0;
 				$get_all_store_billing_log = $this->db->query("SELECT id FROM ".$this->prefix_pos."billing_log ORDER BY id DESC");
+				
+				if($only_backup == 'sales'){
+					$get_all_store_billing_log = $this->db->query("SELECT id FROM ".$this->prefix_pos."billing_log WHERE created <= '".$today_date_plus1."' ORDER BY id DESC");
+				}
+				
 				if($get_all_store_billing_log->num_rows() > 0){
 					$dt_all_billing_log_store = $get_all_store_billing_log->row();
 					$last_id_billing_log_store = $dt_all_billing_log_store->id;
@@ -1438,6 +1484,11 @@ class BackupTrx extends MY_Controller {
 				$billing_log_store = array();
 				$all_billing_log = array();
 				$get_store_billing_log = $this->db->query("SELECT * FROM ".$this->prefix_pos."billing_log WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+				
+				if($only_backup == 'sales'){
+					$get_store_billing_log = $this->db->query("SELECT * FROM ".$this->prefix_pos."billing_log WHERE id > ".$last_id_on_backup." AND created <= '".$today_date_plus1."' ORDER BY id ASC LIMIT ".$limit_backup_data);
+				}
+				
 				if($get_store_billing_log->num_rows() > 0){
 					
 					foreach($get_store_billing_log->result() as $dt){
@@ -3864,9 +3915,7 @@ class BackupTrx extends MY_Controller {
 		
 		$mktime_dc = strtotime(date("d-m-Y H:i:s"));
 		
-		if(!strstr("http://", $ipserver_management_systems)){
-			$ipserver_management_systems = 'http://'.$ipserver_management_systems;
-		}
+		$ipserver_management_systems = prep_url($ipserver_management_systems);
 		
 		if($use_wms == 1){
 			

@@ -1175,11 +1175,11 @@ class SalesSummaryReport extends MY_Controller {
 				$this->db->where("(a.order_status != 'cancel' AND a.order_qty > 0)");	
 				$this->db->where("a.is_deleted", 0);
 				$this->db->where("b.is_deleted", 0);
-				$this->db->where("b.billing_status IN ('paid')");			
+				$this->db->where("b.billing_status IN ('paid')");	
+				$this->db->where('a.billing_id IN ('.$all_bil_id_txt.')');
+				
 				//$this->db->order_by("c.product_name", 'ASC');
 				$this->db->order_by("a.id", 'ASC');
-				
-				$this->db->where('a.billing_id IN ('.$all_bil_id_txt.')');
 				
 				$get_detail = $this->db->get();
 				if($get_detail->num_rows() > 0){

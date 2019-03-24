@@ -771,6 +771,14 @@ class MasterItem extends MY_Controller {
 		if($this->input->post('form_type_masterItem', true) == 'edit'){
 			
 			
+			if(empty($item_code)){
+				
+				//cek item code
+				$get_item_code = $this->generate_item_code($form_module_masterItem);
+				$item_code = $get_item_code['item_code'];
+				
+			}
+			
 			if($item_sku_from_code == 1){
 				$item_sku = $item_code;
 			}
@@ -1160,65 +1168,24 @@ class MasterItem extends MY_Controller {
 		if(!empty($get_exp[0])){
 			$first_format = $get_exp[0];
 			
-			//if($tipe == 'clothing'){
+			$this->db->from($this->table);
+			$this->db->where("item_code LIKE '".$first_format."%' AND item_name = '".$item_name."'");
+			$this->db->where("is_deleted = 0");
+			$this->db->order_by('item_no', 'DESC');
+			$this->db->order_by('item_code', 'DESC');
+			$get_last = $this->db->get();
+			if($get_last->num_rows() > 0){
+				$data_item_code = $get_last->row();
+				$first_format_length_code = strlen($first_format);
+				$item_code = substr($data_item_code->item_code, $first_format_length_code, $item_no_length);
+				$item_no = (int) $item_code;
 				
-				$this->db->from($this->table);
-				$this->db->where("item_code LIKE '".$first_format."%' AND item_name = '".$item_name."'");
-				$this->db->where("is_deleted = 0");
-				$this->db->order_by('item_no', 'DESC');
-				$this->db->order_by('item_code', 'DESC');
-				$get_last = $this->db->get();
-				if($get_last->num_rows() > 0){
-					$data_item_code = $get_last->row();
-					$first_format_length_code = strlen($first_format);
-					$item_code = substr($data_item_code->item_code, $first_format_length_code, $item_no_length);
-					$item_no = (int) $item_code;
-					
-					if(!empty($data_item_code->item_no)){
-						$item_no = $data_item_code->item_no;
-					}		
-			
-				}else{
-					
-					$this->db->from($this->table);
-					$this->db->where("item_code LIKE '".$first_format."%'");
-					$this->db->where("is_deleted = 0");
-					$this->db->order_by('item_no', 'DESC');
-					$this->db->order_by('item_code', 'DESC');
-					$get_last = $this->db->get();
-					if($get_last->num_rows() > 0){
-						$data_item_code = $get_last->row();
-						$first_format_length_code = strlen($first_format);
-						$item_code = substr($data_item_code->item_code, $first_format_length_code, $item_no_length);
-						$item_no = (int) $item_code;
-					
-						if(!empty($data_item_code->item_no)){
-							$item_no = $data_item_code->item_no;
-						}		
-						
-					}else{
-						$item_no = 0;
-					}
-					
-					$item_no++;
+				if(!empty($data_item_code->item_no)){
+					$item_no = $data_item_code->item_no;
+				}		
+		
+			}else{
 				
-				}
-				
-				$length_no = strlen($item_no);
-				if($length_no <= $item_no_length){
-					$gapTxt = $item_no_length - $length_no;
-					$item_code = str_repeat("0", $gapTxt).$item_no;
-				}
-				
-				$repl_attr = array(
-					"{ItemNo}"		=> $item_code
-				);
-				
-				$item_code_format = strtr($item_code_format, $repl_attr);
-			
-			/*}else
-			{
-				//ASUMSI {Dept}{ItemNo}
 				$this->db->from($this->table);
 				$this->db->where("item_code LIKE '".$first_format."%'");
 				$this->db->where("is_deleted = 0");
@@ -1228,26 +1195,33 @@ class MasterItem extends MY_Controller {
 				if($get_last->num_rows() > 0){
 					$data_item_code = $get_last->row();
 					$first_format_length_code = strlen($first_format);
-					//$item_code = substr($data_item_code->item_code, $first_format_length_code, $item_no_length);
-					$item_code = substr($data_item_code->item_code, $item_no_length*-1);
+					$item_code = substr($data_item_code->item_code, $first_format_length_code, $item_no_length);
 					$item_no = (int) $item_code;
-					
+				
 					if(!empty($data_item_code->item_no)){
 						$item_no = $data_item_code->item_no;
-					}
+					}		
 					
 				}else{
 					$item_no = 0;
 				}
 				
 				$item_no++;
-				$length_no = strlen($item_no);
-				if($length_no <= $item_no_length){
-					$gapTxt = $item_no_length - $length_no;
-					$item_code = str_repeat("0", $gapTxt).$item_no;
-				}
+			
 			}
-			*/
+			
+			$length_no = strlen($item_no);
+			if($length_no <= $item_no_length){
+				$gapTxt = $item_no_length - $length_no;
+				$item_code = str_repeat("0", $gapTxt).$item_no;
+			}
+			
+			$repl_attr = array(
+				"{ItemNo}"		=> $item_code
+			);
+			
+			$item_code_format = strtr($item_code_format, $repl_attr);
+		
 		}else
 		{
 			$this->db->from($this->table);

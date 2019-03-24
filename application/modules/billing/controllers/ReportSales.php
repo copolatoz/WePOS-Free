@@ -448,12 +448,6 @@ class ReportSales extends MY_Controller {
 			$this->db->where("a.is_deleted", 0);
 			$this->db->where($add_where);
 			
-
-
-
-
-
-
 			if(empty($sorting)){
 				$this->db->order_by("payment_date","ASC");
 			}else{
@@ -686,12 +680,6 @@ class ReportSales extends MY_Controller {
 							'sub_total_show'	=> 0,
 							'total_pembulatan'		=> 0, 
 							'total_pembulatan_show'	=> 0, 
-							//'total_cash'		=> 0, 
-							//'total_cash_show'	=> 0,
-							//'total_debit'		=> 0, 
-							//'total_debit_show'	=> 0,
-							//'total_credit'		=> 0, 
-							//'total_credit_show'	=> 0,
 							'total_compliment'		=> 0, 
 							'total_compliment_show'	=> 0,
 							'total_hpp'			=> 0, 

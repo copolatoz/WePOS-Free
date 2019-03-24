@@ -40,7 +40,9 @@ class WeposUpdate extends MY_Controller {
 		
 		//OPT-OPTIONS
 		$opt_val = array(
-			'wepos_update_version', 'wepos_update_version2', 'wepos_connected_id', 'wepos_update_next_version', 'wepos_update_next_version2'
+			'wepos_version', 'wepos_tipe', 
+			'wepos_update_version', 'wepos_update_version2', 'wepos_connected_id', 
+			'wepos_update_next_version', 'wepos_update_next_version2'
 		);
 		
 		$get_opt = get_option_value($opt_val);
@@ -67,11 +69,18 @@ class WeposUpdate extends MY_Controller {
 			$get_opt['wepos_connected_id'] = 0;
 		}
 		
+		//delete soon - update for v.3.42.17 to v.3.42.20
+		if(empty($get_opt['wepos_version'])){
+			$get_opt['wepos_version'] = '3.42.19';
+		}
+		
 		//CONNECTED TO STORE MANAGEMENT - CURL
 		$this->load->library('curl');
 		
 		$must_update = 0;
 		$wepos_connected_id = $get_opt['wepos_connected_id'];
+		$wepos_version = $get_opt['wepos_version'];
+		$wepos_tipe = $get_opt['wepos_tipe'];
 		$mktime_dc = strtotime(date("d-m-Y H:i:s"));
 		
 		$post_data = array(
@@ -79,6 +88,8 @@ class WeposUpdate extends MY_Controller {
 			'client_name' => $data_client['client_name'],
 			'current_version' => $current_version,
 			'current_version2' => $current_version2,
+			'wepos_version' => $wepos_version,
+			'wepos_tipe' => $wepos_tipe,
 		);
 		
 		$get_data = '';
@@ -109,15 +120,20 @@ class WeposUpdate extends MY_Controller {
 				
 			}else{
 				$ret_data = json_decode($curl_ret, true);
-			
+				
 				if(empty($ret_data['must_update'])){
 					$ret_data['must_update'] = 0;
+				}
+				if(empty($ret_data['must_update_app'])){
+					$ret_data['must_update_app'] = 0;
 				}
 				
 				if(!empty($ret_data['data']) AND $ret_data['success'] == true){
 					$wepos_connected_id = $ret_data['data']['id'];
 					
 					$must_update = $ret_data['must_update'];
+					$must_update_app = $ret_data['must_update_app'];
+					$server_version = $ret_data['data']['wepos_version'];
 					$info = $ret_data['info'];
 					
 					//save temporary update db
@@ -135,7 +151,7 @@ class WeposUpdate extends MY_Controller {
 					}
 					
 				}else{
-					$r = array('success' => $ret_data['success'], 'info' => $ret_data['info'], 'must_update' => $ret_data['must_update']);
+					$r = array('success' => $ret_data['success'], 'info' => $ret_data['info'], 'must_update' => $ret_data['must_update'], 'must_update_app' => $ret_data['must_update_app']);
 					die(json_encode($r));
 				}
 				
@@ -164,6 +180,7 @@ class WeposUpdate extends MY_Controller {
 			'info' => $info, 
 			'wepos_connected_id' => $wepos_connected_id, 
 			'must_update' => $must_update, 
+			'must_update_app' => $must_update_app, 
 		);
 		
 		
@@ -260,7 +277,7 @@ class WeposUpdate extends MY_Controller {
 		
 		//OPT-OPTIONS
 		$opt_val = array(
-			'wepos_update_version', 'wepos_update_version2', 'wepos_connected_id', 'wepos_update_next_version', 'wepos_update_next_version2'
+			'wepos_version','wepos_update_version', 'wepos_update_version2', 'wepos_connected_id', 'wepos_update_next_version', 'wepos_update_next_version2'
 		);
 		
 		$get_opt = get_option_value($opt_val);
@@ -290,7 +307,7 @@ class WeposUpdate extends MY_Controller {
 		
 		
 		if($get_opt['wepos_update_version'] > $get_opt['wepos_update_next_version']){
-			$r = array('success' => false, 'info' => 'Saat ini sudah menggunakan update terbaru<br/>Current Version: v.'.$get_opt['wepos_update_version2']);
+			$r = array('success' => false, 'info' => 'Aplikasi Sudah Menggunakan Versi Terbaru<br/>v.'.$get_opt['wepos_update_version2']);
 			die(json_encode($r));
 		}
 		
@@ -311,16 +328,39 @@ class WeposUpdate extends MY_Controller {
 			$r = array('success' => false, 'info' => 'Update Gagal!<br/>Data Update tidak ditemukan');
 			die(json_encode($r));
 		}else{
-			@$update_DB = $this->db->query($data_update);
+			
+			$data_update = str_replace("#\n","#",$data_update);
+			$data_update_list = explode("#",trim($data_update));
+			if(!empty($data_update_list)){
+				foreach($data_update_list as $dt_db){
+					$update_db = trim($dt_db);
+					@$update_DB = $this->db->query($update_db);
+				}
+			}
+			
 			//remove options sql
 			$this->db->delete($this->prefix.'options',"option_var = 'wepos_update_".$get_opt['wepos_update_version']."'");
 			
 			$new_opt = array();
 			$new_opt['wepos_update_version'] = $get_opt['wepos_update_next_version'];
 			$new_opt['wepos_update_version2'] = $get_opt['wepos_update_next_version2'];
+			$new_opt['wepos_update_next_version'] = 0;
+			$new_opt['wepos_update_next_version2'] = 0;
 			$update_option = update_option($new_opt);
 			
 			$r = array('success' => true, 'info' => 'Sudah Ter-Update ke v.'.$get_opt['wepos_update_next_version2']);
+			
+			//delete soon - update for v.3.42.17 to v.3.42.20
+			if(empty($get_opt['wepos_version'])){
+				$get_opt['wepos_version'] = '3.42.19';
+			}
+			
+			$wepos_version = str_replace(".","",$get_opt['wepos_version']);
+			$new_version = substr($new_opt['wepos_update_version'],0,5);
+			if($wepos_version > $new_version){
+				$r['info'] = 'Sudah Ter-Update ke v.'.$get_opt['wepos_update_next_version2'].'<br/>Silahkan Verifikasi Ulang Merchant<br/><b>Master Aplikasi/Client Info</b>';
+			}
+			
 			die(json_encode($r));
 		}
 		

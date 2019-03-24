@@ -7,16 +7,16 @@
     <meta name="author" content="<?php echo $meta_author; ?>">
     <meta name="keywords" content="<?php echo $meta_keywords; ?>">
 
-    <link rel="shortcut icon" href="<?php echo base_url(); ?>assets/themes/frontend/images/favicon.ico" />
-	<link href="<?php echo base_url(); ?>assets/themes/frontend/css/modern.css" rel="stylesheet">
-    <link href="<?php echo base_url(); ?>assets/themes/frontend/css/site-red.css" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="<?php echo BASE_URL; ?>assets/themes/frontend/images/favicon.ico" />
+	<link href="<?php echo BASE_URL; ?>assets/themes/frontend/css/modern.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>assets/themes/frontend/css/site-red.css" rel="stylesheet" type="text/css">
 	
-	<script type="text/javascript" src="<?php echo base_url(); ?>assets/themes/frontend/js/jquery-1.9.0.min.js"></script>
-    <script type="text/javascript" src="<?php echo base_url(); ?>assets/themes/frontend/js/buttonset.js"></script>
-    <script type="text/javascript" src="<?php echo base_url(); ?>assets/themes/frontend/js/input-control.js"></script>
+	<script type="text/javascript" src="<?php echo BASE_URL; ?>assets/themes/frontend/js/jquery-1.9.0.min.js"></script>
+    <script type="text/javascript" src="<?php echo BASE_URL; ?>assets/themes/frontend/js/buttonset.js"></script>
+    <script type="text/javascript" src="<?php echo BASE_URL; ?>assets/themes/frontend/js/input-control.js"></script>
 	
 	<script>
-		var appUrl 		= "<?php echo site_url(); ?>";
+		var appUrl 		= "<?php echo BASE_URL; ?>";
 		var programName	= "<?php echo config_item('program_name'); ?>";
 		var copyright	= "<?php echo config_item('copyright'); ?>";
 	</script>
@@ -296,7 +296,7 @@
 							</div>
 							<div class="clearfix"></div>
 							<div id="loadBox" class="padding20" style="display:none; text-align:center;">
-								<img src="<?php echo base_url(); ?>assets/themes/frontend/images/loader.gif" width="64"/>
+								<img src="<?php echo BASE_URL; ?>assets/themes/frontend/images/loader.gif" width="64"/>
 							</div>
 							
 						</form>

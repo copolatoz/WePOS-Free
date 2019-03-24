@@ -88,15 +88,15 @@ class SyncData extends MY_Controller {
 		$is_connected = 0;
 		$mktime_dc = strtotime(date("d-m-Y H:i:s"));
 		
-		if(!strstr("http://", $ipserver_management_systems)){
-			$ipserver_management_systems = 'http://'.$ipserver_management_systems;
-		}
+		$ipserver_management_systems = prep_url($ipserver_management_systems);
 		
 		if($use_wms == 1){
 			
 			$client_url = $ipserver_management_systems.'/systems/masterStore/cekClient?_dc='.$mktime_dc;
 			$post_data = array(
-				'client_code' => $data_client['client_code']
+				'client_code' => $data_client['client_code'],
+				'client_name' => $data_client['client_name'],
+				'client_email' => $data_client['client_email']
 			);
 			
 			$crt_file = ASSETS_PATH.config_item('wms_crt_file');
@@ -164,7 +164,10 @@ class SyncData extends MY_Controller {
 			
 			
 		}else{
-			$r = array('success' => false, 'info' => 'Data Store/Client Tidak teridentifikasi di Server!');
+			$r = array(
+				'success' => false, 
+				'info' => 'Data Store/Client: <b>'.$data_client['client_code'].' &mdash; '.$data_client['client_name'].'</b> Tidak teridentifikasi di Server!'
+			);
 			die(json_encode($r));
 		}
 		
@@ -199,7 +202,7 @@ class SyncData extends MY_Controller {
 				'Database'		=> '<i>'.$data_client['mysql_database'].'</i>',
 				'&nbsp;&nbsp;'	=> '',
 				'DB Status'	=> '',
-				'Keterangan'	=> 'Curl via Merchant',
+				'Keterangan'	=> 'Curl via WMS',
 			);
 		}else{
 			$data_detail = array(
@@ -241,7 +244,8 @@ class SyncData extends MY_Controller {
 			'store_connected_email' => $store_connected_email, 
 			'is_connected' => $is_connected, 
 			'data' => $all_data_detail, 
-			'totalCount' => count($all_data_detail)
+			'totalCount' => count($all_data_detail),
+			'use_wms' => $use_wms
 		);
 		
 		die(json_encode($r));
@@ -313,9 +317,7 @@ class SyncData extends MY_Controller {
 		
 		$mktime_dc = strtotime(date("d-m-Y H:i:s"));
 		
-		if(!strstr("http://", $ipserver_management_systems)){
-			$ipserver_management_systems = 'http://'.$ipserver_management_systems;
-		}
+		$ipserver_management_systems = prep_url($ipserver_management_systems);
 		
 		if($use_wms == 1){
 			
@@ -430,10 +432,10 @@ class SyncData extends MY_Controller {
 		
 		if($wepos_tipe == 'cafe'){
 			unset($total_data_lokal['billing_tipe']);
-			$total_data_lokal['table'] = 0;
-			$total_data_lokal['table_inventory'] = 0;
-			$total_data_lokal['floorplan'] = 0;
-			$total_data_lokal['room'] = 0;
+			//$total_data_lokal['table'] = 0;
+			//$total_data_lokal['table_inventory'] = 0;
+			//$total_data_lokal['floorplan'] = 0;
+			//$total_data_lokal['room'] = 0;
 		}
 		
 		$last_id_lokal = array(
@@ -473,10 +475,10 @@ class SyncData extends MY_Controller {
 		
 		if($wepos_tipe == 'cafe'){
 			unset($last_id_lokal['billing_tipe']);
-			$last_id_lokal['table'] = 0;
-			$last_id_lokal['table_inventory'] = 0;
-			$last_id_lokal['floorplan'] = 0;
-			$last_id_lokal['room'] = 0;
+			//$last_id_lokal['table'] = 0;
+			//$last_id_lokal['table_inventory'] = 0;
+			//$last_id_lokal['floorplan'] = 0;
+			//$last_id_lokal['room'] = 0;
 		}
 		
 		//LOAD LOKAL
@@ -859,6 +861,7 @@ class SyncData extends MY_Controller {
 			'merchant_key' => $client_code, 
 			'data' => $sync_data_store, 
 			'totalCount' => count($sync_data_store), 
+			'use_wms'	=> $use_wms
 			//'available_conn' => $available_conn, 
 			//'sync_data_allowed' => $sync_data_allowed, 
 			//'sync_data_text' 	=> $sync_data_text, 
@@ -881,6 +884,8 @@ class SyncData extends MY_Controller {
 		$client_name = $this->input->post('client_name');
 		$client_email = $this->input->post('client_email');
 		$sync_type = $this->input->post('sync_type');
+		$is_syncbackup = $this->input->post('is_syncbackup');
+		
 		$session_user = $this->session->userdata('user_username');
 		
 		if(empty($session_user)){
@@ -994,10 +999,11 @@ class SyncData extends MY_Controller {
 		);
 		
 		if($wepos_tipe == 'cafe'){
-			$backup_data_allowed[160] = 'table';
-			$backup_data_allowed[161] = 'table_inventory';
-			$backup_data_allowed[162] = 'floorplan';
-			$backup_data_allowed[163] = 'room';
+			unset($backup_data_allowed[160]);
+			//$backup_data_allowed[160] = 'table';
+			//$backup_data_allowed[161] = 'table_inventory';
+			//$backup_data_allowed[162] = 'floorplan';
+			//$backup_data_allowed[163] = 'room';
 		}
 		
 		
@@ -1038,10 +1044,10 @@ class SyncData extends MY_Controller {
 		
 		if($wepos_tipe == 'cafe'){
 			unset($sync_data_text['billing_tipe']);
-			$sync_data_text['table'] = 'Table';
-			$sync_data_text['table_inventory'] = 'Table Inventory';
-			$sync_data_text['floorplan'] = 'Floorplan';
-			$sync_data_text['room'] = 'Room';
+			//$sync_data_text['table'] = 'Table';
+			//$sync_data_text['table_inventory'] = 'Table Inventory';
+			//$sync_data_text['floorplan'] = 'Floorplan';
+			//$sync_data_text['room'] = 'Room';
 		}
 		
 		$backup_data_allowed_req = array(10,20,30,50,70,110,130,140,160);
@@ -1102,25 +1108,7 @@ class SyncData extends MY_Controller {
 		
 		$mktime_dc = strtotime(date("d-m-Y H:i:s"));
 		
-		if(!strstr("http://", $ipserver_management_systems)){
-			$ipserver_management_systems = 'http://'.$ipserver_management_systems;
-		}
-		
-		//DATA BACKUP
-		if($use_wms == 1){
-			
-			$client_url = $ipserver_management_systems.'/sync_backup/syncData/generate?_dc='.$mktime_dc;
-			
-			$crt_file = ASSETS_PATH.config_item('wms_crt_file');
-			
-		}else{
-			
-			//wepos.id
-			$client_url = config_item('website').'/merchant/backupGenerate?_dc='.$mktime_dc;
-			
-			$crt_file = ASSETS_PATH.config_item('wepos_crt_file');
-			
-		}
+		$ipserver_management_systems = prep_url($ipserver_management_systems);
 		
 		$post_data = array(
 			'client_id' => $client_id,
@@ -1131,2108 +1119,2135 @@ class SyncData extends MY_Controller {
 			'backup_type' => $sync_type,
 			'backup_masterdata' => 1,
 			'current_total' => $current_total,
-			'sync_data' => json_encode($sync_data),
+			'backup_data' => json_encode($sync_data),
 			'akses'=> 'CURL',
 			'last_id_on_backup' => $last_id_on_backup,
 			'total_data_on_backup' => $total_data_on_backup,
 			'limit_backup_data' => $limit_backup_data
 		);
 		
-		//BACKUP DATA - UPLOAD DATA
-		$backup_text = '';
-		switch($curr_backup_data){
+		//DATA BACKUP
+		if($is_syncbackup == 'sync'){
 			
-			//Roles
-			case 'roles':
-				$backup_text = 'Roles';
-				
-				//Roles ON STORE - GET LAST ID
-				$last_id_roles_store = 0;
-				$total_data_store = 0;
-				$get_all_store_roles = $this->db->query("SELECT id FROM ".$this->prefix."roles ORDER BY id DESC");
-				if($get_all_store_roles->num_rows() > 0){
-					$dt_all_roles_store = $get_all_store_roles->row();
-					$last_id_roles_store = $dt_all_roles_store->id;
-					$total_data_store = $get_all_store_roles->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_roles_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Roles ON STORE id > $last_id_on_backup
-				$data_roles_store = array();
-				$all_role_id = array();
-				$get_store_roles = $this->db->query("SELECT * FROM ".$this->prefix."roles WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_roles->num_rows() > 0){
-					
-					foreach($get_store_roles->result() as $dt){
-						
-						$data_roles_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_role_id)){
-							$all_role_id[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_roles_store;
-				}
-				
-				if($last_id_roles_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_roles_store'] = $last_id_roles_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['data_roles_store'] = json_encode($data_roles_store);
-				$post_data['all_role_id'] = json_encode($all_role_id);
-				
-				break;
+			//---------------------------------SYNC
+			unset($post_data['backup_data']);
+			unset($post_data['backup_masterdata']);
+			unset($post_data['curr_backup_data']);
+			$post_data['backup_type'] = $sync_type;
+			$post_data['curr_sync_data'] = $curr_backup_data;
+			$post_data['sync_data'] = json_encode($sync_data);
+			$post_data['sync_masterdata'] = 1;
+			$client_url = $ipserver_management_systems.'/sync_backup/syncData/generate?_dc='.$mktime_dc;
+			$crt_file = ASSETS_PATH.config_item('wms_crt_file');
 			
-			//Roles Modules
-			case 'roles_module':
-				$backup_text = 'Roles Modules';
-				
-				//Roles Modules ON STORE - GET LAST ID
-				$last_id_roles_module_store = 0;
-				$total_data_store = 0;
-				$get_all_store_roles_module = $this->db->query("SELECT id FROM ".$this->prefix."roles_module ORDER BY id DESC");
-				if($get_all_store_roles_module->num_rows() > 0){
-					$dt_all_roles_module_store = $get_all_store_roles_module->row();
-					$last_id_roles_module_store = $dt_all_roles_module_store->id;
-					$total_data_store = $get_all_store_roles_module->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_roles_module_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Roles Modules ON STORE id > $last_id_on_backup
-				$data_roles_module_store = array();
-				$all_roles_module_id = array();
-				$get_store_roles_module = $this->db->query("SELECT * FROM ".$this->prefix."roles_module WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_roles_module->num_rows() > 0){
-					
-					foreach($get_store_roles_module->result() as $dt){
-						
-						$data_roles_module_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_roles_module_id)){
-							$all_roles_module_id[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_roles_module_store;
-				}
-				
-				if($last_id_roles_module_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_roles_module_store'] = $last_id_roles_module_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['data_roles_module_store'] = json_encode($data_roles_module_store);
-				$post_data['all_roles_module_id'] = json_encode($all_roles_module_id);
-				
-				
-				break;
+		}else{
 			
-			//User
-			case 'data_user':
-				$backup_text = 'User';
-				
-				//User ON STORE
-				$last_id_users_store = 0;
-				$total_data_store = 0;
-				$get_all_store_users = $this->db->query("SELECT id FROM ".$this->prefix."users ORDER BY id DESC");
-				if($get_all_store_users->num_rows() > 0){
-					$dt_all_users_store = $get_all_store_users->row();
-					$last_id_users_store = $dt_all_users_store->id;
-					$total_data_store = $get_all_store_users->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_users_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//User ON STORE id > $last_id_on_backup
-				$data_users_store = array();
-				$all_user_id = array();
-				$get_store_users = $this->db->query("SELECT * FROM ".$this->prefix."users WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_users->num_rows() > 0){
-					
-					foreach($get_store_users->result() as $dt){
-						
-						$data_users_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_user_id)){
-							$all_user_id[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_users_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_users_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_users_store'] = $last_id_users_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['data_users_store'] = json_encode($data_users_store);
-				$post_data['all_user_id'] = json_encode($all_user_id);
-				
-				break;
+			if($use_wms == 1){
+				$r = array('success' => false, 'info'	=> 'Fitur Backup Master Data tidak bisa digunakan jika menggunakan WMS<br/>Master Data dikelola secara terpusat oleh aplikasi WMS');
+				die(json_encode($r));
+			}
 			
-			//User Desktop
-			case 'users_desktop':
-				$backup_text = 'User Desktop';
-				
-				//User Desktop ON STORE - GET LAST ID
-				$last_id_users_desktop_store = 0;
-				$total_data_store = 0;
-				$get_all_store_users_desktop = $this->db->query("SELECT id FROM ".$this->prefix."users_desktop ORDER BY id DESC");
-				if($get_all_store_users_desktop->num_rows() > 0){
-					$dt_all_users_desktop_store = $get_all_store_users_desktop->row();
-					$last_id_users_desktop_store = $dt_all_users_desktop_store->id;
-					$total_data_store = $get_all_store_users_desktop->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_users_desktop_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//User Desktop ON STORE id > $last_id_on_backup
-				$data_users_desktop_store = array();
-				$all_users_desktop_id = array();
-				$get_store_users_desktop = $this->db->query("SELECT * FROM ".$this->prefix."users_desktop WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_users_desktop->num_rows() > 0){
-					
-					foreach($get_store_users_desktop->result() as $dt){
-						
-						$data_users_desktop_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_users_desktop_id)){
-							$all_users_desktop_id[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_users_desktop_store;
-				}
-				
-				if($last_id_users_desktop_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_users_desktop_store'] = $last_id_users_desktop_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['data_users_desktop_store'] = json_encode($data_users_desktop_store);
-				$post_data['all_users_desktop_id'] = json_encode($all_users_desktop_id);
-				
-				
-				break;
-			
-			//User Shortcut 
-			case 'users_shortcut':
-				$backup_text = 'User Shortcut';
-				
-				//User Shortcut ON STORE - GET LAST ID
-				$last_id_users_shortcut_store = 0;
-				$total_data_store = 0;
-				$get_all_store_users_shortcut = $this->db->query("SELECT id FROM ".$this->prefix."users_shortcut ORDER BY id DESC");
-				if($get_all_store_users_shortcut->num_rows() > 0){
-					$dt_all_users_shortcut_store = $get_all_store_users_shortcut->row();
-					$last_id_users_shortcut_store = $dt_all_users_shortcut_store->id;
-					$total_data_store = $get_all_store_users_shortcut->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_users_shortcut_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//User Shortcut ON STORE id > $last_id_on_backup
-				$data_users_shortcut_store = array();
-				$all_users_shortcut_id = array();
-				$get_store_users_shortcut = $this->db->query("SELECT * FROM ".$this->prefix."users_shortcut WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_users_shortcut->num_rows() > 0){
-					
-					foreach($get_store_users_shortcut->result() as $dt){
-						
-						$data_users_shortcut_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_users_shortcut_id)){
-							$all_users_shortcut_id[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_users_shortcut_store;
-				}
-				
-				if($last_id_users_shortcut_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_users_shortcut_store'] = $last_id_users_shortcut_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['data_users_shortcut_store'] = json_encode($data_users_shortcut_store);
-				$post_data['all_users_shortcut_id'] = json_encode($all_users_shortcut_id);
-				
-				
-				break;
-				
-			//User Quickstart 	
-			case 'users_quickstart':
-				$backup_text = 'User Quickstart';
-				
-				//User Quickstart ON STORE - GET LAST ID
-				$last_id_users_quickstart_store = 0;
-				$total_data_store = 0;
-				$get_all_store_users_quickstart = $this->db->query("SELECT id FROM ".$this->prefix."users_quickstart ORDER BY id DESC");
-				if($get_all_store_users_quickstart->num_rows() > 0){
-					$dt_all_users_quickstart_store = $get_all_store_users_quickstart->row();
-					$last_id_users_quickstart_store = $dt_all_users_quickstart_store->id;
-					$total_data_store = $get_all_store_users_quickstart->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_users_quickstart_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//User Quickstart ON STORE id > $last_id_on_backup
-				$data_users_quickstart_store = array();
-				$all_users_quickstart_id = array();
-				$get_store_users_quickstart = $this->db->query("SELECT * FROM ".$this->prefix."users_quickstart WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_users_quickstart->num_rows() > 0){
-					
-					foreach($get_store_users_quickstart->result() as $dt){
-						
-						$data_users_quickstart_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_users_quickstart_id)){
-							$all_users_quickstart_id[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_users_quickstart_store;
-				}
-				
-				if($last_id_users_quickstart_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_users_quickstart_store'] = $last_id_users_quickstart_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['data_users_quickstart_store'] = json_encode($data_users_quickstart_store);
-				$post_data['all_users_quickstart_id'] = json_encode($all_users_quickstart_id);
-				
-				
-				break;
-				
-			//Supervisor
-			case 'supervisor':
-				$backup_text = 'Supervisor';
-				
-				//Supervisor ON STORE
-				$last_id_supervisor_store = 0;
-				$total_data_store = 0;
-				$get_all_store_supervisor = $this->db->query("SELECT id FROM ".$this->prefix."supervisor ORDER BY id DESC");
-				if($get_all_store_supervisor->num_rows() > 0){
-					$dt_all_supervisor_store = $get_all_store_supervisor->row();
-					$last_id_supervisor_store = $dt_all_supervisor_store->id;
-					$total_data_store = $get_all_store_supervisor->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_supervisor_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Supervisor ON STORE id > $last_id_on_backup
-				$supervisors_store = array();
-				$all_supervisor = array();
-				$get_store_supervisor = $this->db->query("SELECT * FROM ".$this->prefix."supervisor WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_supervisor->num_rows() > 0){
-					
-					foreach($get_store_supervisor->result() as $dt){
-						
-						$supervisors_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_supervisor)){
-							$all_supervisor[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_supervisor_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_supervisor_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_supervisor_store'] = $last_id_supervisor_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['supervisors_store'] = json_encode($supervisors_store);
-				$post_data['all_supervisor'] = json_encode($all_supervisor);
-				
-				break;
-			
-			//Supervisor Access	
-			case 'supervisor_access':
-				$backup_text = 'Supervisor Access';
-				
-				//Supervisor Access ON STORE - GET LAST ID
-				$last_id_supervisor_access_store = 0;
-				$total_data_store = 0;
-				$get_all_store_supervisor_access = $this->db->query("SELECT id FROM ".$this->prefix."supervisor_access ORDER BY id DESC");
-				if($get_all_store_supervisor_access->num_rows() > 0){
-					$dt_all_supervisor_access_store = $get_all_store_supervisor_access->row();
-					$last_id_supervisor_access_store = $dt_all_supervisor_access_store->id;
-					$total_data_store = $get_all_store_supervisor_access->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_supervisor_access_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Supervisor Access ON STORE id > $last_id_on_backup
-				$data_supervisor_access_store = array();
-				$all_supervisor_access_id = array();
-				$get_store_supervisor_access = $this->db->query("SELECT * FROM ".$this->prefix."supervisor_access WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_supervisor_access->num_rows() > 0){
-					
-					foreach($get_store_supervisor_access->result() as $dt){
-						
-						$data_supervisor_access_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_supervisor_access_id)){
-							$all_supervisor_access_id[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_supervisor_access_store;
-				}
-				
-				if($last_id_supervisor_access_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_supervisor_access_store'] = $last_id_supervisor_access_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['data_supervisor_access_store'] = json_encode($data_supervisor_access_store);
-				$post_data['all_supervisor_access_id'] = json_encode($all_supervisor_access_id);
-				
-				break;
-				
-			//MASTER DATA ----------------------------------------
-			//Menu Varian
-			case 'varian':
-				$backup_text = 'Menu Varian';
-				
-				//Menu Varian ON STORE
-				$last_id_varian_store = 0;
-				$total_data_store = 0;
-				$get_all_store_varian = $this->db->query("SELECT id FROM ".$this->prefix_pos."varian ORDER BY id DESC");
-				if($get_all_store_varian->num_rows() > 0){
-					$dt_all_varian_store = $get_all_store_varian->row();
-					$last_id_varian_store = $dt_all_varian_store->id;
-					$total_data_store = $get_all_store_varian->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_varian_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Menu Varian ON STORE id > $last_id_on_backup
-				$varians_store = array();
-				$all_varian = array();
-				$get_store_varian = $this->db->query("SELECT * FROM ".$this->prefix_pos."varian WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_varian->num_rows() > 0){
-					
-					foreach($get_store_varian->result() as $dt){
-						
-						$varians_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_varian)){
-							$all_varian[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_varian_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_varian_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_varian_store'] = $last_id_varian_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['varians_store'] = json_encode($varians_store);
-				$post_data['all_varian'] = json_encode($all_varian);
-				
-				break;	
-			
-			//Menu/Product
-			case 'menu':
-				$backup_text = 'Menu/Product';
-				
-				//Menu/Product ON STORE
-				$last_id_product_store = 0;
-				$total_data_store = 0;
-				$get_all_store_product = $this->db->query("SELECT id FROM ".$this->prefix_pos."product ORDER BY id DESC");
-				if($get_all_store_product->num_rows() > 0){
-					$dt_all_product_store = $get_all_store_product->row();
-					$last_id_product_store = $dt_all_product_store->id;
-					$total_data_store = $get_all_store_product->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_product_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Menu/Product ON STORE id > $last_id_on_backup
-				$products_store = array();
-				$all_product = array();
-				$get_store_product = $this->db->query("SELECT * FROM ".$this->prefix_pos."product WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_product->num_rows() > 0){
-					
-					foreach($get_store_product->result() as $dt){
-						
-						$products_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_product)){
-							$all_product[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_product_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_product_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_product_store'] = $last_id_product_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['products_store'] = json_encode($products_store);
-				$post_data['all_product'] = json_encode($all_product);
-				
-				break;	
-				
-			//Menu Category
-			case 'menu_category':
-				$backup_text = 'Menu Category';
-				
-				//Menu Category ON STORE
-				$last_id_menu_category_store = 0;
-				$total_data_store = 0;
-				$get_all_store_menu_category = $this->db->query("SELECT id FROM ".$this->prefix_pos."product_category ORDER BY id DESC");
-				if($get_all_store_menu_category->num_rows() > 0){
-					$dt_all_menu_category_store = $get_all_store_menu_category->row();
-					$last_id_menu_category_store = $dt_all_menu_category_store->id;
-					$total_data_store = $get_all_store_menu_category->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_menu_category_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Menu Category ON STORE id > $last_id_on_backup
-				$menu_categorys_store = array();
-				$all_menu_category = array();
-				$get_store_menu_category = $this->db->query("SELECT * FROM ".$this->prefix_pos."product_category WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_menu_category->num_rows() > 0){
-					
-					foreach($get_store_menu_category->result() as $dt){
-						
-						$menu_categorys_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_menu_category)){
-							$all_menu_category[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_menu_category_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_menu_category_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_menu_category_store'] = $last_id_menu_category_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['menu_categorys_store'] = json_encode($menu_categorys_store);
-				$post_data['all_menu_category'] = json_encode($all_menu_category);
-				
-				break;	
-				
-			//Menu Package
-			case 'menu_package':
-				$backup_text = 'Menu Package';
-				
-				//Menu Package ON STORE
-				$last_id_menu_package_store = 0;
-				$total_data_store = 0;
-				$get_all_store_menu_package = $this->db->query("SELECT id FROM ".$this->prefix_pos."product_package ORDER BY id DESC");
-				if($get_all_store_menu_package->num_rows() > 0){
-					$dt_all_menu_package_store = $get_all_store_menu_package->row();
-					$last_id_menu_package_store = $dt_all_menu_package_store->id;
-					$total_data_store = $get_all_store_menu_package->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_menu_package_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Menu Package ON STORE id > $last_id_on_backup
-				$menu_packages_store = array();
-				$all_menu_package = array();
-				$get_store_menu_package = $this->db->query("SELECT * FROM ".$this->prefix_pos."product_package WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_menu_package->num_rows() > 0){
-					
-					foreach($get_store_menu_package->result() as $dt){
-						
-						$menu_packages_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_menu_package)){
-							$all_menu_package[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_menu_package_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_menu_package_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_menu_package_store'] = $last_id_menu_package_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['menu_packages_store'] = json_encode($menu_packages_store);
-				$post_data['all_menu_package'] = json_encode($all_menu_package);
-				
-				break;	
-			
-			//Menu Varian
-			case 'menu_varian':
-				$backup_text = 'Menu Varian';
-				
-				//Menu Varian ON STORE
-				$last_id_menu_varian_store = 0;
-				$total_data_store = 0;
-				$get_all_store_menu_varian = $this->db->query("SELECT id FROM ".$this->prefix_pos."product_varian ORDER BY id DESC");
-				if($get_all_store_menu_varian->num_rows() > 0){
-					$dt_all_menu_varian_store = $get_all_store_menu_varian->row();
-					$last_id_menu_varian_store = $dt_all_menu_varian_store->id;
-					$total_data_store = $get_all_store_menu_varian->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_menu_varian_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Menu Varian ON STORE id > $last_id_on_backup
-				$menu_varians_store = array();
-				$all_menu_varian = array();
-				$get_store_menu_varian = $this->db->query("SELECT * FROM ".$this->prefix_pos."product_varian WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_menu_varian->num_rows() > 0){
-					
-					foreach($get_store_menu_varian->result() as $dt){
-						
-						$menu_varians_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_menu_varian)){
-							$all_menu_varian[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_menu_varian_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_menu_varian_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_menu_varian_store'] = $last_id_menu_varian_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['menu_varians_store'] = json_encode($menu_varians_store);
-				$post_data['all_menu_varian'] = json_encode($all_menu_varian);
-				
-				break;	
-			
-			
-			//Payment & Bank
-			case 'payment_bank':
-				$backup_text = 'Payment & Bank';
-				
-				//Payment & Bank ON STORE
-				$last_id_payment_bank_store = 0;
-				$total_data_store = 0;
-				$get_all_store_payment_bank = $this->db->query("SELECT id FROM ".$this->prefix_pos."bank ORDER BY id DESC");
-				if($get_all_store_payment_bank->num_rows() > 0){
-					$dt_all_payment_bank_store = $get_all_store_payment_bank->row();
-					$last_id_payment_bank_store = $dt_all_payment_bank_store->id;
-					$total_data_store = $get_all_store_payment_bank->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_payment_bank_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Payment & Bank ON STORE id > $last_id_on_backup
-				$payment_banks_store = array();
-				$all_payment_bank = array();
-				$get_store_payment_bank = $this->db->query("SELECT * FROM ".$this->prefix_pos."bank WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_payment_bank->num_rows() > 0){
-					
-					foreach($get_store_payment_bank->result() as $dt){
-						
-						$payment_banks_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_payment_bank)){
-							$all_payment_bank[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_payment_bank_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_payment_bank_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_payment_bank_store'] = $last_id_payment_bank_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['payment_banks_store'] = json_encode($payment_banks_store);
-				$post_data['all_payment_bank'] = json_encode($all_payment_bank);
-				
-				break;	
-			
-			//Discount
-			case 'discount':
-				$backup_text = 'Discount';
-				
-				//Discount ON STORE
-				$last_id_discount_store = 0;
-				$total_data_store = 0;
-				$get_all_store_discount = $this->db->query("SELECT id FROM ".$this->prefix_pos."discount ORDER BY id DESC");
-				if($get_all_store_discount->num_rows() > 0){
-					$dt_all_discount_store = $get_all_store_discount->row();
-					$last_id_discount_store = $dt_all_discount_store->id;
-					$total_data_store = $get_all_store_discount->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_discount_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Discount ON STORE id > $last_id_on_backup
-				$discounts_store = array();
-				$all_discount = array();
-				$get_store_discount = $this->db->query("SELECT * FROM ".$this->prefix_pos."discount WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_discount->num_rows() > 0){
-					
-					foreach($get_store_discount->result() as $dt){
-						
-						$discounts_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_discount)){
-							$all_discount[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_discount_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_discount_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_discount_store'] = $last_id_discount_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['discounts_store'] = json_encode($discounts_store);
-				$post_data['all_discount'] = json_encode($all_discount);
-				
-				break;	
-			
-			//Discount Buyget
-			case 'discount_buyget':
-				$backup_text = 'Discount Buy & Get';
-				
-				//Discount Buy & Get ON STORE
-				$last_id_discount_buyget_store = 0;
-				$total_data_store = 0;
-				$get_all_store_discount_buyget = $this->db->query("SELECT id FROM ".$this->prefix_pos."discount_buyget ORDER BY id DESC");
-				if($get_all_store_discount_buyget->num_rows() > 0){
-					$dt_all_discount_buyget_store = $get_all_store_discount_buyget->row();
-					$last_id_discount_buyget_store = $dt_all_discount_buyget_store->id;
-					$total_data_store = $get_all_store_discount_buyget->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_discount_buyget_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Discount Buy & Get ON STORE id > $last_id_on_backup
-				$discount_buygets_store = array();
-				$all_discount_buyget = array();
-				$get_store_discount_buyget = $this->db->query("SELECT * FROM ".$this->prefix_pos."discount_buyget WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_discount_buyget->num_rows() > 0){
-					
-					foreach($get_store_discount_buyget->result() as $dt){
-						
-						$discount_buygets_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_discount_buyget)){
-							$all_discount_buyget[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_discount_buyget_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_discount_buyget_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_discount_buyget_store'] = $last_id_discount_buyget_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['discount_buygets_store'] = json_encode($discount_buygets_store);
-				$post_data['all_discount_buyget'] = json_encode($all_discount_buyget);
-				
-				break;	
-			
-			//Discount Product
-			case 'discount_product':
-				$backup_text = 'Discount Menu/Product';
-				
-				//Discount Menu/Product ON STORE
-				$last_id_discount_product_store = 0;
-				$total_data_store = 0;
-				$get_all_store_discount_product = $this->db->query("SELECT id FROM ".$this->prefix_pos."discount_product ORDER BY id DESC");
-				if($get_all_store_discount_product->num_rows() > 0){
-					$dt_all_discount_product_store = $get_all_store_discount_product->row();
-					$last_id_discount_product_store = $dt_all_discount_product_store->id;
-					$total_data_store = $get_all_store_discount_product->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_discount_product_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Discount Menu/Product ON STORE id > $last_id_on_backup
-				$discount_products_store = array();
-				$all_discount_product = array();
-				$get_store_discount_product = $this->db->query("SELECT * FROM ".$this->prefix_pos."discount_product WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_discount_product->num_rows() > 0){
-					
-					foreach($get_store_discount_product->result() as $dt){
-						
-						$discount_products_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_discount_product)){
-							$all_discount_product[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_discount_product_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_discount_product_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_discount_product_store'] = $last_id_discount_product_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['discount_products_store'] = json_encode($discount_products_store);
-				$post_data['all_discount_product'] = json_encode($all_discount_product);
-				
-				break;	
-				
-			//Discount Voucher
-			case 'discount_voucher':
-				$backup_text = 'Discount Voucher';
-				
-				//Discount Voucher ON STORE
-				$last_id_discount_voucher_store = 0;
-				$total_data_store = 0;
-				$get_all_store_discount_voucher = $this->db->query("SELECT id FROM ".$this->prefix_pos."discount_voucher ORDER BY id DESC");
-				if($get_all_store_discount_voucher->num_rows() > 0){
-					$dt_all_discount_voucher_store = $get_all_store_discount_voucher->row();
-					$last_id_discount_voucher_store = $dt_all_discount_voucher_store->id;
-					$total_data_store = $get_all_store_discount_voucher->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_discount_voucher_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Discount Voucher ON STORE id > $last_id_on_backup
-				$discount_vouchers_store = array();
-				$all_discount_voucher = array();
-				$get_store_discount_voucher = $this->db->query("SELECT * FROM ".$this->prefix_pos."discount_voucher WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_discount_voucher->num_rows() > 0){
-					
-					foreach($get_store_discount_voucher->result() as $dt){
-						
-						$discount_vouchers_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_discount_voucher)){
-							$all_discount_voucher[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_discount_voucher_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_discount_voucher_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_discount_voucher_store'] = $last_id_discount_voucher_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['discount_vouchers_store'] = json_encode($discount_vouchers_store);
-				$post_data['all_discount_voucher'] = json_encode($all_discount_voucher);
-				
-				break;	
-			
-			//Sales/Marketing
-			case 'sales_marketing':
-				$backup_text = 'Sales/Marketing';
-				
-				//Sales/Marketing ON STORE
-				$last_id_sales_marketing_store = 0;
-				$total_data_store = 0;
-				$get_all_store_sales_marketing = $this->db->query("SELECT id FROM ".$this->prefix_pos."sales ORDER BY id DESC");
-				if($get_all_store_sales_marketing->num_rows() > 0){
-					$dt_all_sales_marketing_store = $get_all_store_sales_marketing->row();
-					$last_id_sales_marketing_store = $dt_all_sales_marketing_store->id;
-					$total_data_store = $get_all_store_sales_marketing->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_sales_marketing_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Sales/Marketing ON STORE id > $last_id_on_backup
-				$sales_marketings_store = array();
-				$all_sales_marketing = array();
-				$get_store_sales_marketing = $this->db->query("SELECT * FROM ".$this->prefix_pos."sales WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_sales_marketing->num_rows() > 0){
-					
-					foreach($get_store_sales_marketing->result() as $dt){
-						
-						$sales_marketings_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_sales_marketing)){
-							$all_sales_marketing[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_sales_marketing_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_sales_marketing_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_sales_marketing_store'] = $last_id_sales_marketing_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['sales_marketings_store'] = json_encode($sales_marketings_store);
-				$post_data['all_sales_marketing'] = json_encode($all_sales_marketing);
-				
-				break;	
-			
-			//Customer/Member
-			case 'customer_member':
-				$backup_text = 'Customer/Member';
-				
-				//Customer/Member ON STORE
-				$last_id_customer_member_store = 0;
-				$total_data_store = 0;
-				$get_all_store_customer_member = $this->db->query("SELECT id FROM ".$this->prefix_pos."customer ORDER BY id DESC");
-				if($get_all_store_customer_member->num_rows() > 0){
-					$dt_all_customer_member_store = $get_all_store_customer_member->row();
-					$last_id_customer_member_store = $dt_all_customer_member_store->id;
-					$total_data_store = $get_all_store_customer_member->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_customer_member_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Customer/Member ON STORE id > $last_id_on_backup
-				$customer_members_store = array();
-				$all_customer_member = array();
-				$get_store_customer_member = $this->db->query("SELECT * FROM ".$this->prefix_pos."customer WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_customer_member->num_rows() > 0){
-					
-					foreach($get_store_customer_member->result() as $dt){
-						
-						$customer_members_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_customer_member)){
-							$all_customer_member[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_customer_member_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_customer_member_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_customer_member_store'] = $last_id_customer_member_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['customer_members_store'] = json_encode($customer_members_store);
-				$post_data['all_customer_member'] = json_encode($all_customer_member);
-				
-				break;	
-			
-			//Divisi/Bagian
-			case 'divisi':
-				$backup_text = 'Divisi/Bagian';
-				
-				//Divisi/Bagian ON STORE
-				$last_id_divisi_store = 0;
-				$total_data_store = 0;
-				$get_all_store_divisi = $this->db->query("SELECT id FROM ".$this->prefix_pos."divisi ORDER BY id DESC");
-				if($get_all_store_divisi->num_rows() > 0){
-					$dt_all_divisi_store = $get_all_store_divisi->row();
-					$last_id_divisi_store = $dt_all_divisi_store->id;
-					$total_data_store = $get_all_store_divisi->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_divisi_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Divisi/Bagian ON STORE id > $last_id_on_backup
-				$divisis_store = array();
-				$all_divisi = array();
-				$get_store_divisi = $this->db->query("SELECT * FROM ".$this->prefix_pos."divisi WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_divisi->num_rows() > 0){
-					
-					foreach($get_store_divisi->result() as $dt){
-						
-						$divisis_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_divisi)){
-							$all_divisi[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_divisi_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_divisi_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_divisi_store'] = $last_id_divisi_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['divisis_store'] = json_encode($divisis_store);
-				$post_data['all_divisi'] = json_encode($all_divisi);
-				
-				break;	
-			
-			//Warehouse/Gudang
-			case 'warehouse':
-				$backup_text = 'Warehouse/Gudang';
-				
-				//Warehouse/Gudang ON STORE
-				$last_id_warehouse_store = 0;
-				$total_data_store = 0;
-				$get_all_store_warehouse = $this->db->query("SELECT id FROM ".$this->prefix_pos."storehouse ORDER BY id DESC");
-				if($get_all_store_warehouse->num_rows() > 0){
-					$dt_all_warehouse_store = $get_all_store_warehouse->row();
-					$last_id_warehouse_store = $dt_all_warehouse_store->id;
-					$total_data_store = $get_all_store_warehouse->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_warehouse_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Warehouse/Gudang ON STORE id > $last_id_on_backup
-				$warehouses_store = array();
-				$all_warehouse = array();
-				$get_store_warehouse = $this->db->query("SELECT * FROM ".$this->prefix_pos."storehouse WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_warehouse->num_rows() > 0){
-					
-					foreach($get_store_warehouse->result() as $dt){
-						
-						$warehouses_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_warehouse)){
-							$all_warehouse[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_warehouse_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_warehouse_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_warehouse_store'] = $last_id_warehouse_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['warehouses_store'] = json_encode($warehouses_store);
-				$post_data['all_warehouse'] = json_encode($all_warehouse);
-				
-				break;
-				
-			//Warehouse Access 
-			case 'warehouse_access':
-				$backup_text = 'Warehouse Access';
-				
-				//Warehouse Access ON STORE
-				$last_id_warehouse_access_store = 0;
-				$total_data_store = 0;
-				$get_all_store_warehouse_access = $this->db->query("SELECT id FROM ".$this->prefix_pos."storehouse_users ORDER BY id DESC");
-				if($get_all_store_warehouse_access->num_rows() > 0){
-					$dt_all_warehouse_access_store = $get_all_store_warehouse_access->row();
-					$last_id_warehouse_access_store = $dt_all_warehouse_access_store->id;
-					$total_data_store = $get_all_store_warehouse_access->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_warehouse_access_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Warehouse Access ON STORE id > $last_id_on_backup
-				$warehouse_accesss_store = array();
-				$all_warehouse_access = array();
-				$get_store_warehouse_access = $this->db->query("SELECT * FROM ".$this->prefix_pos."storehouse_users WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_warehouse_access->num_rows() > 0){
-					
-					foreach($get_store_warehouse_access->result() as $dt){
-						
-						$warehouse_accesss_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_warehouse_access)){
-							$all_warehouse_access[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_warehouse_access_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_warehouse_access_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_warehouse_access_store'] = $last_id_warehouse_access_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['warehouse_accesss_store'] = json_encode($warehouse_accesss_store);
-				$post_data['all_warehouse_access'] = json_encode($all_warehouse_access);
-				
-				break;	
-			
-			//Unit
-			case 'unit':
-				$backup_text = 'Unit/Satuan';
-				
-				//Unit ON STORE
-				$last_id_unit_store = 0;
-				$total_data_store = 0;
-				$get_all_store_unit = $this->db->query("SELECT id FROM ".$this->prefix_pos."unit ORDER BY id DESC");
-				if($get_all_store_unit->num_rows() > 0){
-					$dt_all_unit_store = $get_all_store_unit->row();
-					$last_id_unit_store = $dt_all_unit_store->id;
-					$total_data_store = $get_all_store_unit->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_unit_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Unit ON STORE id > $last_id_on_backup
-				$units_store = array();
-				$all_unit = array();
-				$get_store_unit = $this->db->query("SELECT * FROM ".$this->prefix_pos."unit WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_unit->num_rows() > 0){
-					
-					foreach($get_store_unit->result() as $dt){
-						
-						$units_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_unit)){
-							$all_unit[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_unit_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_unit_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_unit_store'] = $last_id_unit_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['units_store'] = json_encode($units_store);
-				$post_data['all_unit'] = json_encode($all_unit);
-				
-				break;
-				
-			//Item/Barang
-			case 'items':
-				$backup_text = 'Item/Barang';
-				
-				//Item/Barang ON STORE
-				$last_id_items_store = 0;
-				$total_data_store = 0;
-				$get_all_store_items = $this->db->query("SELECT id FROM ".$this->prefix_pos."items ORDER BY id DESC");
-				if($get_all_store_items->num_rows() > 0){
-					$dt_all_items_store = $get_all_store_items->row();
-					$last_id_items_store = $dt_all_items_store->id;
-					$total_data_store = $get_all_store_items->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_items_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Item/Barang ON STORE id > $last_id_on_backup
-				$items_store = array();
-				$all_items = array();
-				$get_store_items = $this->db->query("SELECT * FROM ".$this->prefix_pos."items WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_items->num_rows() > 0){
-					
-					foreach($get_store_items->result() as $dt){
-						
-						$items_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_items)){
-							$all_items[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_items_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_items_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_items_store'] = $last_id_items_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['items_store'] = json_encode($items_store);
-				$post_data['all_items'] = json_encode($all_items);
-				
-				break;	
-			
-			//Item Category
-			case 'item_category':
-				$backup_text = 'Item Category';
-				
-				//Item Category ON STORE
-				$last_id_item_category_store = 0;
-				$total_data_store = 0;
-				$get_all_store_item_category = $this->db->query("SELECT id FROM ".$this->prefix_pos."item_category ORDER BY id DESC");
-				if($get_all_store_item_category->num_rows() > 0){
-					$dt_all_item_category_store = $get_all_store_item_category->row();
-					$last_id_item_category_store = $dt_all_item_category_store->id;
-					$total_data_store = $get_all_store_item_category->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_item_category_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Item Category ON STORE id > $last_id_on_backup
-				$item_categorys_store = array();
-				$all_item_category = array();
-				$get_store_item_category = $this->db->query("SELECT * FROM ".$this->prefix_pos."item_category WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_item_category->num_rows() > 0){
-					
-					foreach($get_store_item_category->result() as $dt){
-						
-						$item_categorys_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_item_category)){
-							$all_item_category[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_item_category_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_item_category_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_item_category_store'] = $last_id_item_category_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['item_categorys_store'] = json_encode($item_categorys_store);
-				$post_data['all_item_category'] = json_encode($all_item_category);
-				
-				break;	
-			
-			//Item Sub Category
-			case 'item_subcategory':
-				$backup_text = 'Sub Category';
-				
-				//Item Sub Category ON STORE
-				$last_id_item_subcategory_store = 0;
-				$total_data_store = 0;
-				$get_all_store_item_subcategory = $this->db->query("SELECT id FROM ".$this->prefix_pos."item_subcategory ORDER BY id DESC");
-				if($get_all_store_item_subcategory->num_rows() > 0){
-					$dt_all_item_subcategory_store = $get_all_store_item_subcategory->row();
-					$last_id_item_subcategory_store = $dt_all_item_subcategory_store->id;
-					$total_data_store = $get_all_store_item_subcategory->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_item_subcategory_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Item Sub Category ON STORE id > $last_id_on_backup
-				$item_subcategorys_store = array();
-				$all_item_subcategory = array();
-				$get_store_item_subcategory = $this->db->query("SELECT * FROM ".$this->prefix_pos."item_subcategory WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_item_subcategory->num_rows() > 0){
-					
-					foreach($get_store_item_subcategory->result() as $dt){
-						
-						$item_subcategorys_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_item_subcategory)){
-							$all_item_subcategory[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_item_subcategory_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_item_subcategory_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_item_subcategory_store'] = $last_id_item_subcategory_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['item_subcategorys_store'] = json_encode($item_subcategorys_store);
-				$post_data['all_item_subcategory'] = json_encode($all_item_subcategory);
-				
-				break;	
-			
-			//Item kode unik
-			case 'item_kode_unik':
-				$backup_text = 'Unique Code';
-				
-				//Item kode unik ON STORE
-				$last_id_item_kode_unik_store = 0;
-				$total_data_store = 0;
-				$get_all_store_item_kode_unik = $this->db->query("SELECT id FROM ".$this->prefix_pos."item_kode_unik ORDER BY id DESC");
-				if($get_all_store_item_kode_unik->num_rows() > 0){
-					$dt_all_item_kode_unik_store = $get_all_store_item_kode_unik->row();
-					$last_id_item_kode_unik_store = $dt_all_item_kode_unik_store->id;
-					$total_data_store = $get_all_store_item_kode_unik->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_item_kode_unik_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Item kode unik ON STORE id > $last_id_on_backup
-				$item_kode_uniks_store = array();
-				$all_item_kode_unik = array();
-				$get_store_item_kode_unik = $this->db->query("SELECT * FROM ".$this->prefix_pos."item_kode_unik WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_item_kode_unik->num_rows() > 0){
-					
-					foreach($get_store_item_kode_unik->result() as $dt){
-						
-						$item_kode_uniks_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_item_kode_unik)){
-							$all_item_kode_unik[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_item_kode_unik_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_item_kode_unik_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_item_kode_unik_store'] = $last_id_item_kode_unik_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['item_kode_uniks_store'] = json_encode($item_kode_uniks_store);
-				$post_data['all_item_kode_unik'] = json_encode($all_item_kode_unik);
-				
-				break;	
-			
-			//Supplier
-			case 'supplier':
-				$backup_text = 'Supplier';
-				
-				//Supplier ON STORE
-				$last_id_supplier_store = 0;
-				$total_data_store = 0;
-				$get_all_store_supplier = $this->db->query("SELECT id FROM ".$this->prefix_pos."supplier ORDER BY id DESC");
-				if($get_all_store_supplier->num_rows() > 0){
-					$dt_all_supplier_store = $get_all_store_supplier->row();
-					$last_id_supplier_store = $dt_all_supplier_store->id;
-					$total_data_store = $get_all_store_supplier->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_supplier_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Supplier ON STORE id > $last_id_on_backup
-				$suppliers_store = array();
-				$all_supplier = array();
-				$get_store_supplier = $this->db->query("SELECT * FROM ".$this->prefix_pos."supplier WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_supplier->num_rows() > 0){
-					
-					foreach($get_store_supplier->result() as $dt){
-						
-						$suppliers_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_supplier)){
-							$all_supplier[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_supplier_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_supplier_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_supplier_store'] = $last_id_supplier_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['suppliers_store'] = json_encode($suppliers_store);
-				$post_data['all_supplier'] = json_encode($all_supplier);
-				
-				break;
-			
-			//Supplier Item
-			case 'supplier_item':
-				$backup_text = 'Supplier Item';
-				
-				//Supplier Item ON STORE
-				$last_id_supplier_item_store = 0;
-				$total_data_store = 0;
-				$get_all_store_supplier_item = $this->db->query("SELECT id FROM ".$this->prefix_pos."supplier_item ORDER BY id DESC");
-				if($get_all_store_supplier_item->num_rows() > 0){
-					$dt_all_supplier_item_store = $get_all_store_supplier_item->row();
-					$last_id_supplier_item_store = $dt_all_supplier_item_store->id;
-					$total_data_store = $get_all_store_supplier_item->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_supplier_item_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Supplier Item ON STORE id > $last_id_on_backup
-				$supplier_items_store = array();
-				$all_supplier_item = array();
-				$get_store_supplier_item = $this->db->query("SELECT * FROM ".$this->prefix_pos."supplier_item WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_supplier_item->num_rows() > 0){
-					
-					foreach($get_store_supplier_item->result() as $dt){
-						
-						$supplier_items_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_supplier_item)){
-							$all_supplier_item[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_supplier_item_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_supplier_item_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_supplier_item_store'] = $last_id_supplier_item_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['supplier_items_store'] = json_encode($supplier_items_store);
-				$post_data['all_supplier_item'] = json_encode($all_supplier_item);
-				
-				break;
-			
-			//Order Note
-			case 'order_note':
-				$backup_text = 'Order Note';
-				
-				//Order Note ON STORE
-				$last_id_order_note_store = 0;
-				$total_data_store = 0;
-				$get_all_store_order_note = $this->db->query("SELECT id FROM ".$this->prefix_pos."order_note ORDER BY id DESC");
-				if($get_all_store_order_note->num_rows() > 0){
-					$dt_all_order_note_store = $get_all_store_order_note->row();
-					$last_id_order_note_store = $dt_all_order_note_store->id;
-					$total_data_store = $get_all_store_order_note->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_order_note_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Order Note ON STORE id > $last_id_on_backup
-				$order_notes_store = array();
-				$all_order_note = array();
-				$get_store_order_note = $this->db->query("SELECT * FROM ".$this->prefix_pos."order_note WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_order_note->num_rows() > 0){
-					
-					foreach($get_store_order_note->result() as $dt){
-						
-						$order_notes_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_order_note)){
-							$all_order_note[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_order_note_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_order_note_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_order_note_store'] = $last_id_order_note_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['order_notes_store'] = json_encode($order_notes_store);
-				$post_data['all_order_note'] = json_encode($all_order_note);
-				
-				break;
-			
-			//Billing Tipe
-			case 'billing_tipe':
-				$backup_text = 'Billing Tipe';
-				
-				//Order Note ON STORE
-				$last_id_billing_tipe_store = 0;
-				$total_data_store = 0;
-				$get_all_store_billing_tipe = $this->db->query("SELECT id FROM ".$this->prefix_pos."table ORDER BY id DESC");
-				if($get_all_store_billing_tipe->num_rows() > 0){
-					$dt_all_billing_tipe_store = $get_all_store_billing_tipe->row();
-					$last_id_billing_tipe_store = $dt_all_billing_tipe_store->id;
-					$total_data_store = $get_all_store_billing_tipe->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_billing_tipe_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Order Note ON STORE id > $last_id_on_backup
-				$billing_tipes_store = array();
-				$all_billing_tipe = array();
-				$get_store_billing_tipe = $this->db->query("SELECT * FROM ".$this->prefix_pos."table WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_billing_tipe->num_rows() > 0){
-					
-					foreach($get_store_billing_tipe->result() as $dt){
-						
-						$billing_tipes_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_billing_tipe)){
-							$all_billing_tipe[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_billing_tipe_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_billing_tipe_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_billing_tipe_store'] = $last_id_billing_tipe_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['billing_tipes_store'] = json_encode($billing_tipes_store);
-				$post_data['all_billing_tipe'] = json_encode($all_billing_tipe);
-				
-				break;
-			
-			//Table
-			case 'table':
-				$backup_text = 'Table';
-				
-				//Table ON STORE
-				$last_id_table_store = 0;
-				$total_data_store = 0;
-				$get_all_store_table = $this->db->query("SELECT id FROM ".$this->prefix_pos."table ORDER BY id DESC");
-				if($get_all_store_table->num_rows() > 0){
-					$dt_all_table_store = $get_all_store_table->row();
-					$last_id_table_store = $dt_all_table_store->id;
-					$total_data_store = $get_all_store_table->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_table_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Table ON STORE id > $last_id_on_backup
-				$tables_store = array();
-				$all_table = array();
-				$get_store_table = $this->db->query("SELECT * FROM ".$this->prefix_pos."table WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_table->num_rows() > 0){
-					
-					foreach($get_store_table->result() as $dt){
-						
-						$tables_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_table)){
-							$all_table[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_table_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_table_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_table_store'] = $last_id_table_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['tables_store'] = json_encode($tables_store);
-				$post_data['all_table'] = json_encode($all_table);
-				
-				break;
-			
-			//Table Inventory
-			case 'table_inventory':
-				$backup_text = 'Table Inventory';
-				
-				//Table Inventory ON STORE
-				$last_id_table_inventory_store = 0;
-				$total_data_store = 0;
-				$get_all_store_table_inventory = $this->db->query("SELECT id FROM ".$this->prefix_pos."table_inventory ORDER BY id DESC");
-				if($get_all_store_table_inventory->num_rows() > 0){
-					$dt_all_table_inventory_store = $get_all_store_table_inventory->row();
-					$last_id_table_inventory_store = $dt_all_table_inventory_store->id;
-					$total_data_store = $get_all_store_table_inventory->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_table_inventory_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Table Inventory ON STORE id > $last_id_on_backup
-				$table_inventorys_store = array();
-				$all_table_inventory = array();
-				$get_store_table_inventory = $this->db->query("SELECT * FROM ".$this->prefix_pos."table_inventory WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_table_inventory->num_rows() > 0){
-					
-					foreach($get_store_table_inventory->result() as $dt){
-						
-						$table_inventorys_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_table_inventory)){
-							$all_table_inventory[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_table_inventory_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_table_inventory_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_table_inventory_store'] = $last_id_table_inventory_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['table_inventorys_store'] = json_encode($table_inventorys_store);
-				$post_data['all_table_inventory'] = json_encode($all_table_inventory);
-				
-				break;
-				
-			//Floorplan
-			case 'floorplan':
-				$backup_text = 'Floorplan';
-				
-				//Floorplan ON STORE
-				$last_id_floorplan_store = 0;
-				$total_data_store = 0;
-				$get_all_store_floorplan = $this->db->query("SELECT id FROM ".$this->prefix_pos."floorplan ORDER BY id DESC");
-				if($get_all_store_floorplan->num_rows() > 0){
-					$dt_all_floorplan_store = $get_all_store_floorplan->row();
-					$last_id_floorplan_store = $dt_all_floorplan_store->id;
-					$total_data_store = $get_all_store_floorplan->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_floorplan_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Floorplan ON STORE id > $last_id_on_backup
-				$floorplans_store = array();
-				$all_floorplan = array();
-				$get_store_floorplan = $this->db->query("SELECT * FROM ".$this->prefix_pos."floorplan WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_floorplan->num_rows() > 0){
-					
-					foreach($get_store_floorplan->result() as $dt){
-						
-						$floorplans_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_floorplan)){
-							$all_floorplan[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_floorplan_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_floorplan_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_floorplan_store'] = $last_id_floorplan_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['floorplans_store'] = json_encode($floorplans_store);
-				$post_data['all_floorplan'] = json_encode($all_floorplan);
-				
-				break;
-			
-			//Room
-			case 'room':
-				$backup_text = 'Room';
-				
-				//Order Note ON STORE
-				$last_id_room_store = 0;
-				$total_data_store = 0;
-				$get_all_store_room = $this->db->query("SELECT id FROM ".$this->prefix_pos."room ORDER BY id DESC");
-				if($get_all_store_room->num_rows() > 0){
-					$dt_all_room_store = $get_all_store_room->row();
-					$last_id_room_store = $dt_all_room_store->id;
-					$total_data_store = $get_all_store_room->num_rows();
-				}
-				
-				$last_id_store = 0;
-				$total_data_store_detail = 0;
-				$last_id_store_detail = 0;
-				
-				if($last_id_room_store == $last_id_on_backup){
-					$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
-					die(json_encode($r));
-				}
-				
-				//Order Note ON STORE id > $last_id_on_backup
-				$rooms_store = array();
-				$all_room = array();
-				$get_store_room = $this->db->query("SELECT * FROM ".$this->prefix_pos."room WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
-				if($get_store_room->num_rows() > 0){
-					
-					foreach($get_store_room->result() as $dt){
-						
-						$rooms_store[] = (array) $dt;
-						
-						if(!in_array($dt->id, $all_room)){
-							$all_room[] = $dt->id;
-						}
-						
-						$last_id_store = $dt->id;
-					}
-				}
-				
-				if(empty($last_id_store)){
-					$last_id_store = $last_id_room_store;
-				}
-				
-				//NEXT DATA
-				if($last_id_room_store > $last_id_store){
-					$has_next = 1;
-				}
-				
-				$post_data['last_id_room_store'] = $last_id_room_store;
-				$post_data['total_data_store'] = $total_data_store;
-				$post_data['last_id_store'] = $last_id_store;
-				$post_data['rooms_store'] = json_encode($rooms_store);
-				$post_data['all_room'] = json_encode($all_room);
-				
-				break;
-			
-				
-		}
+			//------------------------------BACKUP
+			//wepos.id
+			$client_url = config_item('website').'/merchant/backupGenerate?_dc='.$mktime_dc;
+			$crt_file = ASSETS_PATH.config_item('wepos_crt_file');
 		
+			//BACKUP DATA - UPLOAD DATA
+			$backup_text = '';
+			switch($curr_backup_data){
+				
+				//Roles
+				case 'roles':
+					$backup_text = 'Roles';
+					
+					//Roles ON STORE - GET LAST ID
+					$last_id_roles_store = 0;
+					$total_data_store = 0;
+					$get_all_store_roles = $this->db->query("SELECT id FROM ".$this->prefix."roles ORDER BY id DESC");
+					if($get_all_store_roles->num_rows() > 0){
+						$dt_all_roles_store = $get_all_store_roles->row();
+						$last_id_roles_store = $dt_all_roles_store->id;
+						$total_data_store = $get_all_store_roles->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_roles_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Roles ON STORE id > $last_id_on_backup
+					$data_roles_store = array();
+					$all_role_id = array();
+					$get_store_roles = $this->db->query("SELECT * FROM ".$this->prefix."roles WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_roles->num_rows() > 0){
+						
+						foreach($get_store_roles->result() as $dt){
+							
+							$data_roles_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_role_id)){
+								$all_role_id[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_roles_store;
+					}
+					
+					if($last_id_roles_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_roles_store'] = $last_id_roles_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['data_roles_store'] = json_encode($data_roles_store);
+					$post_data['all_role_id'] = json_encode($all_role_id);
+					
+					break;
+				
+				//Roles Modules
+				case 'roles_module':
+					$backup_text = 'Roles Modules';
+					
+					//Roles Modules ON STORE - GET LAST ID
+					$last_id_roles_module_store = 0;
+					$total_data_store = 0;
+					$get_all_store_roles_module = $this->db->query("SELECT id FROM ".$this->prefix."roles_module ORDER BY id DESC");
+					if($get_all_store_roles_module->num_rows() > 0){
+						$dt_all_roles_module_store = $get_all_store_roles_module->row();
+						$last_id_roles_module_store = $dt_all_roles_module_store->id;
+						$total_data_store = $get_all_store_roles_module->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_roles_module_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Roles Modules ON STORE id > $last_id_on_backup
+					$data_roles_module_store = array();
+					$all_roles_module_id = array();
+					$get_store_roles_module = $this->db->query("SELECT * FROM ".$this->prefix."roles_module WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_roles_module->num_rows() > 0){
+						
+						foreach($get_store_roles_module->result() as $dt){
+							
+							$data_roles_module_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_roles_module_id)){
+								$all_roles_module_id[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_roles_module_store;
+					}
+					
+					if($last_id_roles_module_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_roles_module_store'] = $last_id_roles_module_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['data_roles_module_store'] = json_encode($data_roles_module_store);
+					$post_data['all_roles_module_id'] = json_encode($all_roles_module_id);
+					
+					
+					break;
+				
+				//User
+				case 'data_user':
+					$backup_text = 'User';
+					
+					//User ON STORE
+					$last_id_users_store = 0;
+					$total_data_store = 0;
+					$get_all_store_users = $this->db->query("SELECT id FROM ".$this->prefix."users ORDER BY id DESC");
+					if($get_all_store_users->num_rows() > 0){
+						$dt_all_users_store = $get_all_store_users->row();
+						$last_id_users_store = $dt_all_users_store->id;
+						$total_data_store = $get_all_store_users->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_users_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//User ON STORE id > $last_id_on_backup
+					$data_users_store = array();
+					$all_user_id = array();
+					$get_store_users = $this->db->query("SELECT * FROM ".$this->prefix."users WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_users->num_rows() > 0){
+						
+						foreach($get_store_users->result() as $dt){
+							
+							$data_users_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_user_id)){
+								$all_user_id[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_users_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_users_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_users_store'] = $last_id_users_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['data_users_store'] = json_encode($data_users_store);
+					$post_data['all_user_id'] = json_encode($all_user_id);
+					
+					break;
+				
+				//User Desktop
+				case 'users_desktop':
+					$backup_text = 'User Desktop';
+					
+					//User Desktop ON STORE - GET LAST ID
+					$last_id_users_desktop_store = 0;
+					$total_data_store = 0;
+					$get_all_store_users_desktop = $this->db->query("SELECT id FROM ".$this->prefix."users_desktop ORDER BY id DESC");
+					if($get_all_store_users_desktop->num_rows() > 0){
+						$dt_all_users_desktop_store = $get_all_store_users_desktop->row();
+						$last_id_users_desktop_store = $dt_all_users_desktop_store->id;
+						$total_data_store = $get_all_store_users_desktop->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_users_desktop_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//User Desktop ON STORE id > $last_id_on_backup
+					$data_users_desktop_store = array();
+					$all_users_desktop_id = array();
+					$get_store_users_desktop = $this->db->query("SELECT * FROM ".$this->prefix."users_desktop WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_users_desktop->num_rows() > 0){
+						
+						foreach($get_store_users_desktop->result() as $dt){
+							
+							$data_users_desktop_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_users_desktop_id)){
+								$all_users_desktop_id[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_users_desktop_store;
+					}
+					
+					if($last_id_users_desktop_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_users_desktop_store'] = $last_id_users_desktop_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['data_users_desktop_store'] = json_encode($data_users_desktop_store);
+					$post_data['all_users_desktop_id'] = json_encode($all_users_desktop_id);
+					
+					
+					break;
+				
+				//User Shortcut 
+				case 'users_shortcut':
+					$backup_text = 'User Shortcut';
+					
+					//User Shortcut ON STORE - GET LAST ID
+					$last_id_users_shortcut_store = 0;
+					$total_data_store = 0;
+					$get_all_store_users_shortcut = $this->db->query("SELECT id FROM ".$this->prefix."users_shortcut ORDER BY id DESC");
+					if($get_all_store_users_shortcut->num_rows() > 0){
+						$dt_all_users_shortcut_store = $get_all_store_users_shortcut->row();
+						$last_id_users_shortcut_store = $dt_all_users_shortcut_store->id;
+						$total_data_store = $get_all_store_users_shortcut->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_users_shortcut_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//User Shortcut ON STORE id > $last_id_on_backup
+					$data_users_shortcut_store = array();
+					$all_users_shortcut_id = array();
+					$get_store_users_shortcut = $this->db->query("SELECT * FROM ".$this->prefix."users_shortcut WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_users_shortcut->num_rows() > 0){
+						
+						foreach($get_store_users_shortcut->result() as $dt){
+							
+							$data_users_shortcut_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_users_shortcut_id)){
+								$all_users_shortcut_id[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_users_shortcut_store;
+					}
+					
+					if($last_id_users_shortcut_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_users_shortcut_store'] = $last_id_users_shortcut_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['data_users_shortcut_store'] = json_encode($data_users_shortcut_store);
+					$post_data['all_users_shortcut_id'] = json_encode($all_users_shortcut_id);
+					
+					
+					break;
+					
+				//User Quickstart 	
+				case 'users_quickstart':
+					$backup_text = 'User Quickstart';
+					
+					//User Quickstart ON STORE - GET LAST ID
+					$last_id_users_quickstart_store = 0;
+					$total_data_store = 0;
+					$get_all_store_users_quickstart = $this->db->query("SELECT id FROM ".$this->prefix."users_quickstart ORDER BY id DESC");
+					if($get_all_store_users_quickstart->num_rows() > 0){
+						$dt_all_users_quickstart_store = $get_all_store_users_quickstart->row();
+						$last_id_users_quickstart_store = $dt_all_users_quickstart_store->id;
+						$total_data_store = $get_all_store_users_quickstart->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_users_quickstart_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//User Quickstart ON STORE id > $last_id_on_backup
+					$data_users_quickstart_store = array();
+					$all_users_quickstart_id = array();
+					$get_store_users_quickstart = $this->db->query("SELECT * FROM ".$this->prefix."users_quickstart WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_users_quickstart->num_rows() > 0){
+						
+						foreach($get_store_users_quickstart->result() as $dt){
+							
+							$data_users_quickstart_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_users_quickstart_id)){
+								$all_users_quickstart_id[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_users_quickstart_store;
+					}
+					
+					if($last_id_users_quickstart_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_users_quickstart_store'] = $last_id_users_quickstart_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['data_users_quickstart_store'] = json_encode($data_users_quickstart_store);
+					$post_data['all_users_quickstart_id'] = json_encode($all_users_quickstart_id);
+					
+					
+					break;
+					
+				//Supervisor
+				case 'supervisor':
+					$backup_text = 'Supervisor';
+					
+					//Supervisor ON STORE
+					$last_id_supervisor_store = 0;
+					$total_data_store = 0;
+					$get_all_store_supervisor = $this->db->query("SELECT id FROM ".$this->prefix."supervisor ORDER BY id DESC");
+					if($get_all_store_supervisor->num_rows() > 0){
+						$dt_all_supervisor_store = $get_all_store_supervisor->row();
+						$last_id_supervisor_store = $dt_all_supervisor_store->id;
+						$total_data_store = $get_all_store_supervisor->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_supervisor_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Supervisor ON STORE id > $last_id_on_backup
+					$supervisors_store = array();
+					$all_supervisor = array();
+					$get_store_supervisor = $this->db->query("SELECT * FROM ".$this->prefix."supervisor WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_supervisor->num_rows() > 0){
+						
+						foreach($get_store_supervisor->result() as $dt){
+							
+							$supervisors_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_supervisor)){
+								$all_supervisor[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_supervisor_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_supervisor_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_supervisor_store'] = $last_id_supervisor_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['supervisors_store'] = json_encode($supervisors_store);
+					$post_data['all_supervisor'] = json_encode($all_supervisor);
+					
+					break;
+				
+				//Supervisor Access	
+				case 'supervisor_access':
+					$backup_text = 'Supervisor Access';
+					
+					//Supervisor Access ON STORE - GET LAST ID
+					$last_id_supervisor_access_store = 0;
+					$total_data_store = 0;
+					$get_all_store_supervisor_access = $this->db->query("SELECT id FROM ".$this->prefix."supervisor_access ORDER BY id DESC");
+					if($get_all_store_supervisor_access->num_rows() > 0){
+						$dt_all_supervisor_access_store = $get_all_store_supervisor_access->row();
+						$last_id_supervisor_access_store = $dt_all_supervisor_access_store->id;
+						$total_data_store = $get_all_store_supervisor_access->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_supervisor_access_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Supervisor Access ON STORE id > $last_id_on_backup
+					$data_supervisor_access_store = array();
+					$all_supervisor_access_id = array();
+					$get_store_supervisor_access = $this->db->query("SELECT * FROM ".$this->prefix."supervisor_access WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_supervisor_access->num_rows() > 0){
+						
+						foreach($get_store_supervisor_access->result() as $dt){
+							
+							$data_supervisor_access_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_supervisor_access_id)){
+								$all_supervisor_access_id[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_supervisor_access_store;
+					}
+					
+					if($last_id_supervisor_access_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_supervisor_access_store'] = $last_id_supervisor_access_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['data_supervisor_access_store'] = json_encode($data_supervisor_access_store);
+					$post_data['all_supervisor_access_id'] = json_encode($all_supervisor_access_id);
+					
+					break;
+					
+				//MASTER DATA ----------------------------------------
+				//Menu Varian
+				case 'varian':
+					$backup_text = 'Menu Varian';
+					
+					//Menu Varian ON STORE
+					$last_id_varian_store = 0;
+					$total_data_store = 0;
+					$get_all_store_varian = $this->db->query("SELECT id FROM ".$this->prefix_pos."varian ORDER BY id DESC");
+					if($get_all_store_varian->num_rows() > 0){
+						$dt_all_varian_store = $get_all_store_varian->row();
+						$last_id_varian_store = $dt_all_varian_store->id;
+						$total_data_store = $get_all_store_varian->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_varian_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Menu Varian ON STORE id > $last_id_on_backup
+					$varians_store = array();
+					$all_varian = array();
+					$get_store_varian = $this->db->query("SELECT * FROM ".$this->prefix_pos."varian WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_varian->num_rows() > 0){
+						
+						foreach($get_store_varian->result() as $dt){
+							
+							$varians_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_varian)){
+								$all_varian[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_varian_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_varian_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_varian_store'] = $last_id_varian_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['varians_store'] = json_encode($varians_store);
+					$post_data['all_varian'] = json_encode($all_varian);
+					
+					break;	
+				
+				//Menu/Product
+				case 'menu':
+					$backup_text = 'Menu/Product';
+					
+					//Menu/Product ON STORE
+					$last_id_product_store = 0;
+					$total_data_store = 0;
+					$get_all_store_product = $this->db->query("SELECT id FROM ".$this->prefix_pos."product ORDER BY id DESC");
+					if($get_all_store_product->num_rows() > 0){
+						$dt_all_product_store = $get_all_store_product->row();
+						$last_id_product_store = $dt_all_product_store->id;
+						$total_data_store = $get_all_store_product->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_product_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Menu/Product ON STORE id > $last_id_on_backup
+					$products_store = array();
+					$all_product = array();
+					$get_store_product = $this->db->query("SELECT * FROM ".$this->prefix_pos."product WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_product->num_rows() > 0){
+						
+						foreach($get_store_product->result() as $dt){
+							
+							$products_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_product)){
+								$all_product[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_product_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_product_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_product_store'] = $last_id_product_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['products_store'] = json_encode($products_store);
+					$post_data['all_product'] = json_encode($all_product);
+					
+					break;	
+					
+				//Menu Category
+				case 'menu_category':
+					$backup_text = 'Menu Category';
+					
+					//Menu Category ON STORE
+					$last_id_menu_category_store = 0;
+					$total_data_store = 0;
+					$get_all_store_menu_category = $this->db->query("SELECT id FROM ".$this->prefix_pos."product_category ORDER BY id DESC");
+					if($get_all_store_menu_category->num_rows() > 0){
+						$dt_all_menu_category_store = $get_all_store_menu_category->row();
+						$last_id_menu_category_store = $dt_all_menu_category_store->id;
+						$total_data_store = $get_all_store_menu_category->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_menu_category_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Menu Category ON STORE id > $last_id_on_backup
+					$menu_categorys_store = array();
+					$all_menu_category = array();
+					$get_store_menu_category = $this->db->query("SELECT * FROM ".$this->prefix_pos."product_category WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_menu_category->num_rows() > 0){
+						
+						foreach($get_store_menu_category->result() as $dt){
+							
+							$menu_categorys_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_menu_category)){
+								$all_menu_category[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_menu_category_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_menu_category_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_menu_category_store'] = $last_id_menu_category_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['menu_categorys_store'] = json_encode($menu_categorys_store);
+					$post_data['all_menu_category'] = json_encode($all_menu_category);
+					
+					break;	
+					
+				//Menu Package
+				case 'menu_package':
+					$backup_text = 'Menu Package';
+					
+					//Menu Package ON STORE
+					$last_id_menu_package_store = 0;
+					$total_data_store = 0;
+					$get_all_store_menu_package = $this->db->query("SELECT id FROM ".$this->prefix_pos."product_package ORDER BY id DESC");
+					if($get_all_store_menu_package->num_rows() > 0){
+						$dt_all_menu_package_store = $get_all_store_menu_package->row();
+						$last_id_menu_package_store = $dt_all_menu_package_store->id;
+						$total_data_store = $get_all_store_menu_package->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_menu_package_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Menu Package ON STORE id > $last_id_on_backup
+					$menu_packages_store = array();
+					$all_menu_package = array();
+					$get_store_menu_package = $this->db->query("SELECT * FROM ".$this->prefix_pos."product_package WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_menu_package->num_rows() > 0){
+						
+						foreach($get_store_menu_package->result() as $dt){
+							
+							$menu_packages_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_menu_package)){
+								$all_menu_package[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_menu_package_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_menu_package_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_menu_package_store'] = $last_id_menu_package_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['menu_packages_store'] = json_encode($menu_packages_store);
+					$post_data['all_menu_package'] = json_encode($all_menu_package);
+					
+					break;	
+				
+				//Menu Varian
+				case 'menu_varian':
+					$backup_text = 'Menu Varian';
+					
+					//Menu Varian ON STORE
+					$last_id_menu_varian_store = 0;
+					$total_data_store = 0;
+					$get_all_store_menu_varian = $this->db->query("SELECT id FROM ".$this->prefix_pos."product_varian ORDER BY id DESC");
+					if($get_all_store_menu_varian->num_rows() > 0){
+						$dt_all_menu_varian_store = $get_all_store_menu_varian->row();
+						$last_id_menu_varian_store = $dt_all_menu_varian_store->id;
+						$total_data_store = $get_all_store_menu_varian->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_menu_varian_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Menu Varian ON STORE id > $last_id_on_backup
+					$menu_varians_store = array();
+					$all_menu_varian = array();
+					$get_store_menu_varian = $this->db->query("SELECT * FROM ".$this->prefix_pos."product_varian WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_menu_varian->num_rows() > 0){
+						
+						foreach($get_store_menu_varian->result() as $dt){
+							
+							$menu_varians_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_menu_varian)){
+								$all_menu_varian[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_menu_varian_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_menu_varian_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_menu_varian_store'] = $last_id_menu_varian_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['menu_varians_store'] = json_encode($menu_varians_store);
+					$post_data['all_menu_varian'] = json_encode($all_menu_varian);
+					
+					break;	
+				
+				
+				//Payment & Bank
+				case 'payment_bank':
+					$backup_text = 'Payment & Bank';
+					
+					//Payment & Bank ON STORE
+					$last_id_payment_bank_store = 0;
+					$total_data_store = 0;
+					$get_all_store_payment_bank = $this->db->query("SELECT id FROM ".$this->prefix_pos."bank ORDER BY id DESC");
+					if($get_all_store_payment_bank->num_rows() > 0){
+						$dt_all_payment_bank_store = $get_all_store_payment_bank->row();
+						$last_id_payment_bank_store = $dt_all_payment_bank_store->id;
+						$total_data_store = $get_all_store_payment_bank->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_payment_bank_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Payment & Bank ON STORE id > $last_id_on_backup
+					$payment_banks_store = array();
+					$all_payment_bank = array();
+					$get_store_payment_bank = $this->db->query("SELECT * FROM ".$this->prefix_pos."bank WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_payment_bank->num_rows() > 0){
+						
+						foreach($get_store_payment_bank->result() as $dt){
+							
+							$payment_banks_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_payment_bank)){
+								$all_payment_bank[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_payment_bank_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_payment_bank_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_payment_bank_store'] = $last_id_payment_bank_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['payment_banks_store'] = json_encode($payment_banks_store);
+					$post_data['all_payment_bank'] = json_encode($all_payment_bank);
+					
+					break;	
+				
+				//Discount
+				case 'discount':
+					$backup_text = 'Discount';
+					
+					//Discount ON STORE
+					$last_id_discount_store = 0;
+					$total_data_store = 0;
+					$get_all_store_discount = $this->db->query("SELECT id FROM ".$this->prefix_pos."discount ORDER BY id DESC");
+					if($get_all_store_discount->num_rows() > 0){
+						$dt_all_discount_store = $get_all_store_discount->row();
+						$last_id_discount_store = $dt_all_discount_store->id;
+						$total_data_store = $get_all_store_discount->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_discount_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Discount ON STORE id > $last_id_on_backup
+					$discounts_store = array();
+					$all_discount = array();
+					$get_store_discount = $this->db->query("SELECT * FROM ".$this->prefix_pos."discount WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_discount->num_rows() > 0){
+						
+						foreach($get_store_discount->result() as $dt){
+							
+							$discounts_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_discount)){
+								$all_discount[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_discount_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_discount_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_discount_store'] = $last_id_discount_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['discounts_store'] = json_encode($discounts_store);
+					$post_data['all_discount'] = json_encode($all_discount);
+					
+					break;	
+				
+				//Discount Buyget
+				case 'discount_buyget':
+					$backup_text = 'Discount Buy & Get';
+					
+					//Discount Buy & Get ON STORE
+					$last_id_discount_buyget_store = 0;
+					$total_data_store = 0;
+					$get_all_store_discount_buyget = $this->db->query("SELECT id FROM ".$this->prefix_pos."discount_buyget ORDER BY id DESC");
+					if($get_all_store_discount_buyget->num_rows() > 0){
+						$dt_all_discount_buyget_store = $get_all_store_discount_buyget->row();
+						$last_id_discount_buyget_store = $dt_all_discount_buyget_store->id;
+						$total_data_store = $get_all_store_discount_buyget->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_discount_buyget_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Discount Buy & Get ON STORE id > $last_id_on_backup
+					$discount_buygets_store = array();
+					$all_discount_buyget = array();
+					$get_store_discount_buyget = $this->db->query("SELECT * FROM ".$this->prefix_pos."discount_buyget WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_discount_buyget->num_rows() > 0){
+						
+						foreach($get_store_discount_buyget->result() as $dt){
+							
+							$discount_buygets_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_discount_buyget)){
+								$all_discount_buyget[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_discount_buyget_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_discount_buyget_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_discount_buyget_store'] = $last_id_discount_buyget_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['discount_buygets_store'] = json_encode($discount_buygets_store);
+					$post_data['all_discount_buyget'] = json_encode($all_discount_buyget);
+					
+					break;	
+				
+				//Discount Product
+				case 'discount_product':
+					$backup_text = 'Discount Menu/Product';
+					
+					//Discount Menu/Product ON STORE
+					$last_id_discount_product_store = 0;
+					$total_data_store = 0;
+					$get_all_store_discount_product = $this->db->query("SELECT id FROM ".$this->prefix_pos."discount_product ORDER BY id DESC");
+					if($get_all_store_discount_product->num_rows() > 0){
+						$dt_all_discount_product_store = $get_all_store_discount_product->row();
+						$last_id_discount_product_store = $dt_all_discount_product_store->id;
+						$total_data_store = $get_all_store_discount_product->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_discount_product_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Discount Menu/Product ON STORE id > $last_id_on_backup
+					$discount_products_store = array();
+					$all_discount_product = array();
+					$get_store_discount_product = $this->db->query("SELECT * FROM ".$this->prefix_pos."discount_product WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_discount_product->num_rows() > 0){
+						
+						foreach($get_store_discount_product->result() as $dt){
+							
+							$discount_products_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_discount_product)){
+								$all_discount_product[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_discount_product_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_discount_product_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_discount_product_store'] = $last_id_discount_product_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['discount_products_store'] = json_encode($discount_products_store);
+					$post_data['all_discount_product'] = json_encode($all_discount_product);
+					
+					break;	
+					
+				//Discount Voucher
+				case 'discount_voucher':
+					$backup_text = 'Discount Voucher';
+					
+					//Discount Voucher ON STORE
+					$last_id_discount_voucher_store = 0;
+					$total_data_store = 0;
+					$get_all_store_discount_voucher = $this->db->query("SELECT id FROM ".$this->prefix_pos."discount_voucher ORDER BY id DESC");
+					if($get_all_store_discount_voucher->num_rows() > 0){
+						$dt_all_discount_voucher_store = $get_all_store_discount_voucher->row();
+						$last_id_discount_voucher_store = $dt_all_discount_voucher_store->id;
+						$total_data_store = $get_all_store_discount_voucher->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_discount_voucher_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Discount Voucher ON STORE id > $last_id_on_backup
+					$discount_vouchers_store = array();
+					$all_discount_voucher = array();
+					$get_store_discount_voucher = $this->db->query("SELECT * FROM ".$this->prefix_pos."discount_voucher WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_discount_voucher->num_rows() > 0){
+						
+						foreach($get_store_discount_voucher->result() as $dt){
+							
+							$discount_vouchers_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_discount_voucher)){
+								$all_discount_voucher[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_discount_voucher_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_discount_voucher_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_discount_voucher_store'] = $last_id_discount_voucher_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['discount_vouchers_store'] = json_encode($discount_vouchers_store);
+					$post_data['all_discount_voucher'] = json_encode($all_discount_voucher);
+					
+					break;	
+				
+				//Sales/Marketing
+				case 'sales_marketing':
+					$backup_text = 'Sales/Marketing';
+					
+					//Sales/Marketing ON STORE
+					$last_id_sales_marketing_store = 0;
+					$total_data_store = 0;
+					$get_all_store_sales_marketing = $this->db->query("SELECT id FROM ".$this->prefix_pos."sales ORDER BY id DESC");
+					if($get_all_store_sales_marketing->num_rows() > 0){
+						$dt_all_sales_marketing_store = $get_all_store_sales_marketing->row();
+						$last_id_sales_marketing_store = $dt_all_sales_marketing_store->id;
+						$total_data_store = $get_all_store_sales_marketing->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_sales_marketing_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Sales/Marketing ON STORE id > $last_id_on_backup
+					$sales_marketings_store = array();
+					$all_sales_marketing = array();
+					$get_store_sales_marketing = $this->db->query("SELECT * FROM ".$this->prefix_pos."sales WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_sales_marketing->num_rows() > 0){
+						
+						foreach($get_store_sales_marketing->result() as $dt){
+							
+							$sales_marketings_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_sales_marketing)){
+								$all_sales_marketing[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_sales_marketing_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_sales_marketing_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_sales_marketing_store'] = $last_id_sales_marketing_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['sales_marketings_store'] = json_encode($sales_marketings_store);
+					$post_data['all_sales_marketing'] = json_encode($all_sales_marketing);
+					
+					break;	
+				
+				//Customer/Member
+				case 'customer_member':
+					$backup_text = 'Customer/Member';
+					
+					//Customer/Member ON STORE
+					$last_id_customer_member_store = 0;
+					$total_data_store = 0;
+					$get_all_store_customer_member = $this->db->query("SELECT id FROM ".$this->prefix_pos."customer ORDER BY id DESC");
+					if($get_all_store_customer_member->num_rows() > 0){
+						$dt_all_customer_member_store = $get_all_store_customer_member->row();
+						$last_id_customer_member_store = $dt_all_customer_member_store->id;
+						$total_data_store = $get_all_store_customer_member->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_customer_member_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Customer/Member ON STORE id > $last_id_on_backup
+					$customer_members_store = array();
+					$all_customer_member = array();
+					$get_store_customer_member = $this->db->query("SELECT * FROM ".$this->prefix_pos."customer WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_customer_member->num_rows() > 0){
+						
+						foreach($get_store_customer_member->result() as $dt){
+							
+							$customer_members_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_customer_member)){
+								$all_customer_member[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_customer_member_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_customer_member_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_customer_member_store'] = $last_id_customer_member_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['customer_members_store'] = json_encode($customer_members_store);
+					$post_data['all_customer_member'] = json_encode($all_customer_member);
+					
+					break;	
+				
+				//Divisi/Bagian
+				case 'divisi':
+					$backup_text = 'Divisi/Bagian';
+					
+					//Divisi/Bagian ON STORE
+					$last_id_divisi_store = 0;
+					$total_data_store = 0;
+					$get_all_store_divisi = $this->db->query("SELECT id FROM ".$this->prefix_pos."divisi ORDER BY id DESC");
+					if($get_all_store_divisi->num_rows() > 0){
+						$dt_all_divisi_store = $get_all_store_divisi->row();
+						$last_id_divisi_store = $dt_all_divisi_store->id;
+						$total_data_store = $get_all_store_divisi->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_divisi_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Divisi/Bagian ON STORE id > $last_id_on_backup
+					$divisis_store = array();
+					$all_divisi = array();
+					$get_store_divisi = $this->db->query("SELECT * FROM ".$this->prefix_pos."divisi WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_divisi->num_rows() > 0){
+						
+						foreach($get_store_divisi->result() as $dt){
+							
+							$divisis_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_divisi)){
+								$all_divisi[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_divisi_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_divisi_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_divisi_store'] = $last_id_divisi_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['divisis_store'] = json_encode($divisis_store);
+					$post_data['all_divisi'] = json_encode($all_divisi);
+					
+					break;	
+				
+				//Warehouse/Gudang
+				case 'warehouse':
+					$backup_text = 'Warehouse/Gudang';
+					
+					//Warehouse/Gudang ON STORE
+					$last_id_warehouse_store = 0;
+					$total_data_store = 0;
+					$get_all_store_warehouse = $this->db->query("SELECT id FROM ".$this->prefix_pos."storehouse ORDER BY id DESC");
+					if($get_all_store_warehouse->num_rows() > 0){
+						$dt_all_warehouse_store = $get_all_store_warehouse->row();
+						$last_id_warehouse_store = $dt_all_warehouse_store->id;
+						$total_data_store = $get_all_store_warehouse->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_warehouse_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Warehouse/Gudang ON STORE id > $last_id_on_backup
+					$warehouses_store = array();
+					$all_warehouse = array();
+					$get_store_warehouse = $this->db->query("SELECT * FROM ".$this->prefix_pos."storehouse WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_warehouse->num_rows() > 0){
+						
+						foreach($get_store_warehouse->result() as $dt){
+							
+							$warehouses_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_warehouse)){
+								$all_warehouse[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_warehouse_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_warehouse_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_warehouse_store'] = $last_id_warehouse_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['warehouses_store'] = json_encode($warehouses_store);
+					$post_data['all_warehouse'] = json_encode($all_warehouse);
+					
+					break;
+					
+				//Warehouse Access 
+				case 'warehouse_access':
+					$backup_text = 'Warehouse Access';
+					
+					//Warehouse Access ON STORE
+					$last_id_warehouse_access_store = 0;
+					$total_data_store = 0;
+					$get_all_store_warehouse_access = $this->db->query("SELECT id FROM ".$this->prefix_pos."storehouse_users ORDER BY id DESC");
+					if($get_all_store_warehouse_access->num_rows() > 0){
+						$dt_all_warehouse_access_store = $get_all_store_warehouse_access->row();
+						$last_id_warehouse_access_store = $dt_all_warehouse_access_store->id;
+						$total_data_store = $get_all_store_warehouse_access->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_warehouse_access_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Warehouse Access ON STORE id > $last_id_on_backup
+					$warehouse_accesss_store = array();
+					$all_warehouse_access = array();
+					$get_store_warehouse_access = $this->db->query("SELECT * FROM ".$this->prefix_pos."storehouse_users WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_warehouse_access->num_rows() > 0){
+						
+						foreach($get_store_warehouse_access->result() as $dt){
+							
+							$warehouse_accesss_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_warehouse_access)){
+								$all_warehouse_access[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_warehouse_access_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_warehouse_access_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_warehouse_access_store'] = $last_id_warehouse_access_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['warehouse_accesss_store'] = json_encode($warehouse_accesss_store);
+					$post_data['all_warehouse_access'] = json_encode($all_warehouse_access);
+					
+					break;	
+				
+				//Unit
+				case 'unit':
+					$backup_text = 'Unit/Satuan';
+					
+					//Unit ON STORE
+					$last_id_unit_store = 0;
+					$total_data_store = 0;
+					$get_all_store_unit = $this->db->query("SELECT id FROM ".$this->prefix_pos."unit ORDER BY id DESC");
+					if($get_all_store_unit->num_rows() > 0){
+						$dt_all_unit_store = $get_all_store_unit->row();
+						$last_id_unit_store = $dt_all_unit_store->id;
+						$total_data_store = $get_all_store_unit->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_unit_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Unit ON STORE id > $last_id_on_backup
+					$units_store = array();
+					$all_unit = array();
+					$get_store_unit = $this->db->query("SELECT * FROM ".$this->prefix_pos."unit WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_unit->num_rows() > 0){
+						
+						foreach($get_store_unit->result() as $dt){
+							
+							$units_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_unit)){
+								$all_unit[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_unit_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_unit_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_unit_store'] = $last_id_unit_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['units_store'] = json_encode($units_store);
+					$post_data['all_unit'] = json_encode($all_unit);
+					
+					break;
+					
+				//Item/Barang
+				case 'items':
+					$backup_text = 'Item/Barang';
+					
+					//Item/Barang ON STORE
+					$last_id_items_store = 0;
+					$total_data_store = 0;
+					$get_all_store_items = $this->db->query("SELECT id FROM ".$this->prefix_pos."items ORDER BY id DESC");
+					if($get_all_store_items->num_rows() > 0){
+						$dt_all_items_store = $get_all_store_items->row();
+						$last_id_items_store = $dt_all_items_store->id;
+						$total_data_store = $get_all_store_items->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_items_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Item/Barang ON STORE id > $last_id_on_backup
+					$items_store = array();
+					$all_items = array();
+					$get_store_items = $this->db->query("SELECT * FROM ".$this->prefix_pos."items WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_items->num_rows() > 0){
+						
+						foreach($get_store_items->result() as $dt){
+							
+							$items_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_items)){
+								$all_items[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_items_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_items_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_items_store'] = $last_id_items_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['items_store'] = json_encode($items_store);
+					$post_data['all_items'] = json_encode($all_items);
+					
+					break;	
+				
+				//Item Category
+				case 'item_category':
+					$backup_text = 'Item Category';
+					
+					//Item Category ON STORE
+					$last_id_item_category_store = 0;
+					$total_data_store = 0;
+					$get_all_store_item_category = $this->db->query("SELECT id FROM ".$this->prefix_pos."item_category ORDER BY id DESC");
+					if($get_all_store_item_category->num_rows() > 0){
+						$dt_all_item_category_store = $get_all_store_item_category->row();
+						$last_id_item_category_store = $dt_all_item_category_store->id;
+						$total_data_store = $get_all_store_item_category->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_item_category_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Item Category ON STORE id > $last_id_on_backup
+					$item_categorys_store = array();
+					$all_item_category = array();
+					$get_store_item_category = $this->db->query("SELECT * FROM ".$this->prefix_pos."item_category WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_item_category->num_rows() > 0){
+						
+						foreach($get_store_item_category->result() as $dt){
+							
+							$item_categorys_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_item_category)){
+								$all_item_category[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_item_category_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_item_category_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_item_category_store'] = $last_id_item_category_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['item_categorys_store'] = json_encode($item_categorys_store);
+					$post_data['all_item_category'] = json_encode($all_item_category);
+					
+					break;	
+				
+				//Item Sub Category
+				case 'item_subcategory':
+					$backup_text = 'Sub Category';
+					
+					//Item Sub Category ON STORE
+					$last_id_item_subcategory_store = 0;
+					$total_data_store = 0;
+					$get_all_store_item_subcategory = $this->db->query("SELECT id FROM ".$this->prefix_pos."item_subcategory ORDER BY id DESC");
+					if($get_all_store_item_subcategory->num_rows() > 0){
+						$dt_all_item_subcategory_store = $get_all_store_item_subcategory->row();
+						$last_id_item_subcategory_store = $dt_all_item_subcategory_store->id;
+						$total_data_store = $get_all_store_item_subcategory->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_item_subcategory_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Item Sub Category ON STORE id > $last_id_on_backup
+					$item_subcategorys_store = array();
+					$all_item_subcategory = array();
+					$get_store_item_subcategory = $this->db->query("SELECT * FROM ".$this->prefix_pos."item_subcategory WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_item_subcategory->num_rows() > 0){
+						
+						foreach($get_store_item_subcategory->result() as $dt){
+							
+							$item_subcategorys_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_item_subcategory)){
+								$all_item_subcategory[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_item_subcategory_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_item_subcategory_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_item_subcategory_store'] = $last_id_item_subcategory_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['item_subcategorys_store'] = json_encode($item_subcategorys_store);
+					$post_data['all_item_subcategory'] = json_encode($all_item_subcategory);
+					
+					break;	
+				
+				//Item kode unik
+				case 'item_kode_unik':
+					$backup_text = 'Unique Code';
+					
+					//Item kode unik ON STORE
+					$last_id_item_kode_unik_store = 0;
+					$total_data_store = 0;
+					$get_all_store_item_kode_unik = $this->db->query("SELECT id FROM ".$this->prefix_pos."item_kode_unik ORDER BY id DESC");
+					if($get_all_store_item_kode_unik->num_rows() > 0){
+						$dt_all_item_kode_unik_store = $get_all_store_item_kode_unik->row();
+						$last_id_item_kode_unik_store = $dt_all_item_kode_unik_store->id;
+						$total_data_store = $get_all_store_item_kode_unik->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_item_kode_unik_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Item kode unik ON STORE id > $last_id_on_backup
+					$item_kode_uniks_store = array();
+					$all_item_kode_unik = array();
+					$get_store_item_kode_unik = $this->db->query("SELECT * FROM ".$this->prefix_pos."item_kode_unik WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_item_kode_unik->num_rows() > 0){
+						
+						foreach($get_store_item_kode_unik->result() as $dt){
+							
+							$item_kode_uniks_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_item_kode_unik)){
+								$all_item_kode_unik[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_item_kode_unik_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_item_kode_unik_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_item_kode_unik_store'] = $last_id_item_kode_unik_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['item_kode_uniks_store'] = json_encode($item_kode_uniks_store);
+					$post_data['all_item_kode_unik'] = json_encode($all_item_kode_unik);
+					
+					break;	
+				
+				//Supplier
+				case 'supplier':
+					$backup_text = 'Supplier';
+					
+					//Supplier ON STORE
+					$last_id_supplier_store = 0;
+					$total_data_store = 0;
+					$get_all_store_supplier = $this->db->query("SELECT id FROM ".$this->prefix_pos."supplier ORDER BY id DESC");
+					if($get_all_store_supplier->num_rows() > 0){
+						$dt_all_supplier_store = $get_all_store_supplier->row();
+						$last_id_supplier_store = $dt_all_supplier_store->id;
+						$total_data_store = $get_all_store_supplier->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_supplier_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Supplier ON STORE id > $last_id_on_backup
+					$suppliers_store = array();
+					$all_supplier = array();
+					$get_store_supplier = $this->db->query("SELECT * FROM ".$this->prefix_pos."supplier WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_supplier->num_rows() > 0){
+						
+						foreach($get_store_supplier->result() as $dt){
+							
+							$suppliers_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_supplier)){
+								$all_supplier[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_supplier_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_supplier_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_supplier_store'] = $last_id_supplier_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['suppliers_store'] = json_encode($suppliers_store);
+					$post_data['all_supplier'] = json_encode($all_supplier);
+					
+					break;
+				
+				//Supplier Item
+				case 'supplier_item':
+					$backup_text = 'Supplier Item';
+					
+					//Supplier Item ON STORE
+					$last_id_supplier_item_store = 0;
+					$total_data_store = 0;
+					$get_all_store_supplier_item = $this->db->query("SELECT id FROM ".$this->prefix_pos."supplier_item ORDER BY id DESC");
+					if($get_all_store_supplier_item->num_rows() > 0){
+						$dt_all_supplier_item_store = $get_all_store_supplier_item->row();
+						$last_id_supplier_item_store = $dt_all_supplier_item_store->id;
+						$total_data_store = $get_all_store_supplier_item->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_supplier_item_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Supplier Item ON STORE id > $last_id_on_backup
+					$supplier_items_store = array();
+					$all_supplier_item = array();
+					$get_store_supplier_item = $this->db->query("SELECT * FROM ".$this->prefix_pos."supplier_item WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_supplier_item->num_rows() > 0){
+						
+						foreach($get_store_supplier_item->result() as $dt){
+							
+							$supplier_items_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_supplier_item)){
+								$all_supplier_item[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_supplier_item_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_supplier_item_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_supplier_item_store'] = $last_id_supplier_item_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['supplier_items_store'] = json_encode($supplier_items_store);
+					$post_data['all_supplier_item'] = json_encode($all_supplier_item);
+					
+					break;
+				
+				//Order Note
+				case 'order_note':
+					$backup_text = 'Order Note';
+					
+					//Order Note ON STORE
+					$last_id_order_note_store = 0;
+					$total_data_store = 0;
+					$get_all_store_order_note = $this->db->query("SELECT id FROM ".$this->prefix_pos."order_note ORDER BY id DESC");
+					if($get_all_store_order_note->num_rows() > 0){
+						$dt_all_order_note_store = $get_all_store_order_note->row();
+						$last_id_order_note_store = $dt_all_order_note_store->id;
+						$total_data_store = $get_all_store_order_note->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_order_note_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Order Note ON STORE id > $last_id_on_backup
+					$order_notes_store = array();
+					$all_order_note = array();
+					$get_store_order_note = $this->db->query("SELECT * FROM ".$this->prefix_pos."order_note WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_order_note->num_rows() > 0){
+						
+						foreach($get_store_order_note->result() as $dt){
+							
+							$order_notes_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_order_note)){
+								$all_order_note[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_order_note_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_order_note_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_order_note_store'] = $last_id_order_note_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['order_notes_store'] = json_encode($order_notes_store);
+					$post_data['all_order_note'] = json_encode($all_order_note);
+					
+					break;
+				
+				//Billing Tipe
+				case 'billing_tipe':
+					$backup_text = 'Billing Tipe';
+					
+					//Order Note ON STORE
+					$last_id_billing_tipe_store = 0;
+					$total_data_store = 0;
+					$get_all_store_billing_tipe = $this->db->query("SELECT id FROM ".$this->prefix_pos."table ORDER BY id DESC");
+					if($get_all_store_billing_tipe->num_rows() > 0){
+						$dt_all_billing_tipe_store = $get_all_store_billing_tipe->row();
+						$last_id_billing_tipe_store = $dt_all_billing_tipe_store->id;
+						$total_data_store = $get_all_store_billing_tipe->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_billing_tipe_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Order Note ON STORE id > $last_id_on_backup
+					$billing_tipes_store = array();
+					$all_billing_tipe = array();
+					$get_store_billing_tipe = $this->db->query("SELECT * FROM ".$this->prefix_pos."table WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_billing_tipe->num_rows() > 0){
+						
+						foreach($get_store_billing_tipe->result() as $dt){
+							
+							$billing_tipes_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_billing_tipe)){
+								$all_billing_tipe[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_billing_tipe_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_billing_tipe_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_billing_tipe_store'] = $last_id_billing_tipe_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['billing_tipes_store'] = json_encode($billing_tipes_store);
+					$post_data['all_billing_tipe'] = json_encode($all_billing_tipe);
+					
+					break;
+				
+				//Table
+				case 'table':
+					$backup_text = 'Table';
+					
+					//Table ON STORE
+					$last_id_table_store = 0;
+					$total_data_store = 0;
+					$get_all_store_table = $this->db->query("SELECT id FROM ".$this->prefix_pos."table ORDER BY id DESC");
+					if($get_all_store_table->num_rows() > 0){
+						$dt_all_table_store = $get_all_store_table->row();
+						$last_id_table_store = $dt_all_table_store->id;
+						$total_data_store = $get_all_store_table->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_table_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Table ON STORE id > $last_id_on_backup
+					$tables_store = array();
+					$all_table = array();
+					$get_store_table = $this->db->query("SELECT * FROM ".$this->prefix_pos."table WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_table->num_rows() > 0){
+						
+						foreach($get_store_table->result() as $dt){
+							
+							$tables_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_table)){
+								$all_table[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_table_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_table_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_table_store'] = $last_id_table_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['tables_store'] = json_encode($tables_store);
+					$post_data['all_table'] = json_encode($all_table);
+					
+					break;
+				
+				//Table Inventory
+				case 'table_inventory':
+					$backup_text = 'Table Inventory';
+					
+					//Table Inventory ON STORE
+					$last_id_table_inventory_store = 0;
+					$total_data_store = 0;
+					$get_all_store_table_inventory = $this->db->query("SELECT id FROM ".$this->prefix_pos."table_inventory ORDER BY id DESC");
+					if($get_all_store_table_inventory->num_rows() > 0){
+						$dt_all_table_inventory_store = $get_all_store_table_inventory->row();
+						$last_id_table_inventory_store = $dt_all_table_inventory_store->id;
+						$total_data_store = $get_all_store_table_inventory->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_table_inventory_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Table Inventory ON STORE id > $last_id_on_backup
+					$table_inventorys_store = array();
+					$all_table_inventory = array();
+					$get_store_table_inventory = $this->db->query("SELECT * FROM ".$this->prefix_pos."table_inventory WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_table_inventory->num_rows() > 0){
+						
+						foreach($get_store_table_inventory->result() as $dt){
+							
+							$table_inventorys_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_table_inventory)){
+								$all_table_inventory[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_table_inventory_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_table_inventory_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_table_inventory_store'] = $last_id_table_inventory_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['table_inventorys_store'] = json_encode($table_inventorys_store);
+					$post_data['all_table_inventory'] = json_encode($all_table_inventory);
+					
+					break;
+					
+				//Floorplan
+				case 'floorplan':
+					$backup_text = 'Floorplan';
+					
+					//Floorplan ON STORE
+					$last_id_floorplan_store = 0;
+					$total_data_store = 0;
+					$get_all_store_floorplan = $this->db->query("SELECT id FROM ".$this->prefix_pos."floorplan ORDER BY id DESC");
+					if($get_all_store_floorplan->num_rows() > 0){
+						$dt_all_floorplan_store = $get_all_store_floorplan->row();
+						$last_id_floorplan_store = $dt_all_floorplan_store->id;
+						$total_data_store = $get_all_store_floorplan->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_floorplan_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Floorplan ON STORE id > $last_id_on_backup
+					$floorplans_store = array();
+					$all_floorplan = array();
+					$get_store_floorplan = $this->db->query("SELECT * FROM ".$this->prefix_pos."floorplan WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_floorplan->num_rows() > 0){
+						
+						foreach($get_store_floorplan->result() as $dt){
+							
+							$floorplans_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_floorplan)){
+								$all_floorplan[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_floorplan_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_floorplan_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_floorplan_store'] = $last_id_floorplan_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['floorplans_store'] = json_encode($floorplans_store);
+					$post_data['all_floorplan'] = json_encode($all_floorplan);
+					
+					break;
+				
+				//Room
+				case 'room':
+					$backup_text = 'Room';
+					
+					//Order Note ON STORE
+					$last_id_room_store = 0;
+					$total_data_store = 0;
+					$get_all_store_room = $this->db->query("SELECT id FROM ".$this->prefix_pos."room ORDER BY id DESC");
+					if($get_all_store_room->num_rows() > 0){
+						$dt_all_room_store = $get_all_store_room->row();
+						$last_id_room_store = $dt_all_room_store->id;
+						$total_data_store = $get_all_store_room->num_rows();
+					}
+					
+					$last_id_store = 0;
+					$total_data_store_detail = 0;
+					$last_id_store_detail = 0;
+					
+					if($last_id_room_store == $last_id_on_backup){
+						$r = array('success' => true, 'info' => 'Backup Data: <b>'.$backup_text.'</b> Updated!', 'has_next' => 0);
+						die(json_encode($r));
+					}
+					
+					//Order Note ON STORE id > $last_id_on_backup
+					$rooms_store = array();
+					$all_room = array();
+					$get_store_room = $this->db->query("SELECT * FROM ".$this->prefix_pos."room WHERE id > ".$last_id_on_backup." ORDER BY id ASC LIMIT ".$limit_backup_data);
+					if($get_store_room->num_rows() > 0){
+						
+						foreach($get_store_room->result() as $dt){
+							
+							$rooms_store[] = (array) $dt;
+							
+							if(!in_array($dt->id, $all_room)){
+								$all_room[] = $dt->id;
+							}
+							
+							$last_id_store = $dt->id;
+						}
+					}
+					
+					if(empty($last_id_store)){
+						$last_id_store = $last_id_room_store;
+					}
+					
+					//NEXT DATA
+					if($last_id_room_store > $last_id_store){
+						$has_next = 1;
+					}
+					
+					$post_data['last_id_room_store'] = $last_id_room_store;
+					$post_data['total_data_store'] = $total_data_store;
+					$post_data['last_id_store'] = $last_id_store;
+					$post_data['rooms_store'] = json_encode($rooms_store);
+					$post_data['all_room'] = json_encode($all_room);
+					
+					break;
+				
+					
+			}
+			
+		}
 		
 		//UPLOAD		
 		$this->curl->create($client_url);
@@ -3251,35 +3266,1068 @@ class SyncData extends MY_Controller {
 		
 		$backup_status = false;
 		if(empty($return_data)){
-			$r = array('success' => false, 'info' => 'Backup Master Data: '.$backup_text.' Gagal!', 'has_next' => 0);
+			
+			if($is_syncbackup == 'sync'){
+				$r = array('success' => false, 'info' => 'Sync Master Data: '.ucwords(str_replace("_"," ",$curr_backup_data)).' Gagal!', 'has_next' => 0);
+			}else{
+				$r = array('success' => false, 'info' => 'Backup Master Data: '.$backup_text.' Gagal!', 'has_next' => 0);
+			}
+			
 			die(json_encode($r));
 		}else{
+			
+			if(!empty($return_data['last_id_on_backup'])){
+				$last_id_on_backup = $return_data['last_id_on_backup'];
+			}
+			
+			if(!empty($return_data['total_data_on_backup'])){
+				$total_data_on_backup = $return_data['total_data_on_backup'];
+			}
+			
 			$backup_status = true;
 			
-			if($return_data['success'] == false){
+			if($use_wms == 1){
 				
-				$r = array(
-					'success' => false, 
-					'info'	=> $return_data['info'], 
-					'has_next' => $has_next,
-					'last_id_on_backup' => $last_id_on_backup,
-					'total_data_on_backup' => $total_data_on_backup,
-					'total_data_store' => $total_data_store,
-					'last_id_store' => $last_id_store,
-					'data' => $return_data['data'],
-				);
-				die(json_encode($r));
+				if(!empty($return_data['new_data_store'])){
+					$new_data_store = $return_data['new_data_store'];
+				}
 				
+				//---------------------------------SYNC
+				if($return_data['success'] == false){
+					
+					$r = array(
+						'success' => false, 
+						'info'	=> $return_data['info'],
+						'has_next' => 0
+					);
+					die(json_encode($r));
+					
+				}else{
+					
+					$total_data_sync = 0;
+					$last_id_sync = 0;
+					$sync_text = '';
+					$sync_status = false;
+					
+					switch($curr_backup_data){
+						
+						//Roles
+						case 'roles':
+							$sync_text = 'Roles';
+							
+							//MODULES
+							//roles
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['roles'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix."roles");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix."roles", $new_data_store['roles']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix."roles");
+									$sync_status = true;
+								}
+							}
+							
+							break;
+							
+						//Roles Module
+						case 'roles_module':
+							$sync_text = 'Roles Module';
+							
+							//MODULES
+							//roles_module
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['roles_module'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix."roles_module");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix."roles_module", $new_data_store['roles_module']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix."roles_module");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+							
+						//User
+						case 'data_user':
+							$sync_text = 'User';
+							
+							//MODULES
+							//data_user
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['data_user'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix."users");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix."users", $new_data_store['data_user']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix."users");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Users Desktop
+						case 'users_desktop':
+							$sync_text = 'Users Desktop';
+							
+							//MODULES
+							//users_desktop
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['users_desktop'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix."users_desktop");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix."users_desktop", $new_data_store['users_desktop']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix."users_desktop");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Users Shortcut
+						case 'users_shortcut':
+							$sync_text = 'Users Shortcut';
+							
+							//MODULES
+							//users_shortcut
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['users_shortcut'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix."users_shortcut");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix."users_shortcut", $new_data_store['users_shortcut']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix."users_shortcut");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Users Quickstart
+						case 'users_quickstart':
+							$sync_text = 'Users Quickstart';
+							
+							//MODULES
+							//users_quickstart
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['users_quickstart'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix."users_quickstart");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix."users_quickstart", $new_data_store['users_quickstart']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix."users_quickstart");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Supervisor
+						case 'supervisor':
+							$sync_text = 'Supervisor';
+							
+							//MODULES
+							//supervisor
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['supervisor'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix."supervisor");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix."supervisor", $new_data_store['supervisor']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix."supervisor");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Supervisor Access
+						case 'supervisor_access':
+							$sync_text = 'Supervisor Access';
+							
+							//MODULES
+							//supervisor_access
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['supervisor_access'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix."supervisor_access");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix."supervisor_access", $new_data_store['supervisor_access']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix."supervisor_access");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Varian
+						case 'varian':
+							$sync_text = 'Varian';
+							
+							//MODULES
+							//varian
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['varian'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."varian");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."varian", $new_data_store['varian']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."varian");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Menu
+						case 'menu':
+							$sync_text = 'Menu';
+							
+							//MODULES
+							//menu
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['menu'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."product");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."product", $new_data_store['menu']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."product");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Menu Category
+						case 'menu_category':
+							$sync_text = 'Menu Category';
+							
+							//MODULES
+							//menu_category
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['menu_category'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."product_category");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."product_category", $new_data_store['menu_category']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."product_category");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Menu Package
+						case 'menu_package':
+							$sync_text = 'Menu Package';
+							
+							//MODULES
+							//menu_package
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['menu_package'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."product_package");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."product_package", $new_data_store['menu_package']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."product_package");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Menu Varian
+						case 'menu_varian':
+							$sync_text = 'Menu Varian';
+							
+							//MODULES
+							//menu_varian
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['menu_varian'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."product_varian");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."product_varian", $new_data_store['menu_varian']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."product_varian");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Payment Bank
+						case 'payment_bank':
+							$sync_text = 'Payment Bank';
+							
+							//MODULES
+							//payment_bank
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['payment_bank'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."bank");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."bank", $new_data_store['payment_bank']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."bank");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Discount
+						case 'discount':
+							$sync_text = 'Discount';
+							
+							//MODULES
+							//discount
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['discount'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."discount");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."discount", $new_data_store['discount']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."discount");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Discount Buy & Get
+						case 'discount_buyget':
+							$sync_text = 'Discount Buy & Get';
+							
+							//MODULES
+							//discount_buyget
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['discount_buyget'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."discount_buyget");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."discount_buyget", $new_data_store['discount_buyget']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."discount_buyget");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Discount Product
+						case 'discount_product':
+							$sync_text = 'Discount Product';
+							
+							//MODULES
+							//discount_product
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['discount_product'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."discount_product");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."discount_product", $new_data_store['discount_product']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."discount_product");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Discount Voucher
+						case 'discount_voucher':
+							$sync_text = 'Discount Voucher';
+							
+							//MODULES
+							//discount_voucher
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['discount_voucher'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."discount_voucher");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."discount_voucher", $new_data_store['discount_voucher']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."discount_voucher");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Sales Marketing
+						case 'sales_marketing':
+							$sync_text = 'Sales Marketing';
+							
+							//MODULES
+							//sales_marketing
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['sales_marketing'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."sales");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."sales", $new_data_store['sales_marketing']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."sales");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Customer Member
+						case 'customer_member':
+							$sync_text = 'Customer Member';
+							
+							//MODULES
+							//customer_member
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['customer_member'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."customer");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."customer", $new_data_store['customer_member']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."customer");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Divisi
+						case 'divisi':
+							$sync_text = 'Divisi';
+							
+							//MODULES
+							//divisi
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['divisi'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."divisi");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."divisi", $new_data_store['divisi']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."divisi");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Warehouse
+						case 'warehouse':
+							$sync_text = 'Warehouse/Gudang';
+							
+							//MODULES
+							//warehouse
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['warehouse'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."storehouse");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."storehouse", $new_data_store['warehouse']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."storehouse");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Warehouse Access
+						case 'warehouse_access':
+							$sync_text = 'Warehouse Access';
+							
+							//MODULES
+							//warehouse_access
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['warehouse_access'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."storehouse_users");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."storehouse_users", $new_data_store['warehouse_access']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."storehouse_users");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Unit
+						case 'unit':
+							$sync_text = 'Unit';
+							
+							//MODULES
+							//unit
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['unit'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."unit");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."unit", $new_data_store['unit']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."unit");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//items
+						case 'items':
+							$sync_text = 'Items';
+							
+							//MODULES
+							//items
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['items'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."items");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."items", $new_data_store['items']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."items");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Item Category
+						case 'item_category':
+							$sync_text = 'Item Category';
+							
+							//MODULES
+							//item_category
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['item_category'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."item_category");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."item_category", $new_data_store['item_category']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."item_category");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Item Sub Category
+						case 'item_subcategory':
+							$sync_text = 'Item Sub Category';
+							
+							//MODULES
+							//item_subcategory
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['item_subcategory'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."item_subcategory");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."item_subcategory", $new_data_store['item_subcategory']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."item_subcategory");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Item Kode Unik
+						case 'item_kode_unik':
+							$sync_text = 'Item Kode Unik';
+							
+							//MODULES
+							//item_kode_unik
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['item_kode_unik'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."item_kode_unik");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."item_kode_unik", $new_data_store['item_kode_unik']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."item_kode_unik");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Supplier
+						case 'supplier':
+							$sync_text = 'Supplier';
+							
+							//MODULES
+							//supplier
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['supplier'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."supplier");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."supplier", $new_data_store['supplier']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."supplier");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Supplier Item
+						case 'supplier_item':
+							$sync_text = 'Supplier Item';
+							
+							//MODULES
+							//supplier_item
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['supplier_item'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."supplier_item");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."supplier_item", $new_data_store['supplier_item']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."supplier_item");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Order Note
+						case 'order_note':
+							$sync_text = 'Order Note';
+							
+							//MODULES
+							//order_note
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['order_note'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."order_note");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."order_note", $new_data_store['order_note']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."order_note");
+									$sync_status = true;
+								}
+							}
+						
+							break;
+						
+						//Table
+						case 'table':
+							$sync_text = 'Table';
+							
+							//MODULES
+							//table
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['table'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."table");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."table", $new_data_store['table']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."table");
+									$sync_status = true;
+								}
+							}
+							
+						//Table Inventory
+						case 'table_inventory':
+							$sync_text = 'Table Inventory';
+							
+							//MODULES
+							//table_inventory
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['table_inventory'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."table_inventory");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."table_inventory", $new_data_store['table_inventory']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."table_inventory");
+									$sync_status = true;
+								}
+							}
+							
+							break;
+						
+						//Floorplan
+						case 'floorplan':
+							$sync_text = 'Floorplan';
+							
+							//MODULES
+							//floorplan
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['floorplan'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."floorplan");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."floorplan", $new_data_store['floorplan']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."floorplan");
+									$sync_status = true;
+								}
+							}
+							
+							break;
+						
+						//Room
+						case 'room':
+							$sync_text = 'Room';
+							
+							//MODULES
+							//room
+							$last_id_sync = $last_id_on_backup;
+							$total_data_sync = $total_data_on_backup;
+							
+							if(!empty($new_data_store['room'])){
+								//TRUNCATE STORE
+								$this->db->query("TRUNCATE ".$this->prefix_pos."room");
+								
+								//BATCH
+								$this->db->insert_batch($this->prefix_pos."room", $new_data_store['room']);
+
+								$sync_status = true;
+								
+							}else{
+								if($last_id_sync == 0 AND $total_data_sync == 0){
+									//TRUNCATE STORE
+									$this->db->query("TRUNCATE ".$this->prefix_pos."room");
+									$sync_status = true;
+								}
+							}
+							
+							break;
+						
+					}
+					
+					
+					$r = array(
+						'success' => true, 
+						'info'	=> 'Syncronize Data: <b>'.$sync_text.'</b> Selesai..',
+						'has_next' => 0,
+						'last_id_on_backup' => $last_id_on_backup,
+						'total_data_on_backup' => $total_data_on_backup,
+						'last_id_store' => $last_id_sync,
+						'total_data_store' => $total_data_sync,
+						'sync_status' => $sync_status,
+					);
+					die(json_encode($r));
+					
+				}
+			
+			}else{
+				
+				//---------------------------------BACKUP
+				if($return_data['success'] == false){
+				
+					$r = array(
+						'success' => false, 
+						'info'	=> $return_data['info'], 
+						'has_next' => $has_next,
+						'last_id_on_backup' => $last_id_on_backup,
+						'total_data_on_backup' => $total_data_on_backup,
+						'total_data_store' => $total_data_store,
+						'last_id_store' => $last_id_store,
+						'data' => $return_data['data'],
+					);
+					die(json_encode($r));
+					
+				}
 			}
+			
 		}
 		
-		if(!empty($return_data['last_id_on_backup'])){
-			$last_id_on_backup = $return_data['last_id_on_backup'];
-		}
-		
-		if(!empty($return_data['total_data_on_backup'])){
-			$total_data_on_backup = $return_data['total_data_on_backup'];
-		}
 		
 		if($backup_status){
 			
@@ -3293,6 +4341,7 @@ class SyncData extends MY_Controller {
 				'last_id_store' => $last_id_store
 			);
 			die(json_encode($r));
+			
   
 		}else{
 			
@@ -3363,9 +4412,7 @@ class SyncData extends MY_Controller {
 		
 		$mktime_dc = strtotime(date("d-m-Y H:i:s"));
 		
-		if(!strstr("http://", $ipserver_management_systems)){
-			$ipserver_management_systems = 'http://'.$ipserver_management_systems;
-		}
+		$ipserver_management_systems = prep_url($ipserver_management_systems);
 		
 		if($use_wms == 1){
 			

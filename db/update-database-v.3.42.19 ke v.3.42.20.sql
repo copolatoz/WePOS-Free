@@ -9,6 +9,22 @@ WePOS - Cafe: v3.42.19 ke v3.42.20
 */
 
 
+ALTER TABLE `pos_supplier` 
+MODIFY `supplier_code` VARCHAR(20) DEFAULT NULL,
+ADD `source_from` ENUM('MERCHANT','WSM') DEFAULT 'MERCHANT',
+ADD `supplier_no` MEDIUMINT(9) DEFAULT 0;
+#
+ALTER TABLE `pos_sales` 
+ADD `sales_code` VARCHAR(20) DEFAULT NULL,
+ADD `sales_email` VARCHAR(50) DEFAULT NULL,
+ADD `source_from` ENUM('MERCHANT','WSM') DEFAULT 'MERCHANT',
+ADD `sales_no` MEDIUMINT(9) DEFAULT 0;
+#
+ALTER TABLE `pos_customer` 
+MODIFY `customer_code` VARCHAR(20) DEFAULT NULL,
+ADD `source_from` ENUM('MERCHANT','WSM','ELVO') DEFAULT 'MERCHANT',
+ADD `customer_no` MEDIUMINT(9) DEFAULT 0;
+#
 UPDATE apps_options SET option_value = '01-03-2019', updated = '2019-03-07 00:00:01' WHERE option_var IN ('closing_sales_start_date','stock_rekap_start_date','closing_purchasing_start_date','closing_inventory_start_date','closing_accounting_start_date');
 #
 UPDATE apps_options SET option_value = '0', updated = '2019-03-07 00:00:01' WHERE option_var IN ('view_multiple_store');

@@ -58,7 +58,7 @@ class MasterSales extends MY_Controller {
 		
 		
 		if(!empty($searching)){
-			$params['where'][] = "(sales_name LIKE '%".$searching."%')";
+			$params['where'][] = "(sales_name LIKE '%".$searching."%' OR sales_code LIKE '%".$searching."%')";
 		}
 		if(!empty($show_valid_date)){
 			$today_date = date("Y-m-d H:i:s");
@@ -122,6 +122,8 @@ class MasterSales extends MY_Controller {
 				
 				$s['sales_name_company_fee'] = $s['sales_name'].' / '.$s['sales_company'].' ('.$sales_type_simple.' '.$jenis_fee.')';
 				
+				$s['source_from'] = ucwords($s['source_from']);
+				
 				array_push($newData, $s);
 			}
 		}
@@ -137,12 +139,14 @@ class MasterSales extends MY_Controller {
 		$this->table = $this->prefix.'sales';				
 		$session_user = $this->session->userdata('user_username');
 		
+		$sales_code = $this->input->post('sales_code');
 		$sales_name = $this->input->post('sales_name');
 		$sales_percentage = $this->input->post('sales_percentage');
 		$sales_price = $this->input->post('sales_price');
 		$sales_type = $this->input->post('sales_type');
 		$sales_contract_type = $this->input->post('sales_contract_type');
 		$sales_phone = $this->input->post('sales_phone');
+		$sales_email = $this->input->post('sales_email');
 		$sales_address = $this->input->post('sales_address');
 		$sales_company = $this->input->post('sales_company');
 		$date_start = $this->input->post('date_start');
@@ -168,23 +172,48 @@ class MasterSales extends MY_Controller {
 		//UPDATE
 		$id = $this->input->post('id', true);
 			
-		//check if promo + active date available	
+
+		//CHECK CODE
+		if(!empty($sales_code)){
+			$id = $this->input->post('id', true);
+			$this->db->from($this->table);
+			$this->db->where("sales_code = '".$sales_code."'");
+			if(!empty($id)){
+				$this->db->where("id != ".$id);
+			}
+			$this->db->where("is_deleted = 0");
+			$get_last = $this->db->get();
+			if($get_last->num_rows() > 0){
+				
+				//available
+				$r = array('success' => false, 'info' => 'Kode sudah digunakan!'); 
+				die(json_encode($r));
+		
+			}
+		}else{
+			$get_code = $this->generate_sales_code();
+			$sales_code = $get_code['sales_code'];
+			$sales_no = $get_code['sales_no'];
+		}
 			
 		$r = '';
 		if($this->input->post('form_type_masterSales', true) == 'add')
 		{
 			$var = array(
 				'fields'	=>	array(
+				    'sales_code' => 	$sales_code,
 				    'sales_name' => 	$sales_name,
 				    'sales_percentage' => $sales_percentage,
 				    'sales_price' => $sales_price,
 				    'sales_type' => $sales_type,
 				    'sales_contract_type' => $sales_contract_type,
 				    'sales_phone' => $sales_phone,
+				    'sales_email' => $sales_email,
 					'sales_address'	=>	$sales_address,
 					'sales_company'	=>	$sales_company,
 					'date_start'	=>	$date_start,
 					'date_end'		=>	$date_end,
+				    'source_from'  	=> 	'MERCHANT',
 					'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
@@ -193,6 +222,10 @@ class MasterSales extends MY_Controller {
 				),
 				'table'		=>  $this->table
 			);	
+			
+			if(!empty($sales_no)){
+				$var['fields']['sales_no'] = $sales_no;
+			}
 			
 			//SAVE
 			$insert_id = false;
@@ -212,12 +245,14 @@ class MasterSales extends MY_Controller {
 		}else
 		if($this->input->post('form_type_masterSales', true) == 'edit'){
 			$var = array('fields'	=>	array(
+				    'sales_code' => 	$sales_code,
 				    'sales_name' => 	$sales_name,
 				    'sales_percentage' => $sales_percentage,
 				    'sales_price' => $sales_price,
 				    'sales_type' => $sales_type,
 				    'sales_contract_type' => $sales_contract_type,
 				    'sales_phone' => $sales_phone,
+				    'sales_email' => $sales_email,
 					'sales_address'	=>	$sales_address,
 					'sales_company'	=>	$sales_company,
 					'date_start'	=>	$date_start,
@@ -229,7 +264,9 @@ class MasterSales extends MY_Controller {
 				'table'			=>  $this->table,
 				'primary_key'	=>  'id'
 			);
-			
+			if(!empty($sales_no)){
+				$var['fields']['sales_no'] = $sales_no;
+			}
 			
 			$this->lib_trans->begin();
 				$update = $this->m->save($var, $id);
@@ -277,6 +314,61 @@ class MasterSales extends MY_Controller {
             $r = array('success' => false, 'info' => 'Delete Master Sales Failed!'); 
         }
 		die(json_encode($r));
+	}
+	
+	public function generate_sales_code($tipe = ''){
+		
+		$this->table = $this->prefix.'sales';		
+
+		$getDate = date("ym");
+		
+		$prefix_sales_code = 'C'.date("ym");
+		$code_format = '{Sales}{SalesNo}';
+		$no_length = 4;
+		
+		$repl_attr = array(
+			"{Sales}" => $prefix_sales_code,
+		);
+		
+		$sales_code = strtr($code_format, $repl_attr);
+		$sales_code = $prefix_sales_code.'0001';
+		
+		$this->db->from($this->table);
+		$this->db->where("sales_code LIKE '".$prefix_sales_code."%'");
+		$this->db->where("is_deleted = 0");
+		$this->db->order_by('sales_no', 'DESC');
+		$this->db->order_by('sales_code', 'DESC');
+		$get_last = $this->db->get();
+		if($get_last->num_rows() > 0){
+			$data_sales_code = $get_last->row();
+			
+			$length_code = strlen($prefix_sales_code);
+			$get_sales_no = substr($data_sales_code->sales_code, $length_code, $no_length);
+			$sales_no = (int) $get_sales_no;
+		
+			if(!empty($data_sales_code->sales_no)){
+				$sales_no = $data_sales_code->sales_no;
+			}		
+			
+		}else{
+			$sales_no = 0;
+		}
+		
+		$sales_no++;
+		
+		$length_no = strlen($sales_no);
+		if($length_no <= $no_length){
+			$gapTxt = $no_length - $length_no;
+			$sales_no = str_repeat("0", $gapTxt).$sales_no;
+		}
+		
+		$repl_attr = array(
+			"{SalesNo}"		=> $sales_no
+		);
+		
+		$sales_code = strtr($sales_code, $repl_attr);
+		
+		return array('sales_no' => $sales_no, 'sales_code' => $sales_code);				
 	}
 	
 }

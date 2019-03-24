@@ -133,51 +133,61 @@ class WeposNotify extends MY_Controller {
 		}
 		
 		
-		//GET so
-		$all_so = array();
+		//GET reservation
+		$all_reservation = array();
 		$all_reservation_no = array();
 		$all_reservation_id = array();
 		$all_reservation_total = array();
-		$this->db->from($this->reservation);
-		$this->db->where("reservation_status = 'done'");
-		$get_so = $this->db->get();
-		if($get_so->num_rows() > 0){
-			foreach($get_so->result_array() as $dt){
-				$all_ref[] = $dt['reservation_number'];
-				$all_so[] = $dt['reservation_number'];
-				$all_reservation_id[] = $dt['id'];
-				$all_reservation_no[$dt['id']] = $dt['reservation_number'];
-				$all_reservation_total[$dt['id']] = ($dt['reservation_sub_total'] - $dt['reservation_discount']);
-				
-				
+		
+		if ($this->db->table_exists($this->reservation))
+		{
+			$this->db->from($this->reservation);
+			$this->db->where("reservation_status = 'done'");
+			$get_so = $this->db->get();
+			if($get_so->num_rows() > 0){
+				foreach($get_so->result_array() as $dt){
+					$all_ref[] = $dt['reservation_number'];
+					$all_reservation[] = $dt['reservation_number'];
+					$all_reservation_id[] = $dt['id'];
+					$all_reservation_no[$dt['id']] = $dt['reservation_number'];
+					$all_reservation_total[$dt['id']] = ($dt['reservation_sub_total'] - $dt['reservation_discount']);
+					
+					
+				}
+				//echo '<br/>---FOUND reservation: '.count($all_reservation).'---';
 			}
-			//echo '<br/>---FOUND SO: '.count($all_so).'---';
 		}
+
+		
 		
 		$all_reservation_detail = array();
 		$all_reservation_no_detail = array();
 		$all_reservation_total_detail = array();
-		if(!empty($all_reservation_id)){
-			$all_reservation_id_sql = implode(",", $all_reservation_id);
-			$this->db->from($this->reservation_detail);
-			$this->db->where("reservation_id IN (".$all_reservation_id_sql.")");
-			$get_sod = $this->db->get();
-			if($get_sod->num_rows() > 0){
-				foreach($get_sod->result_array() as $dt){
-					
-					if($dt['resd_qty'] > 0){
-						$all_reservation_detail[$dt['id']] = $dt['item_id'];
-						$all_reservation_no_detail[$dt['id']] = $all_reservation_no[$dt['reservation_id']];
+		
+		if ($this->db->table_exists($this->reservation_detail))
+		{
+			if(!empty($all_reservation_id)){
+				$all_reservation_id_sql = implode(",", $all_reservation_id);
+				$this->db->from($this->reservation_detail);
+				$this->db->where("reservation_id IN (".$all_reservation_id_sql.")");
+				$get_resd = $this->db->get();
+				if($get_resd->num_rows() > 0){
+					foreach($get_resd->result_array() as $dt){
 						
-						if(empty($all_reservation_total_detail[$dt['reservation_id']])){
-							$all_reservation_total_detail[$dt['reservation_id']] = 0;
+						if($dt['resd_qty'] > 0){
+							$all_reservation_detail[$dt['id']] = $dt['item_id'];
+							$all_reservation_no_detail[$dt['id']] = $all_reservation_no[$dt['reservation_id']];
+							
+							if(empty($all_reservation_total_detail[$dt['reservation_id']])){
+								$all_reservation_total_detail[$dt['reservation_id']] = 0;
+							}
+							
+							$all_reservation_total_detail[$dt['reservation_id']] += ($dt['resd_total'] - $dt['resd_potongan']);
+							
 						}
-						
-						$all_reservation_total_detail[$dt['reservation_id']] += ($dt['resd_total'] - $dt['resd_potongan']);
-						
 					}
+					//echo '<br/>---FOUND reservation DETAIL: '.count($all_reservation_detail).'---';
 				}
-				//echo '<br/>---FOUND SO DETAIL: '.count($all_reservation_detail).'---';
 			}
 		}
 		
@@ -285,10 +295,10 @@ class WeposNotify extends MY_Controller {
 		
 		//NOTIFY SO ----------------------------------------------------------
 		$notify_text_so = '';
-		if(!empty($all_so)){
+		if(!empty($all_reservation)){
 			
 			$no_err = 0;
-			foreach($all_so as $dt){
+			foreach($all_reservation as $dt){
 				if(!in_array($dt, $all_reservation_stok)){
 					$no_err++;
 					

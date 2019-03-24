@@ -1242,7 +1242,7 @@
 				<tr class="tbl-header">
 					<td class="first xcenter" width="50" rowspan="2">NO</td>
 					<td class="xcenter" width="180" rowspan="2">DISCOUNT</td>
-					<td class="xcenter" width="80" rowspan="2">QTY MENU</td>
+					<td class="xcenter" width="80" rowspan="2">QTY BILLING</td>
 					<td class="xcenter" width="120" rowspan="2">SALES</td>
 					<?php
 					if($diskon_sebelum_pajak_service == 1){
@@ -1310,7 +1310,7 @@
 						<tr class="tbl-data">
 							<td class="first xcenter"><?php echo $no; ?></td>
 							<td class="xleft"><?php echo $det['discount_name']; ?></td>
-							<td class="xcenter"><?php echo $det['total_qty']; ?></td>
+							<td class="xcenter"><?php echo $det['total_qty_billing']; ?></td>
 							<td class="xright"><?php echo $det['total_billing_show']; ?></td>
 							<?php
 							if($diskon_sebelum_pajak_service == 1){
@@ -1368,7 +1368,7 @@
 						</tr>
 						<?php	
 					
-						$total_qty +=  $det['total_qty'];
+						$total_qty +=  $det['total_qty_billing'];
 						$total_billing +=  $det['total_billing'];
 						$total_sub_total +=  $det['sub_total'];
 						$total_net_sales +=  $det['net_sales'];

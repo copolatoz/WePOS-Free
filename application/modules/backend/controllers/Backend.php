@@ -43,34 +43,34 @@ class Backend extends MY_Controller {
 			//}
 			
 			$included_styles = array(        
-				base_url().'assets/desktop/css/desktop.css', 
-				base_url().'assets/desktop/css/icons.css', 
-				base_url().'assets/desktop/icons/awesome/font-awesome.css', 
-				//base_url().'assets/desktop/css/extapp.css' , 
-				base_url().'assets/desktop/css/modules.css'    
+				BASE_URL.'assets/desktop/css/desktop.css', 
+				BASE_URL.'assets/desktop/css/icons.css', 
+				BASE_URL.'assets/desktop/icons/awesome/font-awesome.css', 
+				//BASE_URL.'assets/desktop/css/extapp.css' , 
+				BASE_URL.'assets/desktop/css/modules.css'    
 			);	
 			
 			
 			//JS-APPS MERGE
 			$included_js = array(        
-				base_url().'assets/js/extjs.4.2/ext-all.js', 
-				base_url().'apps/core/Constants.js', 
-				base_url().'apps/core/Module.js',
-				base_url().'apps/core/Widget.js',
-				base_url().'apps/core/LoadingBox.js',
-				base_url().'apps/core/MessageBox.js',
-				base_url().'apps/core/Application.js',
-				base_url().'apps/desktop/Desktop.js',
-				base_url().'apps/desktop/TaskBar.js',
-				base_url().'apps/desktop/TrayClock.js',
-				base_url().'apps/desktop/Wallpaper.js',
-				base_url().'apps/desktop/WallpaperModal.js',
-				base_url().'apps/desktop/StartMenu.js',
-				base_url().'apps/desktop/AboutModal.js',
-				base_url().'apps/desktop/model/ShortcutModel.js' ,
-				base_url().'apps/desktop/model/WallpaperModel.js',
-				base_url().'apps/Application.js',
-				base_url().'apps/startup/boot.js' 
+				BASE_URL.'assets/js/extjs.4.2/ext-all.js', 
+				BASE_URL.'apps/core/Constants.js', 
+				BASE_URL.'apps/core/Module.js',
+				BASE_URL.'apps/core/Widget.js',
+				BASE_URL.'apps/core/LoadingBox.js',
+				BASE_URL.'apps/core/MessageBox.js',
+				BASE_URL.'apps/core/Application.js',
+				BASE_URL.'apps/desktop/Desktop.js',
+				BASE_URL.'apps/desktop/TaskBar.js',
+				BASE_URL.'apps/desktop/TrayClock.js',
+				BASE_URL.'apps/desktop/Wallpaper.js',
+				BASE_URL.'apps/desktop/WallpaperModal.js',
+				BASE_URL.'apps/desktop/StartMenu.js',
+				BASE_URL.'apps/desktop/AboutModal.js',
+				BASE_URL.'apps/desktop/model/ShortcutModel.js' ,
+				BASE_URL.'apps/desktop/model/WallpaperModel.js',
+				BASE_URL.'apps/Application.js',
+				BASE_URL.'apps/startup/boot.js' 
 			);		
 			
 			$vars = array( 
@@ -123,10 +123,10 @@ class Backend extends MY_Controller {
 		var ExtApp = {
 			version		: "'.config_item('program_version').'"	
 		};
-		ExtApp.BASE_PATH = "'.site_url().'";	
-		var serviceUrl      = "'.site_url().'backend/services";
-		var reportServiceUrl      = "'.site_url().'backend/reportServices?";
-		var appUrl      = "'.site_url().'";
+		ExtApp.BASE_PATH = "'.BASE_URL.'";	
+		var serviceUrl      = "'.BASE_URL.'backend/services";
+		var reportServiceUrl      = "'.BASE_URL.'backend/reportServices?";
+		var appUrl      = "'.BASE_URL.'";
         var id_client	= '.$this->session->userdata('client_id').';
         var client_structure_id	= '.$this->session->userdata('client_structure_id').';
         var id_client_unit	= '.$this->session->userdata('client_unit_id').';
@@ -247,8 +247,8 @@ class Backend extends MY_Controller {
 		//REPORT PATH
 		echo '
 		ExtApp.asCashier = '.$asCashier.';
-        var ReportViewerURL   =   "'.site_url().'reports/core/index.php?stimulsoft_client_key=ViewerFx";
-        var ReportDesignerURL =   "'.site_url().'reports/core/index.php?stimulsoft_client_key=DesignerFx";
+        var ReportViewerURL   =   "'.BASE_URL.'reports/core/index.php?stimulsoft_client_key=ViewerFx";
+        var ReportDesignerURL =   "'.BASE_URL.'reports/core/index.php?stimulsoft_client_key=DesignerFx";
 		';
 		
 		//MODULES-MENU INIT

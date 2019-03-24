@@ -33,7 +33,6 @@ class MasterCustomer extends MY_Controller {
 		);
 		
 		//DROPDOWN & SEARCHING
-		$sales_type = $this->input->post('sales_type');
 		$is_dropdown = $this->input->post('is_dropdown');
 		$searching = $this->input->post('query');
 		$show_valid_date = $this->input->post('show_valid_date');
@@ -89,6 +88,8 @@ class MasterCustomer extends MY_Controller {
 					$s['customer_status_text'] = '<span style="color:red;font-weight:bold;">Blacklist</span>';
 				}
 				
+				$s['source_from'] = ucwords($s['source_from']);
+				
 				array_push($newData, $s);
 			}
 		}
@@ -118,9 +119,36 @@ class MasterCustomer extends MY_Controller {
 			die(json_encode($r));
 		}		
 		
+		if(empty($customer_status)){
+			$customer_status = 'ok';
+		}		
+		
 		$is_active = $this->input->post('is_active');
 		if(empty($is_active)){
 			$is_active = 0;
+		}
+		
+		//CHECK CODE
+		if(!empty($customer_code)){
+			$id = $this->input->post('id', true);
+			$this->db->from($this->table);
+			$this->db->where("customer_code = '".$customer_code."'");
+			if(!empty($id)){
+				$this->db->where("id != ".$id);
+			}
+			$this->db->where("is_deleted = 0");
+			$get_last = $this->db->get();
+			if($get_last->num_rows() > 0){
+				
+				//available
+				$r = array('success' => false, 'info' => 'Kode sudah digunakan!'); 
+				die(json_encode($r));
+		
+			}
+		}else{
+			$get_code = $this->generate_customer_code();
+			$customer_code = $get_code['customer_code'];
+			$customer_no = $get_code['customer_no'];
 		}
 			
 		$r = '';
@@ -136,6 +164,7 @@ class MasterCustomer extends MY_Controller {
 				    'customer_email'  	=> 	$customer_email,
 				    'customer_status'  	=> 	$customer_status,
 				    'keterangan_blacklist'  	=> 	$keterangan_blacklist,
+				    'source_from'  	=> 	'MERCHANT',
 					'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
@@ -144,6 +173,10 @@ class MasterCustomer extends MY_Controller {
 				),
 				'table'		=>  $this->table
 			);	
+			
+			if(!empty($customer_no)){
+				$var['fields']['customer_no'] = $customer_no;
+			}
 			
 			//SAVE
 			$insert_id = false;
@@ -178,6 +211,10 @@ class MasterCustomer extends MY_Controller {
 				'table'			=>  $this->table,
 				'primary_key'	=>  'id'
 			);
+			
+			if(!empty($customer_no)){
+				$var['fields']['customer_no'] = $customer_no;
+			}
 			
 			//UPDATE
 			$id = $this->input->post('id', true);
@@ -258,4 +295,60 @@ class MasterCustomer extends MY_Controller {
 		
 		
 	}
+	
+	public function generate_customer_code($tipe = ''){
+		
+		$this->table = $this->prefix.'customer';		
+
+		$getDate = date("ym");
+		
+		$prefix_customer_code = 'C'.date("ym");
+		$code_format = '{Customer}{CustomerNo}';
+		$no_length = 4;
+		
+		$repl_attr = array(
+			"{Customer}" => $prefix_customer_code,
+		);
+		
+		$customer_code = strtr($code_format, $repl_attr);
+		$customer_code = $prefix_customer_code.'0001';
+		
+		$this->db->from($this->table);
+		$this->db->where("customer_code LIKE '".$prefix_customer_code."%'");
+		$this->db->where("is_deleted = 0");
+		$this->db->order_by('customer_no', 'DESC');
+		$this->db->order_by('customer_code', 'DESC');
+		$get_last = $this->db->get();
+		if($get_last->num_rows() > 0){
+			$data_customer_code = $get_last->row();
+			
+			$length_code = strlen($prefix_customer_code);
+			$get_customer_no = substr($data_customer_code->customer_code, $length_code, $no_length);
+			$customer_no = (int) $get_customer_no;
+		
+			if(!empty($data_customer_code->customer_no)){
+				$customer_no = $data_customer_code->customer_no;
+			}		
+			
+		}else{
+			$customer_no = 0;
+		}
+		
+		$customer_no++;
+		
+		$length_no = strlen($customer_no);
+		if($length_no <= $no_length){
+			$gapTxt = $no_length - $length_no;
+			$customer_no = str_repeat("0", $gapTxt).$customer_no;
+		}
+		
+		$repl_attr = array(
+			"{CustomerNo}"		=> $customer_no
+		);
+		
+		$customer_code = strtr($customer_code, $repl_attr);
+		
+		return array('customer_no' => $customer_no, 'customer_code' => $customer_code);				
+	}
+	
 }

@@ -1902,7 +1902,7 @@ CREATE TABLE IF NOT EXISTS `pos_closing_sales` (
 
 CREATE TABLE IF NOT EXISTS `pos_customer` (
   `id` int(11) unsigned NOT NULL,
-  `customer_code` varchar(10) DEFAULT NULL,
+  `customer_code` VARCHAR(20) DEFAULT NULL,
   `customer_name` varchar(255) NOT NULL,
   `customer_contact_person` varchar(40) DEFAULT NULL,
   `customer_address` varchar(255) DEFAULT NULL,
@@ -1916,11 +1916,13 @@ CREATE TABLE IF NOT EXISTS `pos_customer` (
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
   `customer_status` enum('ok','warning','blacklist') DEFAULT 'ok',
-  `keterangan_blacklist` varchar(255) DEFAULT NULL
+  `keterangan_blacklist` varchar(255) DEFAULT NULL,
+  `source_from` ENUM('MERCHANT','WSM','ELVO') DEFAULT 'MERCHANT',
+  `customer_no` MEDIUMINT(9) DEFAULT 0
 ) ENGINE=InnoDB AUTO_INCREMENT=2;
 
-INSERT INTO `pos_customer` (`id`, `customer_code`, `customer_name`, `customer_contact_person`, `customer_address`, `customer_phone`, `customer_fax`, `customer_email`, `createdby`, `created`, `updatedby`, `updated`, `is_active`, `is_deleted`, `customer_status`, `keterangan_blacklist`) VALUES
-(1, 'C18080001', 'WePOS Customer Test', 'WePOS', 'Bandung', '022', NULL, 'support@wepos.id', 'admin', '2019-03-07 15:16:28', 'admin', '2019-03-07 15:16:28', 1, 0, 'ok', '');
+INSERT INTO `pos_customer` (`id`, `customer_code`, `customer_name`, `customer_contact_person`, `customer_address`, `customer_phone`, `customer_fax`, `customer_email`, `createdby`, `created`, `updatedby`, `updated`, `is_active`, `is_deleted`, `customer_status`, `keterangan_blacklist`, `customer_no`) VALUES
+(1, 'CS19030001', 'WePOS Customer Test', 'WePOS', 'Bandung', '022', NULL, 'support@wepos.id', 'admin', '2019-03-07 15:16:28', 'admin', '2019-03-07 15:16:28', 1, 0, 'ok', '', 1);
 
 CREATE TABLE IF NOT EXISTS `pos_customer_member` (
   `id` int(11) NOT NULL,
@@ -2713,7 +2715,11 @@ CREATE TABLE IF NOT EXISTS `pos_sales` (
   `updated` timestamp NULL DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT '1',
   `is_deleted` tinyint(1) DEFAULT '0',
-  `sales_type` enum('before_tax','after_tax') DEFAULT 'after_tax'
+  `sales_type` enum('before_tax','after_tax') DEFAULT 'after_tax',
+  `sales_code` VARCHAR(20) DEFAULT NULL,
+  `sales_email` VARCHAR(50) DEFAULT NULL,
+  `source_from` ENUM('MERCHANT','WSM') DEFAULT 'MERCHANT',
+  `sales_no` MEDIUMINT(9) DEFAULT 0
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `pos_stock` (
@@ -2853,7 +2859,7 @@ INSERT INTO `pos_storehouse_users` (`id`, `storehouse_id`, `user_id`, `createdby
 
 CREATE TABLE IF NOT EXISTS `pos_supplier` (
   `id` int(11) unsigned NOT NULL,
-  `supplier_code` varchar(10) DEFAULT NULL,
+  `supplier_code` VARCHAR(20) DEFAULT NULL,
   `supplier_name` varchar(255) NOT NULL,
   `supplier_contact_person` varchar(40) DEFAULT NULL,
   `supplier_address` varchar(255) DEFAULT NULL,
@@ -2867,11 +2873,13 @@ CREATE TABLE IF NOT EXISTS `pos_supplier` (
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
   `supplier_status` enum('ok','warning','blacklist') DEFAULT 'ok',
-  `keterangan_blacklist` varchar(255) DEFAULT NULL
+  `keterangan_blacklist` varchar(255) DEFAULT NULL,
+  `source_from` ENUM('MERCHANT','WSM') DEFAULT 'MERCHANT',
+  `supplier_no` MEDIUMINT(9) DEFAULT 0
 ) ENGINE=InnoDB AUTO_INCREMENT=2;
 
-INSERT INTO `pos_supplier` (`id`, `supplier_code`, `supplier_name`, `supplier_contact_person`, `supplier_address`, `supplier_phone`, `supplier_fax`, `supplier_email`, `createdby`, `created`, `updatedby`, `updated`, `is_active`, `is_deleted`, `supplier_status`, `keterangan_blacklist`) VALUES
-(1, '', 'Supplier Daging', 'H.Ahmad', '', '123', '', '', 'admin', '2019-03-07 19:29:07', 'admin', '2019-03-07 19:29:07', 1, 0, 'ok', '');
+INSERT INTO `pos_supplier` (`id`, `supplier_code`, `supplier_name`, `supplier_contact_person`, `supplier_address`, `supplier_phone`, `supplier_fax`, `supplier_email`, `createdby`, `created`, `updatedby`, `updated`, `is_active`, `is_deleted`, `supplier_status`, `keterangan_blacklist`, `supplier_no`) VALUES
+(1, 'SP19030001', 'Supplier Daging', 'H.Ahmad', '', '123', '', '', 'admin', '2019-03-07 19:29:07', 'admin', '2019-03-07 19:29:07', 1, 0, 'ok', '', 1);
 
 CREATE TABLE IF NOT EXISTS `pos_supplier_item` (
   `id` int(11) unsigned NOT NULL,
