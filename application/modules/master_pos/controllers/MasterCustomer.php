@@ -144,13 +144,17 @@ class MasterCustomer extends MY_Controller {
 				$r = array('success' => false, 'info' => 'Kode sudah digunakan!'); 
 				die(json_encode($r));
 		
+			}else{
+				$get_code = $this->generate_customer_code($customer_code);
+				$customer_code = $get_code['customer_code'];
+				$customer_no = $get_code['customer_no'];
 			}
 		}else{
 			$get_code = $this->generate_customer_code();
 			$customer_code = $get_code['customer_code'];
 			$customer_no = $get_code['customer_no'];
 		}
-			
+		
 		$r = '';
 		if($this->input->post('form_type_masterCustomer', true) == 'add')
 		{
@@ -296,22 +300,28 @@ class MasterCustomer extends MY_Controller {
 		
 	}
 	
-	public function generate_customer_code($tipe = ''){
+	public function generate_customer_code($cek_code = ''){
 		
 		$this->table = $this->prefix.'customer';		
 
 		$getDate = date("ym");
 		
-		$prefix_customer_code = 'C'.date("ym");
+		$prefix_customer_code = 'CST'.date("ym");
 		$code_format = '{Customer}{CustomerNo}';
 		$no_length = 4;
+		
+		if(!empty($cek_code)){
+			$get_customer_no = substr($cek_code, $no_length*-1);
+			$customer_no = (int) $get_customer_no;
+			return array('customer_no' => $customer_no, 'customer_code' => $cek_code);
+		}
 		
 		$repl_attr = array(
 			"{Customer}" => $prefix_customer_code,
 		);
 		
 		$customer_code = strtr($code_format, $repl_attr);
-		$customer_code = $prefix_customer_code.'0001';
+		//$customer_code = $prefix_customer_code.'0001';
 		
 		$this->db->from($this->table);
 		$this->db->where("customer_code LIKE '".$prefix_customer_code."%'");
@@ -336,14 +346,15 @@ class MasterCustomer extends MY_Controller {
 		
 		$customer_no++;
 		
+		$customer_no_add = $customer_no;
 		$length_no = strlen($customer_no);
 		if($length_no <= $no_length){
 			$gapTxt = $no_length - $length_no;
-			$customer_no = str_repeat("0", $gapTxt).$customer_no;
+			$customer_no_add = str_repeat("0", $gapTxt).$customer_no;
 		}
 		
 		$repl_attr = array(
-			"{CustomerNo}"		=> $customer_no
+			"{CustomerNo}"		=> $customer_no_add
 		);
 		
 		$customer_code = strtr($customer_code, $repl_attr);

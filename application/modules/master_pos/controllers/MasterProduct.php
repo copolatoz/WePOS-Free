@@ -871,16 +871,14 @@ class MasterProduct extends MY_Controller {
 					$get_product_code = $this->generate_product_code($tipe);
 					$r = array('success' => false, 'info' => 'Kode sudah digunakan!<br/>Coba Kode Berikut: '.$get_product_code['product_code']); 
 				}
+				die(json_encode($r));
 		
-			}else{
-				$get_product_code['product_code'] = $product_code;
-				$get_product_code['product_no'] = $product_no;
 			}
 			
 			$var = array(
 				'fields'	=>	array(
-				    'product_code' => 	$get_product_code['product_code'],
-				    'product_no' => 	$get_product_code['product_no'],
+				    'product_code' => 	$product_code,
+				    'product_no' => 	$product_no,
 				    'product_name'  => 	$product_name,
 				    'product_chinese_name'  => 	$product_chinese_name,
 					'product_desc'	=>	$product_desc,

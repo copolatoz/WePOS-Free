@@ -656,12 +656,25 @@ class MasterItem extends MY_Controller {
 		if($this->input->post('form_type_masterItem', true) == 'add')
 		{
 			$get_item_code = array('item_code' => '', 'item_no' => 1);
+			$item_no = 1;
+			
+			$this->db->select("id");
+			$this->db->from($this->table);
+			$this->db->order_by("id", "DESC");
+			$this->db->limit("1");
+			$get_last_no = $this->db->get();
+			if($get_last_no->num_rows() > 0){
+				$get_last_db = $get_last_no->row();
+				$item_no = $get_last_db->id;
+				$item_no++;
+			}
 			
 			if(empty($item_code)){
 				
 				//cek item code
 				$get_item_code = $this->generate_item_code($form_module_masterItem);
 				$item_code = $get_item_code['item_code'];
+				$item_no = $get_product_code['item_no'];
 				
 			}
 			
@@ -682,10 +695,8 @@ class MasterItem extends MY_Controller {
 				
 				die(json_encode($r));
 		
-			}else{
-				$get_item_code['item_code'] = $item_code;
-				$get_item_code['item_no'] = 1;
 			}
+			
 			
 			//$r = array('success' => false, 'info' => $get_item_code, 'item_no' => $get_item_code['item_no']);
 			//die(json_encode($r));
@@ -696,8 +707,8 @@ class MasterItem extends MY_Controller {
 			
 			$var = array(
 				'fields'	=>	array(
-				    'item_code' => 	$get_item_code['item_code'],
-				    'item_no' => 	$get_item_code['item_no'],
+				    'item_code' => 	$item_code,
+				    'item_no' => 	$item_no,
 				    'item_sku' => 	$item_sku,
 				    'item_name' => 	$item_name,
 					'item_desc'	=>	$item_desc,
@@ -776,6 +787,7 @@ class MasterItem extends MY_Controller {
 				//cek item code
 				$get_item_code = $this->generate_item_code($form_module_masterItem);
 				$item_code = $get_item_code['item_code'];
+				$item_no = $get_item_code['item_no'];
 				
 			}
 			
@@ -1182,8 +1194,8 @@ class MasterItem extends MY_Controller {
 				
 				if(!empty($data_item_code->item_no)){
 					$item_no = $data_item_code->item_no;
-				}		
-		
+				}
+				$item_no++;
 			}else{
 				
 				$this->db->from($this->table);

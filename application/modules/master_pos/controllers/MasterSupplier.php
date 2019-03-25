@@ -161,6 +161,10 @@ class MasterSupplier extends MY_Controller {
 				$r = array('success' => false, 'info' => 'Kode sudah digunakan!'); 
 				die(json_encode($r));
 		
+			}else{
+				$get_code = $this->generate_supplier_code($supplier_code);
+				$supplier_code = $get_code['supplier_code'];
+				$supplier_no = $get_code['supplier_no'];
 			}
 		}else{
 			$get_code = $this->generate_supplier_code();
@@ -316,23 +320,28 @@ class MasterSupplier extends MY_Controller {
 		
 	}
 	
-	
-	public function generate_supplier_code($tipe = ''){
+	public function generate_supplier_code($cek_code = ''){
 		
 		$this->table = $this->prefix.'supplier';		
 
 		$getDate = date("ym");
 		
-		$prefix_supplier_code = 'C'.date("ym");
-		$code_format = '{Customer}{CustomerNo}';
+		$prefix_supplier_code = 'SPL'.date("ym");
+		$code_format = '{Supplier}{SupplierNo}';
 		$no_length = 4;
 		
+		if(!empty($cek_code)){
+			$get_supplier_no = substr($cek_code, $no_length*-1);
+			$supplier_no = (int) $get_supplier_no;
+			return array('supplier_no' => $supplier_no, 'supplier_code' => $cek_code);
+		}
+		
 		$repl_attr = array(
-			"{Customer}" => $prefix_supplier_code,
+			"{Supplier}" => $prefix_supplier_code,
 		);
 		
 		$supplier_code = strtr($code_format, $repl_attr);
-		$supplier_code = $prefix_supplier_code.'0001';
+		//$supplier_code = $prefix_supplier_code.'0001';
 		
 		$this->db->from($this->table);
 		$this->db->where("supplier_code LIKE '".$prefix_supplier_code."%'");
@@ -357,18 +366,20 @@ class MasterSupplier extends MY_Controller {
 		
 		$supplier_no++;
 		
+		$supplier_no_add = $supplier_no;
 		$length_no = strlen($supplier_no);
 		if($length_no <= $no_length){
 			$gapTxt = $no_length - $length_no;
-			$supplier_no = str_repeat("0", $gapTxt).$supplier_no;
+			$supplier_no_add = str_repeat("0", $gapTxt).$supplier_no;
 		}
 		
 		$repl_attr = array(
-			"{CustomerNo}"		=> $supplier_no
+			"{SupplierNo}"		=> $supplier_no_add
 		);
 		
 		$supplier_code = strtr($supplier_code, $repl_attr);
 		
 		return array('supplier_no' => $supplier_no, 'supplier_code' => $supplier_code);				
 	}
+	
 }

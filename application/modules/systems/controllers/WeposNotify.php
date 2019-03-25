@@ -30,6 +30,16 @@ class WeposNotify extends MY_Controller {
 			die(json_encode($r));
 		}
 		
+		$this->db->query("UPDATE ".$this->prefix_pos."product SET product_no = id WHERE product_no = 0");
+		$this->db->query("UPDATE ".$this->prefix_pos."items SET item_no = id WHERE item_no = 0");
+		$this->db->query("UPDATE ".$this->prefix_pos."supplier SET supplier_no = id WHERE supplier_no = 0");
+		$this->db->query("UPDATE ".$this->prefix_pos."customer SET customer_no = id WHERE customer_no = 0");
+		
+		$today_mk = strtotime(date("d-m-Y"));
+		$day_min15_mk = $today_mk-(15*ONE_DAY_UNIX);
+		$day_min15 = date("Y-m-d", $day_min15_mk);
+		
+		$this->db->query("UPDATE ".$this->prefix_pos."discount SET is_active = 0 WHERE date_end < '".$day_min15." 00:00:00' AND is_active = 1 AND is_deleted = 0 AND discount_date_type = 'limited_date'");
 		
 		$r = array('success' => true, 'info' => 'Master Data Selesai');
 		die(json_encode($r));
@@ -566,9 +576,6 @@ class WeposNotify extends MY_Controller {
 	public function Bersihkan_data()
 	{
 		
-		$this->po = $this->prefix_pos.'po';
-		$this->ap = $this->prefix_acc.'account_payable';
-		
 		$session_client_id = $this->session->userdata('client_id');	
 		$session_user = $this->session->userdata('user_username');
 		
@@ -582,7 +589,7 @@ class WeposNotify extends MY_Controller {
 			die(json_encode($r));
 		}
 		
-		
+		$this->db->query("UPDATE ".$this->prefix_pos."billing SET total_credit = grand_total WHERE payment_id = 1 AND ((total_credit = 0 AND is_half_payment = 0) OR (total_credit = 0 AND total_cash = 0 AND is_half_payment = 1))");
 		
 		$r = array('success' => true, 'info' => 'Bersihkan Data - Selesai');
 		die(json_encode($r));
@@ -591,9 +598,6 @@ class WeposNotify extends MY_Controller {
 
 	public function Closing()
 	{
-		
-		$this->po = $this->prefix_pos.'po';
-		$this->ap = $this->prefix_acc.'account_payable';
 		
 		$session_client_id = $this->session->userdata('client_id');	
 		$session_user = $this->session->userdata('user_username');

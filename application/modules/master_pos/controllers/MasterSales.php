@@ -189,7 +189,11 @@ class MasterSales extends MY_Controller {
 				$r = array('success' => false, 'info' => 'Kode sudah digunakan!'); 
 				die(json_encode($r));
 		
-			}
+			}else{
+				$get_code = $this->generate_sales_code($sales_code);
+				$sales_code = $get_code['sales_code'];
+				$sales_no = $get_code['sales_no'];
+			}	
 		}else{
 			$get_code = $this->generate_sales_code();
 			$sales_code = $get_code['sales_code'];
@@ -316,22 +320,28 @@ class MasterSales extends MY_Controller {
 		die(json_encode($r));
 	}
 	
-	public function generate_sales_code($tipe = ''){
+	public function generate_sales_code($cek_code = ''){
 		
 		$this->table = $this->prefix.'sales';		
 
 		$getDate = date("ym");
 		
-		$prefix_sales_code = 'C'.date("ym");
+		$prefix_sales_code = 'SLS'.date("ym");
 		$code_format = '{Sales}{SalesNo}';
 		$no_length = 4;
+		
+		if(!empty($cek_code)){
+			$get_sales_no = substr($cek_code, $no_length*-1);
+			$sales_no = (int) $get_sales_no;
+			return array('sales_no' => $sales_no, 'sales_code' => $cek_code);
+		}
 		
 		$repl_attr = array(
 			"{Sales}" => $prefix_sales_code,
 		);
 		
 		$sales_code = strtr($code_format, $repl_attr);
-		$sales_code = $prefix_sales_code.'0001';
+		//$sales_code = $prefix_sales_code.'0001';
 		
 		$this->db->from($this->table);
 		$this->db->where("sales_code LIKE '".$prefix_sales_code."%'");
@@ -356,14 +366,15 @@ class MasterSales extends MY_Controller {
 		
 		$sales_no++;
 		
+		$sales_no_add = $sales_no;
 		$length_no = strlen($sales_no);
 		if($length_no <= $no_length){
 			$gapTxt = $no_length - $length_no;
-			$sales_no = str_repeat("0", $gapTxt).$sales_no;
+			$sales_no_add = str_repeat("0", $gapTxt).$sales_no;
 		}
 		
 		$repl_attr = array(
-			"{SalesNo}"		=> $sales_no
+			"{SalesNo}"		=> $sales_no_add
 		);
 		
 		$sales_code = strtr($sales_code, $repl_attr);
