@@ -715,6 +715,7 @@ class MasterProduct extends MY_Controller {
 		$session_user = $this->session->userdata('user_username');
 		
 		$product_code = $this->input->post('product_code');
+		$product_category_code = $this->input->post('product_category_code');
 		if($product_code == '- AUTO -'){
 			$product_code = '';
 		}
@@ -834,15 +835,28 @@ class MasterProduct extends MY_Controller {
 		if($this->input->post('form_type_masterProduct', true) == 'add')
 		{
 			$get_product_code = array('product_code' => '', 'product_no' => 1);
+			$product_no = 1;
+			
+			$this->db->select("id");
+			$this->db->from($this->table);
+			$this->db->order_by("id", "DESC");
+			$this->db->limit("1");
+			$get_last_no = $this->db->get();
+			if($get_last_no->num_rows() > 0){
+				$get_last_db = $get_last_no->row();
+				$product_no = $get_last_db->id;
+				$product_no++;
+			}
 			
 			if(empty($product_code)){
 				
 				//cek item code
 				$get_product_code = $this->generate_product_code($tipe);
 				$product_code = $get_product_code['product_code'];
+				$product_no = $get_product_code['product_no'];
 				
 			}
-			
+				
 			$this->db->from($this->table);
 			$this->db->where("product_code = '".$product_code."'");
 			$this->db->where("is_deleted = 0");
@@ -853,16 +867,14 @@ class MasterProduct extends MY_Controller {
 				$r = array('success' => false, 'info' => 'Kode sudah digunakan!'); 
 				
 				//suggestion
-				if(!empty($item_category_code)){
+				if(!empty($product_category_code)){
 					$get_product_code = $this->generate_product_code($tipe);
-					$r = array('success' => false, 'info' => 'Kode sudah digunakan!<br/>Gunakan Kode Berikut: '.$get_product_code['product_code']); 
+					$r = array('success' => false, 'info' => 'Kode sudah digunakan!<br/>Coba Kode Berikut: '.$get_product_code['product_code']); 
 				}
-				
-				die(json_encode($r));
 		
 			}else{
 				$get_product_code['product_code'] = $product_code;
-				$get_product_code['product_no'] = 1;
+				$get_product_code['product_no'] = $product_no;
 			}
 			
 			$var = array(
@@ -1237,7 +1249,8 @@ class MasterProduct extends MY_Controller {
 				
 				if(!empty($data_product_code->product_no)){
 					$product_no = $data_product_code->product_no;
-				}		
+				}	
+				$product_no++;	
 		
 			}else{
 				
