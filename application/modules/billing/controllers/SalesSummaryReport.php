@@ -828,8 +828,9 @@ class SalesSummaryReport extends MY_Controller {
 								$summary_promo_bill_id[$s['id']] = $s;
 							}else{
 								
-								if(!empty($s['discount_id'])){
+								//if(!empty($s['discount_id'])){
 									//$summary_promo[$var_promo]['total_qty'] += 1;
+									$summary_promo[$var_promo]['total_qty_billing'] += 1;
 									$summary_promo[$var_promo]['total_billing'] += $s['total_billing'];
 									$summary_promo[$var_promo]['discount_total'] += $s['discount_total'];
 									$summary_promo[$var_promo]['discount_billing_total'] += $s['discount_billing_total'];
@@ -842,7 +843,7 @@ class SalesSummaryReport extends MY_Controller {
 									$summary_promo[$var_promo]['grand_total'] += $s['grand_total'];
 									$summary_promo[$var_promo]['compliment_total'] += $s['compliment_total'];
 									$summary_promo[$var_promo]['total_dp'] += $s['total_dp'];
-								}
+								//}
 								
 							}
 							

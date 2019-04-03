@@ -265,7 +265,7 @@ class ListStock extends MY_Controller {
 		$alert_hpp_vs_sales = 0;
 		
 		// Default Parameter
-		$this->db->select('a.*, b.item_name, b.item_code, b.item_price, b.sales_price, b.unit_id, b.use_for_sales, c.unit_name');
+		$this->db->select('a.*, b.item_name, b.item_code, b.item_price, b.sales_price, b.unit_id, b.use_for_sales, b.min_stock, c.unit_name');
 		$this->db->from($this->table_stock_rekap.' as a');
 		$this->db->join($this->table_items.' as b',"b.id = a.item_id","LEFT");
 		$this->db->join($this->table_unit.' as c',"c.id = b.unit_id","LEFT");
@@ -299,13 +299,21 @@ class ListStock extends MY_Controller {
 					$alert_hpp_vs_sales++;
 				}
 				
-				if($dt['total_stock'] < 0){
-					$dt['item_name'] = '<b style="color:red">'.$dt['item_name'].'</b>';
-					$dt['total_stock'] = '<b style="color:red">'.$dt['total_stock'].'</b>';
+				if($dt['total_stock'] < 0 OR (!empty($dt['min_stock']) AND $dt['total_stock'] < $dt['min_stock'])){
+					$dt['item_name'] = '<b style="color:orange">'.$dt['item_name'].'</b>';
+					$dt['total_stock'] = '<b style="color:orange">'.priceFormat($dt['total_stock']).'</b>';
+				}else{
+					$dt['total_stock'] = priceFormat($dt['total_stock']);
 				}
-				if($dt['total_stock_kemarin'] < 0){
-					$dt['total_stock_kemarin'] = '<b style="color:red">'.$dt['total_stock_kemarin'].'</b>';
+				
+				if($dt['total_stock_kemarin'] < 0 OR (!empty($dt['min_stock']) AND $dt['total_stock'] < $dt['min_stock'])){
+					$dt['total_stock_kemarin'] = '<b style="color:orange">'.priceFormat($dt['total_stock_kemarin']).'</b>';
+				}else{
+					$dt['total_stock_kemarin'] = priceFormat($dt['total_stock_kemarin']);
 				}
+				
+				$dt['total_stock_in'] = priceFormat($dt['total_stock_in']);
+				$dt['total_stock_out'] = priceFormat($dt['total_stock_out']);
 				
 				$date_item = $dt['trx_date'].'_'.$dt['item_id'];
 				if(!in_array($date_item, $all_date_item)){
@@ -325,6 +333,7 @@ class ListStock extends MY_Controller {
 	
 	public function generate()
 	{
+		$nofity = $this->input->post('nofity');
 		$get_opt = get_option_value(array("as_server_backup"));
 		cek_server_backup($get_opt);
 		
@@ -770,9 +779,23 @@ class ListStock extends MY_Controller {
 		
 		//CEK FIRST TO START DATE
 		$opt_value = array(
-			'stock_rekap_start_date'
+			'stock_rekap_start_date',
+			'stock_rekap_last_update'
 		);
 		$get_opt = get_option_value($opt_value);
+		
+		$stock_rekap_last_update = 0;
+		$stock_rekap_last_update_mktime = 0;
+		if(!empty($get_opt['stock_rekap_last_update'])){
+			$stock_rekap_last_update = $get_opt['stock_rekap_last_update'];
+			$stock_rekap_last_update_mktime = strtotime($stock_rekap_last_update);
+			$stock_rekap_last_update = date("Y-m-d", $stock_rekap_last_update_mktime);
+		}
+		
+		//now
+		$date_now = date("d-m-Y H:i:s");
+		$date_now_mk = strtotime($date_now);
+		$date_now = date("Y-m-d", $date_now_mk);
 		
 		$stock_rekap_start_date = '';
 		$stock_rekap_start_date_mktime = 0;
@@ -893,28 +916,54 @@ class ListStock extends MY_Controller {
 				$r = array('success' => true, 'generated' => 1, 'last' => $last_tanggal, 'na_tanggal' => $na_tanggal, 't_na_tanggal' => count($na_tanggal), 'info' => 'Generate Stok: '.$tanggal);
 			}
 			
+			$stock_rekap_last_update_mktime = $date_now_mk;
+			$stock_rekap_last_update = $date_now;
+				
 		}else{
 			
-			if($tanggal_min30_mktime <= $stock_rekap_start_date_mktime){
-				$tanggal_min30_mktime = $stock_rekap_start_date_mktime;
-				$tanggal_min30 = $stock_rekap_start_date;
-			}
-			$last_tanggal = $tanggal_min30;
-			
-			$na_tanggal = array();
-			foreach($dt_tanggal as $tanggal_x){
-				if(!empty($dt_tanggal_mktime[$tanggal_x])){
-					$get_mk = $dt_tanggal_mktime[$tanggal_x];
-					
-					if($stock_rekap_start_date_mktime <= $get_mk){
-						$na_tanggal[] = $tanggal_x;
-					}
-					
+			if(empty($stock_rekap_last_update)){
+				
+				$stock_rekap_last_update_mktime = $date_now_mk;
+				$stock_rekap_last_update = $date_now;
+				
+				if($tanggal_min30_mktime <= $stock_rekap_start_date_mktime){
+					$tanggal_min30_mktime = $stock_rekap_start_date_mktime;
+					$tanggal_min30 = $stock_rekap_start_date;
 				}
+				$last_tanggal = $tanggal_min30;
+				
+				$na_tanggal = array();
+				foreach($dt_tanggal as $tanggal_x){
+					if(!empty($dt_tanggal_mktime[$tanggal_x])){
+						$get_mk = $dt_tanggal_mktime[$tanggal_x];
+						
+						if($stock_rekap_start_date_mktime <= $get_mk){
+							$na_tanggal[] = $tanggal_x;
+						}
+						
+					}
+				}
+				
+				$r = array('success' => true, 'generated' => 1, 'last' => $last_tanggal, 'na_tanggal' => $na_tanggal, 't_na_tanggal' => count($na_tanggal), 'info' => 'Generate Stok: '.$tanggal);
+			
+			}else{
+				
+				$stock_rekap_last_update_mktime = $date_now_mk;
+				$stock_rekap_last_update = $date_now;
+				
+				$last_tanggal = $stock_rekap_last_update;
+				$na_tanggal = array($stock_rekap_last_update);
+				
+				$r = array('success' => true, 'generated' => 1, 'last' => $last_tanggal, 'na_tanggal' => $na_tanggal, 't_na_tanggal' => count($na_tanggal), 'info' => 'Generate Stok: '.$tanggal);
+		
 			}
 			
-			$r = array('success' => true, 'generated' => 1, 'last' => $last_tanggal, 'na_tanggal' => $na_tanggal, 't_na_tanggal' => count($na_tanggal), 'info' => 'Generate Stok: '.$tanggal);
 		}
+		
+		$opt_value = array(
+			'stock_rekap_last_update' => date("d-m-Y H:i:s", $stock_rekap_last_update_mktime)
+		);
+		update_option($opt_value);
 		
 		die(json_encode($r));
 		

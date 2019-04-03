@@ -110,6 +110,7 @@ class ReportSalesByItem extends MY_Controller {
 			$this->db->join($this->prefix.'product_category as d','d.id = c.category_id','LEFT');
 			$this->db->join($this->prefix.'item_category as e','e.id = c2.category_id','LEFT');
 			$this->db->join($this->prefix.'item_subcategory as f','f.id = c2.subcategory_id','LEFT');
+			$this->db->where("(a.order_status != 'cancel' AND a.order_qty > 0)");	
 			$this->db->where("a.is_deleted", 0);
 			$this->db->where("b.is_deleted", 0);
 			$this->db->where("b.billing_status", "paid");			

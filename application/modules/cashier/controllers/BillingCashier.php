@@ -677,7 +677,7 @@ class BillingCashier extends MY_Controller {
 			a.id as billing_id, a.voucher_no, a.is_sistem_tawar, a.single_rate, a.is_reservation,
 			b.table_name, b.table_no, b.table_desc, b.floorplan_id, c.floorplan_name, 
 			d.payment_type_name, e.user_firstname, e.user_lastname, f.bank_name, 
-			g.billing_no as merge_billing_no, h.sales_name, h.sales_company, i.customer_name');
+			g.billing_no as merge_billing_no, h.sales_name, h.sales_company, i.customer_name, i.customer_code');
 		$this->db->from($this->table." as a");
 		$this->db->join($this->prefix.'table as b','b.id = a.table_id','LEFT');
 		$this->db->join($this->prefix.'floorplan as c','c.id = b.floorplan_id','LEFT');
@@ -5340,6 +5340,12 @@ class BillingCashier extends MY_Controller {
 				$payment_type_show = '-';
 				if(!empty($billingData->payment_type_name)){
 					$payment_type_show = $billingData->payment_type_name;
+					if($payment_type_show == 'Cash'){
+						$payment_type_show .= '/Tunai';
+					}
+				}
+				if(!empty($billingData->bank_name)){
+					$payment_type_show = $billingData->bank_name;
 				}
 				
 				$is_half_payment = $billingData->is_half_payment;
@@ -5347,13 +5353,39 @@ class BillingCashier extends MY_Controller {
 					
 					$total_cash_show = printer_command_align_right(priceFormat($billingData->total_cash), $max_number_3);
 					$total_credit_show = printer_command_align_right(priceFormat($billingData->total_credit), $max_number_3);
-					$half_payment_show = 'Cash[tab]'.$total_cash_show."\n";
-					$half_payment_show .= '[tab]'.$payment_type_show.'[tab]'.$total_credit_show;
+					$half_payment_show = "";
+					//$half_payment_show .= '[tab]Cash/Tunai[tab]'.$total_cash_show."\n";
+					//$half_payment_show .= '[tab]'.$payment_type_show.'[tab]'.$total_credit_show."\n";
+					$half_payment_show = "[align=0]Payment: Sebagian Tunai\n";
+					$half_payment_show .= "[align=0] - Cash/Tunai : ".$total_cash_show."\n";
+					$half_payment_show .= "[align=0] - ".$payment_type_show." : ".$total_credit_show;
 					$payment_type_show = $half_payment_show;
 					
+				}else{
+					$payment_type_show = "[align=0]Payment: ".$payment_type_show;
 				}
 				
 				$table_no_receipt = printer_command_align_right($billingData->table_no, 15);
+				
+				if(empty($grand_total)){
+					$grand_total_show = '.0';
+				}
+				
+				$total_paid = $cash;
+				$total_paid_show = $cash_show;
+				if(empty($total_paid)){
+					$total_paid_show = '.0';
+					if($billingData->billing_status == 'paid'){
+						$payment_type_show = "[align=0]Free / Compliment";
+					}else{
+						$payment_type_show = "[set_tab2]";
+					}
+					
+				}
+				
+				if(!empty($billingData->customer_id)){
+					$payment_type_show .= "\n[align=0]Member: ".$billingData->customer_code."\n";
+				}
 				
 				$print_attr = array(
 					"{date}"	=> date("d/m/Y"),
@@ -5373,6 +5405,7 @@ class BillingCashier extends MY_Controller {
 					"{potongan}"	=> $discount_total_show,
 					"{grand_total}"	=> $grand_total_show,
 					"{cash}"	=> $cash_show,
+					"{total_paid}"	=> $total_paid_show,
 					"{return}"	=> $return_show,
 					"{payment_type}"=> $payment_type_show,
 					//"\n{dp_total}"=> $total_dp_show,
@@ -5389,6 +5422,10 @@ class BillingCashier extends MY_Controller {
 					$print_attr["{billing_no}"] = $billingData->billing_no.' (VOID)';
 				}
 				
+				if($tax_total == 0){
+					$cashierReceipt_layout = empty_value_printer_text($cashierReceipt_layout, '{tax_total}');
+				}
+				
 				if($discount_total == 0){
 					$cashierReceipt_layout = empty_value_printer_text($cashierReceipt_layout, '{potongan}');
 				}
@@ -5399,6 +5436,18 @@ class BillingCashier extends MY_Controller {
 				
 				if($total_dp == 0){
 					$cashierReceipt_layout = empty_value_printer_text($cashierReceipt_layout, '{dp_total}');
+				}
+				
+				if($total_pembulatan == 0){
+					$cashierReceipt_layout = empty_value_printer_text($cashierReceipt_layout, '{pembulatan}');
+				}
+				
+				if($total_pembulatan == 0){
+					$cashierReceipt_layout = empty_value_printer_text($cashierReceipt_layout, '{rounded}');
+				}
+				
+				if($return == 0){
+					$cashierReceipt_layout = empty_value_printer_text($cashierReceipt_layout, '{return}');
 				}
 				
 				$cashierReceipt_layout = str_replace("{hide_empty}","", $cashierReceipt_layout);
