@@ -143,6 +143,14 @@ class SalesSettlementReport extends MY_Controller {
 					$date_exp = explode(" ",$s['payment_date']);
 					$date_exp2 = explode("-",$date_exp[0]);
 					$s['billing_date'] = $date_exp2[2]."/".$date_exp2[1]."/".$date_exp2[0];
+					
+					//STILL ON CURR DAY
+					$date_exp_time = explode(":",$date_exp[1]);
+					if($date_exp_time[0] < 7){
+						//billing date -1
+						$datemin1 = strtotime($date_exp2[2]."-".$date_exp2[1]."-".$date_exp2[0]." ".$date_exp[1])-ONE_DAY_UNIX;
+						$s['billing_date'] = date("d/m/Y",$datemin1);
+					}
 						
 					
 					if(empty($total_qty_billing[$s['billing_date']])){

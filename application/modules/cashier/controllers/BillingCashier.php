@@ -778,6 +778,13 @@ class BillingCashier extends MY_Controller {
 	public function generate_billing_no(){
 		$this->table = $this->prefix.'billing';						
 		$billing_date = date('ymd');
+		$billing_time = date('G');
+		$datenowstr = strtotime(date("d-m-Y H:i:s"));
+		
+		if($billing_time < 7){
+			$datenowstr = strtotime(date("d-m-Y H:i:s"))-ONE_DAY_UNIX;
+			$billing_date = date('ymd', $datenowstr);
+		}
 		
 		$this->db->select("id,billing_no");
 		$this->db->from($this->table);
@@ -787,27 +794,28 @@ class BillingCashier extends MY_Controller {
 		if($get_last->num_rows() > 0){
 			$data_billing = $get_last->row();
 			$billing_no = $data_billing->billing_no;
-			$billing_date = date('ymd');
+			$billing_date = date('ymd', $datenowstr);
+			
 			//CHECK IF VALID
-			if(date('ymd') != substr($billing_no, 0, 6)){
-				if(strtotime(date('Y-m-d')) <= strtotime(substr($billing_no, 0, 2)."-".substr($billing_no, 2, 2)."-".substr($billing_no, 4, 2))){
+			if(date('ymd', $datenowstr) != substr($billing_no, 0, 6)){
+				if(strtotime(date('d-m-Y')) <= strtotime(substr($billing_no, 0, 2)."-".substr($billing_no, 2, 2)."-".substr($billing_no, 4, 2))){
 					//INCREMENT IF OLD DATE
 					$billing_date = substr($billing_no, 0, 6);
 					$billing_no = str_replace($billing_date,"",$billing_no);	
 					
 				}else{
 					//ZERO IF NEXT DATE
-					$billing_date = date('ymd');
+					$billing_date = date('ymd', $datenowstr);
 					$billing_no = 0;
 				}
 				
 			}else{			
-				$billing_date = date('ymd');
+				$billing_date = date('ymd', $datenowstr);
 				$billing_no = str_replace($billing_date,"",$billing_no);	
 			}			
 			$billing_no = (int) $billing_no;			
 		}else{
-			$billing_date = date('ymd');
+			$billing_date = date('ymd', $datenowstr);
 			$billing_no = 0;
 		}
 		
@@ -5346,6 +5354,12 @@ class BillingCashier extends MY_Controller {
 				}
 				if(!empty($billingData->bank_name)){
 					$payment_type_show = $billingData->bank_name;
+					
+					//card_no
+					if(!empty($billingData->card_no)){
+						$payment_type_show .= " / ".$billingData->card_no;
+					}
+					
 				}
 				
 				$is_half_payment = $billingData->is_half_payment;
@@ -5356,13 +5370,13 @@ class BillingCashier extends MY_Controller {
 					$half_payment_show = "";
 					//$half_payment_show .= '[tab]Cash/Tunai[tab]'.$total_cash_show."\n";
 					//$half_payment_show .= '[tab]'.$payment_type_show.'[tab]'.$total_credit_show."\n";
-					$half_payment_show = "[align=0]Payment: Sebagian Tunai\n";
+					$half_payment_show = "Sebagian Tunai\n";
 					$half_payment_show .= "[align=0] - Cash/Tunai : ".$total_cash_show."\n";
 					$half_payment_show .= "[align=0] - ".$payment_type_show." : ".$total_credit_show;
 					$payment_type_show = $half_payment_show;
 					
 				}else{
-					$payment_type_show = "[align=0]Payment: ".$payment_type_show;
+					$payment_type_show = $payment_type_show;
 				}
 				
 				$table_no_receipt = printer_command_align_right($billingData->table_no, 15);
@@ -5376,15 +5390,19 @@ class BillingCashier extends MY_Controller {
 				if(empty($total_paid)){
 					$total_paid_show = '.0';
 					if($billingData->billing_status == 'paid'){
-						$payment_type_show = "[align=0]Free / Compliment";
+						$payment_type_show = "Free / Compliment";
 					}else{
 						$payment_type_show = "[set_tab2]";
 					}
 					
 				}
+				//$payment_type_show .= "\n";
 				
+				$customer_show = '';
+				$customer_code_show = '';
 				if(!empty($billingData->customer_id)){
-					$payment_type_show .= "\n[align=0]Member: ".$billingData->customer_code."\n";
+					$customer_show .= $billingData->customer_name;
+					$customer_code_show .= $billingData->customer_code;
 				}
 				
 				$print_attr = array(
@@ -5408,6 +5426,8 @@ class BillingCashier extends MY_Controller {
 					"{total_paid}"	=> $total_paid_show,
 					"{return}"	=> $return_show,
 					"{payment_type}"=> $payment_type_show,
+					"{customer}"=> $customer_show,
+					"{customer_code}"=> $customer_code_show,
 					//"\n{dp_total}"=> $total_dp_show,
 					"{dp_total}"=> $total_dp_show,
 					"{notes}"=> $billingData->billing_notes,
@@ -5448,6 +5468,10 @@ class BillingCashier extends MY_Controller {
 				
 				if($return == 0){
 					$cashierReceipt_layout = empty_value_printer_text($cashierReceipt_layout, '{return}');
+				}
+				
+				if(!empty($billingData->customer_id)){
+					$cashierReceipt_layout = empty_value_printer_text($cashierReceipt_layout, '{customer}');
 				}
 				
 				$cashierReceipt_layout = str_replace("{hide_empty}","", $cashierReceipt_layout);
@@ -10952,6 +10976,15 @@ class BillingCashier extends MY_Controller {
 		$date_from = date("d-m-Y");
 		$date_till = date("d-m-Y");
 		
+		//STILL ON CURR DAY
+		$billing_time = date('G');
+		$datenowstr = strtotime(date("d-m-Y H:i:s"));
+		if($billing_time < 7){
+			$datenowstr = strtotime(date("d-m-Y H:i:s"))-ONE_DAY_UNIX;
+			$date_from = date("d-m-Y", $datenowstr);
+			$date_till = date("d-m-Y", $datenowstr);
+		}
+		
 		$mktime_dari = strtotime($date_from);
 		$mktime_sampai = strtotime($date_till);
 					
@@ -11008,6 +11041,8 @@ class BillingCashier extends MY_Controller {
 		$all_bil_id = array();
 		$all_discount_id = array();
 		$summary_payment = array();
+		$konversi_pembulatan_billing = array();
+		$balancing_discount_billing = array();
 		
 		$data_post['summary_data'] = array(
 			'total_billing'	=> 0,
@@ -11383,16 +11418,434 @@ class BillingCashier extends MY_Controller {
 					}
 				}
 				
+				//BALANCING DISKON
+				if(!empty($s['billing_discount_total'])){
+					if(empty($balancing_discount_billing[$s['billing_id']])){
+						$balancing_discount_billing[$s['billing_id']] = array(
+							'discount_total'	=> $s['billing_discount_total'],
+							'discount_detail_total'	=> 0,
+							'payment_id'	=> 0,
+							'bank_id'	=> 0,
+							'discount_perbilling'	=> $s['discount_perbilling'],
+							'discount_detail'	=> array(),
+							'billing_date'	=> $s['billing_date']
+						);
+					}
+				}
+				
+				if(!empty($s['billing_discount_total'])){
+					if(empty($balancing_discount_billing[$s['billing_id']]['discount_detail'][$s['product_id']])){
+						$balancing_discount_billing[$s['billing_id']]['discount_detail'][$s['product_id']] = array(
+							'total_discount'=> 0,
+							'total_discount_balance'=> 0,
+							'tax_total'	=> 0,
+							'service_total'	=> 0,
+							'total_billing'	=> 0,
+							'sub_total'	=> 0,
+							'sub_total_balance'=> 0,
+							'discount_balance'=> 0
+						);
+					}
+					$balancing_discount_billing[$s['billing_id']]['discount_detail'][$s['product_id']]['total_discount'] += $total_discount_product;
+					$balancing_discount_billing[$s['billing_id']]['discount_detail'][$s['product_id']]['tax_total'] += $s['tax_total'];
+					$balancing_discount_billing[$s['billing_id']]['discount_detail'][$s['product_id']]['service_total'] += $s['service_total'];
+					$balancing_discount_billing[$s['billing_id']]['discount_detail'][$s['product_id']]['total_billing'] += $total_billing;
+					$balancing_discount_billing[$s['billing_id']]['discount_detail'][$s['product_id']]['sub_total'] += $sub_total;
+					$balancing_discount_billing[$s['billing_id']]['discount_detail_total'] += $total_discount_product;
+					$balancing_discount_billing[$s['billing_id']]['payment_id'] = $s['payment_id'];
+					$balancing_discount_billing[$s['billing_id']]['bank_id'] = $s['bank_id'];
+				}
 				
 				//$newData[$s['id']] = $s;
-				
+				if(!empty($total_billing)){
+					//KONVERSI PEMBULATAN PER-ITEM
+					if(empty($konversi_pembulatan_billing[$s['billing_id']])){
+						$konversi_pembulatan_billing[$s['billing_id']] = array(
+							'total_qty'	=> 0,
+							'billing_total_pembulatan'	=> $s['billing_total_pembulatan'],
+							'total_pembulatan_product'	=> array(),
+							'billing_date'	=> $s['billing_date']
+						);
+					}
+					
+					$konversi_pembulatan_billing[$s['billing_id']]['total_qty'] += $s['order_qty'];
+					if(empty($konversi_pembulatan_billing[$s['billing_id']]['total_pembulatan_product'][$s['product_id']])){
+						$konversi_pembulatan_billing[$s['billing_id']]['total_pembulatan_product'][$s['product_id']] = array(
+							'total_pembulatan'	=> 0,
+							'payment'	=> array(),
+							'bank'	=> array()
+						);
+					}
+					$konversi_pembulatan_billing[$s['billing_id']]['total_pembulatan_product'][$s['product_id']]['total_pembulatan'] = $total_pembulatan;
+					if(!empty($s['payment_id'])){
+						if(empty($konversi_pembulatan_billing[$s['billing_id']]['total_pembulatan_product'][$s['product_id']]['payment'][$s['payment_id']])){
+							$konversi_pembulatan_billing[$s['billing_id']]['total_pembulatan_product'][$s['product_id']]['payment'][$s['payment_id']] = 0;
+						}
+						$konversi_pembulatan_billing[$s['billing_id']]['total_pembulatan_product'][$s['product_id']]['payment'][$s['payment_id']] += $total_pembulatan;
+					}
+					
+					//bank_id
+					if(!empty($s['bank_id'])){
+						if(empty($konversi_pembulatan_billing[$s['billing_id']]['total_pembulatan_product'][$s['product_id']]['bank'][$s['bank_id']])){
+							$konversi_pembulatan_billing[$s['billing_id']]['total_pembulatan_product'][$s['product_id']]['bank'][$s['bank_id']] = 0;
+						}
+						$konversi_pembulatan_billing[$s['billing_id']]['total_pembulatan_product'][$s['product_id']]['bank'][$s['bank_id']] += $total_pembulatan;
+					}
+				}
 			}
 		}
+		
+		
+			
+			//PEMBAGIAN PEMBULATAN AVERAGE
+			$konversi_pembulatan_product = array();
+			$konversi_pembulatan_product_payment = array();
+			$konversi_pembulatan_product_bank = array();
+			$pembulatan_awal_product = array();
+			$pembulatan_awal_product_payment = array();
+			$pembulatan_awal_product_bank = array();
+			if(!empty($konversi_pembulatan_billing)){
+				foreach($konversi_pembulatan_billing as $dt){
+					//if($dt['billing_total_pembulatan'] != 0){
+						$pembagian_pembulatan = $dt['billing_total_pembulatan'] / count($dt['total_pembulatan_product']);
+						
+						$pembagian_pembulatan = number_format($pembagian_pembulatan, 2);
+						
+						//cek selisih
+						$selisih_pembagian = $pembagian_pembulatan*count($dt['total_pembulatan_product']) - $dt['billing_total_pembulatan'];
+						//echo ($pembagian_pembulatan*count($dt['total_pembulatan_product'])).' - '.$dt['billing_total_pembulatan'].' = '.$selisih_pembagian.'<br/>';
+						$no = 1;
+						foreach($dt['total_pembulatan_product'] as $product_id => $data){
+							if(empty($konversi_pembulatan_product[$product_id])){
+								$konversi_pembulatan_product[$product_id] = array(
+									//'total_pembulatan' => 0
+								);
+							}
+							if(empty($konversi_pembulatan_product[$product_id][$dt['billing_date']])){
+								$konversi_pembulatan_product[$product_id][$dt['billing_date']] = array(
+									'total_pembulatan' => 0
+								);
+							}
+							if(empty($pembulatan_awal_product[$product_id])){
+								$pembulatan_awal_product[$product_id] = array();
+							}
+							if(empty($pembulatan_awal_product[$product_id][$dt['billing_date']])){
+								$pembulatan_awal_product[$product_id][$dt['billing_date']] = 0;
+							}
+							
+							$pembulatan_awal_product[$product_id][$dt['billing_date']] += $data['total_pembulatan'];
+							
+							$konversi_pembulatan_product[$product_id][$dt['billing_date']]['total_pembulatan'] += $pembagian_pembulatan;
+							if($no == 1 AND $selisih_pembagian != 0){
+								$konversi_pembulatan_product[$product_id][$dt['billing_date']]['total_pembulatan'] -= $selisih_pembagian;
+							}
+							
+							//PAYMENT
+							if(!empty($data['payment'])){
+								foreach($data['payment'] as $payment_id => $dtP){
+									if(empty($konversi_pembulatan_product_payment[$product_id][$dt['billing_date']])){
+										$konversi_pembulatan_product_payment[$product_id][$dt['billing_date']] = array();
+									}
+									if(empty($konversi_pembulatan_product_payment[$product_id][$dt['billing_date']][$payment_id])){
+										$konversi_pembulatan_product_payment[$product_id][$dt['billing_date']][$payment_id] = 0;
+									}
+									$konversi_pembulatan_product_payment[$product_id][$dt['billing_date']][$payment_id] += $pembagian_pembulatan;
+									if($no == 1 AND $selisih_pembagian != 0){
+										$konversi_pembulatan_product_payment[$product_id][$dt['billing_date']][$payment_id] -= $selisih_pembagian;
+									}
+									
+									if(empty($pembulatan_awal_product_payment[$product_id][$dt['billing_date']])){
+										$pembulatan_awal_product_payment[$product_id][$dt['billing_date']] = array();
+									}
+									if(empty($pembulatan_awal_product_payment[$product_id][$dt['billing_date']][$payment_id])){
+										$pembulatan_awal_product_payment[$product_id][$dt['billing_date']][$payment_id] = 0;
+									}
+									$pembulatan_awal_product_payment[$product_id][$dt['billing_date']][$payment_id] += $dtP;
+									
+									
+								}
+								
+							}
+							//$konversi_data = $data['total_pembulatan'] - $pembagian_pembulatan;
+							
+							//BANK
+							if(!empty($data['bank'])){
+								foreach($data['bank'] as $bank_id => $dtP){
+									if(empty($konversi_pembulatan_product_bank[$product_id][$dt['billing_date']])){
+										$konversi_pembulatan_product_bank[$product_id][$dt['billing_date']] = array();
+									}
+									if(empty($konversi_pembulatan_product_bank[$product_id][$dt['billing_date']][$bank_id])){
+										$konversi_pembulatan_product_bank[$product_id][$dt['billing_date']][$bank_id] = 0;
+									}
+									$konversi_pembulatan_product_bank[$product_id][$dt['billing_date']][$bank_id] += $pembagian_pembulatan;
+									if($no == 1 AND $selisih_pembagian != 0){
+										$konversi_pembulatan_product_bank[$product_id][$dt['billing_date']][$bank_id] -= $selisih_pembagian;
+									}
+									
+									if(empty($pembulatan_awal_product_bank[$product_id][$dt['billing_date']])){
+										$pembulatan_awal_product_bank[$product_id][$dt['billing_date']] = array();
+									}
+									if(empty($pembulatan_awal_product_bank[$product_id][$dt['billing_date']][$bank_id])){
+										$pembulatan_awal_product_bank[$product_id][$dt['billing_date']][$bank_id] = 0;
+									}
+									$pembulatan_awal_product_bank[$product_id][$dt['billing_date']][$bank_id] += $dtP;
+									
+									
+								}
+								
+							}
+							//$konversi_data = $data['total_pembulatan'] - $pembagian_pembulatan;
+							
+							$no++;
+						}
+					//}
+				}
+			}
+			
+			//BALANCING DISKON
+			$data_diskon_awal = array();
+			$data_diskon_awal_payment = array();
+			$data_diskon_awal_bank = array();
+			$data_balancing_diskon = array();
+			$data_balancing_diskon_payment = array();
+			$data_balancing_diskon_bank = array();
+			$data_selisih_diskon = array();
+			$data_selisih_diskon_payment = array();
+			$data_selisih_diskon_bank = array();
+			if(!empty($balancing_discount_billing)){
+				foreach($balancing_discount_billing as $billing_id => $dt){
+					$selisih_diskon = $dt['discount_total'] - $dt['discount_detail_total'];
+					$total_produk = count($dt['discount_detail']);
+					
+					//AVERAGE
+					$selisih_diskon_perproduct = 0;
+					if($selisih_diskon != 0){
+						$selisih_diskon_perproduct = $selisih_diskon/$total_produk;
+						$selisih_diskon_perproduct = number_format($selisih_diskon_perproduct, 2);
+					}
+					
+					$discount_detail_total = 0;
+					
+					if(!empty($dt['discount_detail'])){
+						
+						$no = 0;
+						foreach($dt['discount_detail'] as $product_id => $dt_diskon){
+							$no++;
+							$discount_detail_total += ($dt_diskon['total_discount']+$selisih_diskon_perproduct);
+							
+							
+							if(empty($data_diskon_awal[$product_id])){
+								$data_diskon_awal[$product_id] = array(
+									//'item'	=> 0,
+									//'billing'	=> 0
+								);
+							}
+							if(empty($data_balancing_diskon[$product_id])){
+								$data_balancing_diskon[$product_id] = array(
+									//'item'	=> 0,
+									//'billing'	=> 0
+								);
+							}
+							
+							if(empty($data_diskon_awal[$product_id][$dt['billing_date']])){
+								$data_diskon_awal[$product_id][$dt['billing_date']] = array(
+									'item'	=> 0,
+									'billing'	=> 0
+								);
+							}
+							if(empty($data_balancing_diskon[$product_id][$dt['billing_date']])){
+								$data_balancing_diskon[$product_id][$dt['billing_date']] = array(
+									'item'	=> 0,
+									'billing'	=> 0
+								);
+							}
+							
+							
+							if($dt['discount_perbilling'] == 1){
+								$data_diskon_awal[$product_id][$dt['billing_date']]['billing'] += $dt_diskon['total_discount'];
+							}else{
+								$data_diskon_awal[$product_id][$dt['billing_date']]['item'] += $dt_diskon['total_discount'];
+							}
+							
+							if($dt['discount_perbilling'] == 1){
+								$data_balancing_diskon[$product_id][$dt['billing_date']]['billing'] += ($dt_diskon['total_discount']+$selisih_diskon_perproduct);
+							}else{
+								$data_balancing_diskon[$product_id][$dt['billing_date']]['item'] += ($dt_diskon['total_discount']+$selisih_diskon_perproduct);
+							}
+							
+							$balancing_discount_billing[$billing_id]['discount_detail'][$product_id]['total_discount_balance'] = ($dt_diskon['total_discount']+$selisih_diskon_perproduct);
+							
+							if($no == count($dt['discount_detail'])){
+								if($discount_detail_total != $dt['discount_total']){
+									$selisih_akhir = $dt['discount_total'] - $discount_detail_total;
+									
+									if($dt['discount_perbilling'] == 1){
+										$data_balancing_diskon[$product_id][$dt['billing_date']]['billing'] += $selisih_akhir;
+									}else{
+										$data_balancing_diskon[$product_id][$dt['billing_date']]['item'] += $selisih_akhir;
+									}
+									
+									$balancing_discount_billing[$billing_id]['discount_detail'][$product_id]['total_discount_balance'] += $selisih_akhir;
+									
+								}
+							}
+							
+						}
+						
+					}
+				}
+				
+				//SET SELISIH DISKON
+				if(!empty($balancing_discount_billing)){
+					foreach($balancing_discount_billing as $billing_id => $dt){
+						if(!empty($dt['discount_detail'])){
+							foreach($dt['discount_detail'] as $product_id => $dt_diskon){
+								
+								$sub_total_balance = $dt_diskon['total_billing'] - $dt_diskon['total_discount_balance'];
+								$sub_total_balance += $dt_diskon['tax_total'];
+								$sub_total_balance += $dt_diskon['service_total'];
+								
+								$balancing_discount_billing[$billing_id]['discount_detail'][$product_id]['sub_total_balance'] = $sub_total_balance;
+								
+								$sub_total_selisih = $dt_diskon['sub_total'] - $sub_total_balance;
+								$balancing_discount_billing[$billing_id]['discount_detail'][$product_id]['discount_balance'] = $sub_total_selisih;
+								
+								if(empty($data_selisih_diskon[$product_id])){
+									$data_selisih_diskon[$product_id] = array();
+								}
+								if(empty($data_selisih_diskon[$product_id][$dt['billing_date']])){
+									$data_selisih_diskon[$product_id][$dt['billing_date']] = 0;
+								}
+								
+								$data_selisih_diskon[$product_id][$dt['billing_date']] += $sub_total_selisih;
+								
+								if(empty($data_selisih_diskon_payment[$product_id])){
+									$data_selisih_diskon_payment[$product_id] = array();
+								}
+								if(empty($data_selisih_diskon_payment[$product_id][$dt['billing_date']])){
+									$data_selisih_diskon_payment[$product_id][$dt['billing_date']] = array();
+								}
+								
+								if(empty($data_selisih_diskon_payment[$product_id][$dt['billing_date']][$dt['payment_id']])){
+									$data_selisih_diskon_payment[$product_id][$dt['billing_date']][$dt['payment_id']] = 0;
+								}
+								
+								//echo $product_id.' -> '.$dt['payment_id'].' <br/>';
+								$data_selisih_diskon_payment[$product_id][$dt['billing_date']][$dt['payment_id']] += $sub_total_selisih;
+								
+								if(empty($data_selisih_diskon_bank[$product_id])){
+									$data_selisih_diskon_bank[$product_id] = array();
+								}
+								if(empty($data_selisih_diskon_bank[$product_id][$dt['billing_date']])){
+									$data_selisih_diskon_bank[$product_id][$dt['billing_date']] = array();
+								}
+								
+								if(empty($data_selisih_diskon_bank[$product_id][$dt['billing_date']][$dt['bank_id']])){
+									$data_selisih_diskon_bank[$product_id][$dt['billing_date']][$dt['bank_id']] = 0;
+								}
+								
+								//echo $product_id.' -> '.$dt['bank_id'].' <br/>';
+								$data_selisih_diskon_bank[$product_id][$dt['billing_date']][$dt['bank_id']] += $sub_total_selisih;
+								
+							}
+						}
+					}
+				}
+			}
 		
 		//GROUP PAYMENT
 		$summary_payment_group = array();
 		if(!empty($summary_payment)){
 			foreach($summary_payment as $dt){
+				
+				//BALANCING DISKON
+				if(!empty($data_diskon_awal[$dt['product_id']][$billing_date])){
+					$dt['discount_total'] -= $data_diskon_awal[$dt['product_id']][$billing_date]['item'];
+					$dt['discount_billing_total'] -= $data_diskon_awal[$dt['product_id']][$billing_date]['billing'];
+				}
+				
+				if(!empty($data_balancing_diskon[$dt['product_id']][$billing_date])){
+					$dt['discount_total'] += $data_balancing_diskon[$dt['product_id']][$billing_date]['item'];
+					$dt['discount_billing_total'] += $data_balancing_diskon[$dt['product_id']][$billing_date]['billing'];
+				}
+				
+				if(!empty($data_selisih_diskon[$dt['product_id']][$billing_date])){
+					$dt['sub_total'] -= $data_selisih_diskon[$dt['product_id']][$billing_date];
+					$dt['grand_total'] -= $data_selisih_diskon[$dt['product_id']][$billing_date];
+				}
+				
+				//BALANCING DISKON PAYMENT
+				if(!empty($data_selisih_diskon_payment[$dt['product_id']][$billing_date])){
+					foreach($data_selisih_diskon_payment[$dt['product_id']][$billing_date] as $payment_id => $dtP){
+						if(!empty($dt['payment_'.$payment_id])){
+							$dt['payment_'.$payment_id] -= $dtP;
+						}
+					}
+				}
+				
+				//BALANCING DISKON BANK
+				if(!empty($data_selisih_diskon_bank[$dt['product_id']][$billing_date])){
+					foreach($data_selisih_diskon_bank[$dt['product_id']][$billing_date] as $bank_id => $dtP){
+						if(!empty($dt['bank_'.$bank_id])){
+							$dt['bank_'.$bank_id] -= $dtP;
+						}
+					}
+				}
+				
+				
+				//KONVERSI PEMBULATAN
+				$selisih_pembulatan = 0;
+				if(!empty($pembulatan_awal_product[$dt['product_id']][$billing_date])){
+					$selisih_pembulatan -= $pembulatan_awal_product[$dt['product_id']][$billing_date];
+					$dt['grand_total'] -= $pembulatan_awal_product[$dt['product_id']][$billing_date];
+				}
+				
+				
+				if(!empty($konversi_pembulatan_product[$dt['product_id']][$billing_date])){
+					$dt['total_pembulatan'] = $konversi_pembulatan_product[$dt['product_id']][$billing_date]['total_pembulatan'];
+					$dt['grand_total'] += $konversi_pembulatan_product[$dt['product_id']][$billing_date]['total_pembulatan'];
+					$selisih_pembulatan += $konversi_pembulatan_product[$dt['product_id']][$billing_date]['total_pembulatan'];
+				}
+				
+				if(!empty($dt['compliment_total'])){
+					$dt['compliment_total'] += $selisih_pembulatan;
+				}
+				
+				//KONVERSI PEMBULATAN PAYMENT
+				if(!empty($pembulatan_awal_product_payment[$dt['product_id']][$billing_date])){
+					foreach($pembulatan_awal_product_payment[$dt['product_id']][$billing_date] as $payment_id => $dtP){
+						if(!empty($dt['payment_'.$payment_id])){
+							$dt['payment_'.$payment_id] -= $dtP;
+						}
+					}
+				}
+				
+				if(!empty($konversi_pembulatan_product_payment[$dt['product_id']][$billing_date])){
+					foreach($konversi_pembulatan_product_payment[$dt['product_id']][$billing_date] as $payment_id => $dtP){
+						if(!empty($dt['payment_'.$payment_id])){
+							$dt['payment_'.$payment_id] += $dtP;
+						}
+					}
+				}
+				
+				
+				//KONVERSI PEMBULATAN BANK
+				if(!empty($pembulatan_awal_product_bank[$dt['product_id']][$billing_date])){
+					foreach($pembulatan_awal_product_bank[$dt['product_id']][$billing_date] as $bank_id => $dtP){
+						if(!empty($dt['bank_'.$bank_id])){
+							$dt['bank_'.$bank_id] -= $dtP;
+						}
+					}
+				}
+				
+				if(!empty($konversi_pembulatan_product_bank[$dt['product_id']][$billing_date])){
+					foreach($konversi_pembulatan_product_bank[$dt['product_id']][$billing_date] as $bank_id => $dtP){
+						if(!empty($dt['bank_'.$bank_id])){
+							$dt['bank_'.$bank_id] += $dtP;
+						}
+					}
+				}
+				
 				if(empty($summary_payment_group[$dt['payment_id']])){
 					$summary_payment_group[$dt['payment_id']] = array();
 				}
@@ -11510,16 +11963,15 @@ class BillingCashier extends MY_Controller {
 						
 						$value_show = printer_command_align_right(priceFormat($dt['payment_'.$key]), $max_number_3);
 						
-						if($no_payment == 1 AND count($dt_detail) == 1){
-							$all_payment_data .= "[tab]".$payment_name."[tab]".$value_show."\n"; 
+						if($payment_name == 'CASH'){
+							$all_payment_data .= "[align=0][tab]".$payment_name."[tab]".$value_show."\n"; 
 						}else{
 							if($no_payment == 1){
-								$all_payment_data .= $payment_name."\n";
+								//$all_payment_data .= $payment_name."\n";
+								$all_payment_data .= "[align=0][tab]".$payment_name."[tab] \n"; 
 							}
-							$all_payment_data .= "[align=0]".$data_name."[tab] [tab]".$value_show."\n";
+							$all_payment_data .= "[align=0][tab] ** ".$data_name."[tab]".$value_show."\n";
 						}
-						
-						 
 						
 					}
 				}
@@ -11528,9 +11980,9 @@ class BillingCashier extends MY_Controller {
 			}
 		}
 		
-		
 		$print_attr = array(
 			"{user}"	=> $session_user,
+			"{tanggal_settlement}"		=> date("d/m/Y", $datenowstr),
 			"{tanggal_shift}"		=> date("d/m/Y"),
 			"{jam_shift}"			=> date("H:i"),
 			"{summary_data}"			=> $all_summary_data,

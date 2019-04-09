@@ -5,7 +5,6 @@
 /application/.htaccess
 /application/modules/fixbugs/models
 /.settings
-uploads/
 backup/
 apps/
 .buildpath

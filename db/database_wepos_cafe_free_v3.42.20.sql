@@ -537,7 +537,7 @@ CREATE TABLE IF NOT EXISTS `apps_modules` (
   `updated` timestamp NULL DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=147;
+) ENGINE=InnoDB AUTO_INCREMENT=170;
 
 INSERT INTO `apps_modules` (`id`, `module_name`, `module_author`, `module_version`, `module_description`, `module_folder`, `module_controller`, `module_is_menu`, `module_breadcrumb`, `module_order`, `module_icon`, `module_shortcut_icon`, `module_glyph_icon`, `module_glyph_font`, `module_free`, `running_background`, `show_on_start_menu`, `show_on_right_start_menu`, `start_menu_path`, `start_menu_order`, `start_menu_icon`, `start_menu_glyph`, `show_on_context_menu`, `context_menu_icon`, `context_menu_glyph`, `show_on_shorcut_desktop`, `desktop_shortcut_icon`, `desktop_shortcut_glyph`, `show_on_preference`, `preference_icon`, `preference_glyph`, `createdby`, `created`, `updatedby`, `updated`, `is_active`, `is_deleted`) VALUES
 (1, 'Setup Aplikasi', 'dev@wepos.id', 'v.1.0', '', 'systems', 'setupAplikasiFree', 1, '1. Master Aplikasi>Setup Aplikasi', 1, 'icon-cog', 'icon-cog', '', '', 1, 0, 1, 0, '1. Master Aplikasi>Setup Aplikasi', 1000, 'icon-cog', '', 0, 'icon-cog', '', 1, 'icon-cog', '', 0, 'icon-cog', '', 'administrator', '2019-03-07 01:52:11', 'administrator', '2019-03-07 17:00:00', 1, 0),
@@ -602,7 +602,8 @@ INSERT INTO `apps_modules` (`id`, `module_name`, `module_author`, `module_versio
 (129, 'Receiving Report', 'dev@wepos.id', 'v.1.0.0', 'Receiving Report', 'inventory', 'reportReceiving', 0, '6. Reports>Receiving (In)>Receiving Report', 1, 'icon-grid', 'icon-grid', '', '', 1, 0, 1, 0, '6. Reports>Receiving (In)>Receiving Report', 6501, 'icon-grid', '', 0, 'icon-grid', '', 0, 'icon-grid', '', 0, 'icon-grid', '', 'administrator', '2019-03-07 06:31:50', 'administrator', '2019-03-07 12:00:32', 1, 0),
 (132, 'Receiving Report (Recap)', 'dev@wepos.id', 'v.1.0.0', 'Receiving Report (Recap)', 'inventory', 'reportReceivingRecap', 0, '6. Reports>Receiving (In)>Receiving Report (Recap)', 1, 'icon-grid', 'icon-grid', '', '', 1, 0, 1, 0, '6. Reports>Receiving (In)>Receiving Report (Recap)', 6504, 'icon-grid', '', 0, 'icon-grid', '', 1, 'icon-grid', '', 1, 'icon-grid', '', 'administrator', '2019-03-07 08:57:19', 'administrator', '2019-03-07 12:01:16', 1, 0),
 (145, 'Monitoring Stock (Actual)', 'dev@wepos.id', 'v.1.0.0', 'Monitoring Stock (Actual)', 'inventory', 'reportMonitoringStock', 0, '6. Reports>Warehouse>Monitoring Stock (Actual)', 1, 'icon-grid', 'icon-grid', '', '', 1, 0, 1, 0, '6. Reports>Warehouse>Monitoring Stock (Actual)', 6642, 'icon-grid', '', 0, 'icon-grid', '', 1, 'icon-grid', '', 1, 'icon-grid', '', 'administrator', '2019-02-11 16:44:12', 'administrator', '2019-03-07 17:45:36', 1, 0),
-(146, 'Kartu Stok', 'dev@wepos.id', 'v.1.0.0', 'Kartu Stok', 'inventory', 'kartuStok', 0, '6. Reports>Warehouse>Kartu Stock', 1, 'icon-grid', 'icon-grid', '', '', 1, 0, 1, 0, '6. Reports>Warehouse>Kartu Stock', 6643, 'icon-grid', '', 0, 'icon-grid', '', 1, 'icon-grid', '', 1, 'icon-grid', '', 'administrator', '2019-03-07 23:43:42', 'administrator', '2019-03-07 17:46:03', 1, 0);
+(146, 'Kartu Stok', 'dev@wepos.id', 'v.1.0.0', 'Kartu Stok', 'inventory', 'kartuStok', 0, '6. Reports>Warehouse>Kartu Stock', 1, 'icon-grid', 'icon-grid', '', '', 1, 0, 1, 0, '6. Reports>Warehouse>Kartu Stock', 6643, 'icon-grid', '', 0, 'icon-grid', '', 1, 'icon-grid', '', 1, 'icon-grid', '', 'administrator', '2019-03-07 23:43:42', 'administrator', '2019-03-07 17:46:03', 1, 0),
+(169,'Pembayaran PPOB','dev@wepos.id','v.1.0.0','Pembayaran PPOB','cashier','ppob',0,'3. Cashier & Reservation>Pembayaran PPOB',1,'icon-grid','icon-grid','','',1,0,1,0,'3. Cashier & Reservation>Pembayaran PPOB',3401,'icon-grid','',0,'icon-grid','',1,'icon-grid','',1,'icon-grid','','administrator','2019-04-09 08:25:57','administrator','2019-04-09 17:49:57',1,0);
 
 CREATE TABLE IF NOT EXISTS `apps_modules_method` (
   `id` smallint(6) NOT NULL,
@@ -894,7 +895,7 @@ CREATE TABLE IF NOT EXISTS `apps_roles_module` (
   `updated` timestamp NULL DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=426;
+) ENGINE=InnoDB AUTO_INCREMENT=428;
 
 INSERT INTO `apps_roles_module` (`id`, `role_id`, `module_id`, `start_menu_path`, `module_order`, `createdby`, `created`, `updatedby`, `updated`, `is_active`, `is_deleted`) VALUES
 (1, 1, 151, NULL, 0, 'admin', '2019-03-07 05:34:13', 'admin', '2019-03-07 05:34:13', 1, 0),
@@ -1321,7 +1322,9 @@ INSERT INTO `apps_roles_module` (`id`, `role_id`, `module_id`, `start_menu_path`
 (422, 5, 14, NULL, 0, 'admin', '2019-03-07 05:41:49', 'admin', '2019-03-07 05:41:49', 1, 0),
 (423, 5, 9, NULL, 0, 'admin', '2019-03-07 05:41:49', 'admin', '2019-03-07 05:41:49', 1, 0),
 (424, 5, 10, NULL, 0, 'admin', '2019-03-07 05:41:49', 'admin', '2019-03-07 05:41:49', 1, 0),
-(425, 5, 7, NULL, 0, 'admin', '2019-03-07 05:41:49', 'admin', '2019-03-07 05:41:49', 1, 0);
+(425, 5, 7, NULL, 0, 'admin', '2019-03-07 05:41:49', 'admin', '2019-03-07 05:41:49', 1, 0),
+(426, 1,169,NULL,0,'admin','2019-04-09 16:18:38','admin','2019-04-09 16:18:38',1,0),
+(427, 2,169,NULL,0,'admin','2019-04-09 16:18:38','admin','2019-04-09 16:18:38',1,0);
 
 CREATE TABLE IF NOT EXISTS `apps_roles_widget` (
   `id` smallint(6) NOT NULL,

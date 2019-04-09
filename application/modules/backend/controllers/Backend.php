@@ -144,6 +144,7 @@ class Backend extends MY_Controller {
         var programRelease = "'.config_item('program_release').'";
         var client_name_app = "'.config_item('client_name').'";
         var copyright   = "'.config_item('copyright').'";
+        var website_url   = "'.config_item('website').'";
         var one_day_unix= '.ONE_DAY_UNIX.';
         var date_today  = "'.date('d/m/Y').'";	
 		';
