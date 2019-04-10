@@ -76,6 +76,7 @@ class Ppob extends MY_Controller {
 		if(empty($get_opt['ppob_key'])){
 			$get_opt['ppob_key'] = 0;
 		}
+		/*
 		if(empty($get_opt['management_systems'])){
 			$r = array('success' => false, 'info' => 'Cek Setup Aplikasi, aktifkan pilihan: <b>Backup Data ke Server</b>');
 			if(!empty($is_return)){
@@ -91,6 +92,7 @@ class Ppob extends MY_Controller {
 			}
 			die(json_encode($r));
 		}
+		*/
 		
 		//cek_server_backup($get_opt);
 		
