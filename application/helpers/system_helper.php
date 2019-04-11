@@ -352,7 +352,7 @@ if( ! function_exists('replace_to_printer_command')){
 			"[set_tab2]"	=> "\x1b\x44\x07\x13",
 			"[set_tab3]"	=> "\x1b\x44\x01\x13",
 			"[set_tab1a]"	=> "\x1b\x44\x04\x13",
-			"[set_tab1b]"	=> "\x1b\x44\x10,x02",
+			"[set_tab1b]"	=> "\x1b\x44\x10",
 			"[tab]"	=> "\x09",
 			"[newline]"	=> "\x0A",
 			"[fullcut]"	=> "\x1b\x69",
@@ -368,43 +368,43 @@ if( ! function_exists('replace_to_printer_command')){
 			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x07\x13";
 			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x13";
 			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x13";
-			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x10";
+			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x11";
 		}
 		
 		//40
 		if($tipe_pin == 40){
-			$string_to_hexa['[set_tab1]'] = "\x1b\x44\x04\x14\x1c";
+			$string_to_hexa['[set_tab1]'] = "\x1b\x44\x04\x14\x1d";
 			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x0F\x19";
 			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x19";
 			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x19";
-			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x17";
+			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x19";
 		}
 		
 		//42
 		if($tipe_pin == 42){
-			$string_to_hexa['[set_tab1]'] = "\x1b\x44\x04\x13\x1c";
-			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x12\x1c";
-			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x1c";
-			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x1c";
-			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x19";
+			$string_to_hexa['[set_tab1]'] = "\x1b\x44\x04\x16\x1f";
+			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x12\x1d";
+			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x1d";
+			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x1d";
+			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x1b";
 		}
 		
 		//46
 		if($tipe_pin == 46){
-			$string_to_hexa['[set_tab1]'] = "\x1b\x44\x04\x17\x20";
-			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x15\x20";
-			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x20";
-			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x20";
-			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x1d";
+			$string_to_hexa['[set_tab1]'] = "\x1b\x44\x04\x18\x22";
+			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x15\x21";
+			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x21";
+			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x21";
+			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x1f";
 		}
 		
 		//48
 		if($tipe_pin == 48){
-			$string_to_hexa['[set_tab1]'] = "\x1b\x44\x04\x18\x23";
-			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x15\x22"; 
-			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x22";
-			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x22";
-			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x1f";
+			$string_to_hexa['[set_tab1]'] = "\x1b\x44\x04\x1a\x24";
+			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x15\x23"; 
+			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x23";
+			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x23";
+			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x21";
 		}
 		
 		if($tipe_printer == 'BIRCH'){
@@ -1237,6 +1237,7 @@ if(!function_exists('printing_process')){
 				foreach($xplode_perline as $key => $dt_exp){
 					
 					//echo 'no_line = '.$no_line.', dt_exp = '.$dt_exp.'<br/>';
+					$dt_exp = trim($dt_exp);
 					
 					//--FONT STYLE---------------
 					//align

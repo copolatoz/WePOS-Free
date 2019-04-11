@@ -4761,32 +4761,32 @@ class BillingCashier extends MY_Controller {
 
 				if($printer_pin_cashierReceipt == 32){
 					$max_text -= 6;
-					$max_number_1 = 7;
+					$max_number_1 = 8;
 					$max_number_2 = 8;
 					$max_number_3 = 13;
 				}
 				if($printer_pin_cashierReceipt == 40){
 					$max_text -= 2;
-					$max_number_1 = 7;
+					$max_number_1 = 9;
 					$max_number_2 = 11;
 					$max_number_3 = 13;
 				}
 				if($printer_pin_cashierReceipt == 42){
-					$max_text -= 2;
+					//$max_text -= 2;
 					$max_number_1 = 9;
 					$max_number_2 = 11;
 					$max_number_3 = 13;
 				}
 				if($printer_pin_cashierReceipt == 46){
 					$max_text += 2;
-					$max_number_1 = 9;
-					$max_number_2 = 11;
+					$max_number_1 = 10;
+					$max_number_2 = 12;
 					$max_number_3 = 13;
 				}
 				if($printer_pin_cashierReceipt == 48){
 					$max_text += 4;
-					$max_number_1 = 9;
-					$max_number_2 = 11;
+					$max_number_1 = 10;
+					$max_number_2 = 12;
 					$max_number_3 = 13;
 				}
 				
@@ -5379,7 +5379,44 @@ class BillingCashier extends MY_Controller {
 					$payment_type_show = $payment_type_show;
 				}
 				
-				$table_no_receipt = printer_command_align_right($billingData->table_no, 15);
+				//table no
+				$table_no_receipt = $billingData->table_no;
+				$table_no_title = 'MEJA:';
+				if(strstr($cashierReceipt_layout,'{table_no=')){
+					$exp_tableno = explode('{table_no=', $cashierReceipt_layout);
+					if(!empty($exp_tableno[1])){
+						$exp_tableno2 = explode('}', $exp_tableno[1]);
+						if(!empty($exp_tableno2[0])){
+							$table_no_title = $exp_tableno2[0];
+							$table_no_title = str_replace('"',"",$table_no_title);
+							$table_no_title = str_replace('\'',"",$table_no_title);
+						}
+					}
+					$cashierReceipt_layout = str_replace('{table_no='.$table_no_title.'}',"{table_no}",$cashierReceipt_layout);
+					$cashierReceipt_layout = str_replace('{table_no="'.$table_no_title.'"}',"{table_no}",$cashierReceipt_layout);
+					$cashierReceipt_layout = str_replace('{table_no=\''.$table_no_title.'\'}',"{table_no}",$cashierReceipt_layout);
+				}
+				$table_no_receipt = $table_no_title.$billingData->table_no;
+				$table_no_receipt = printer_command_align_right($table_no_receipt, 15);
+				
+				//$billingData->billing_no
+				$billing_no_receipt = $billingData->billing_no;
+				$billing_no_title = 'NO:';
+				if(strstr($cashierReceipt_layout,'{billing_no=')){
+					$exp_billingno = explode('{billing_no=', $cashierReceipt_layout);
+					if(!empty($exp_billingno[1])){
+						$exp_billingno2 = explode('}', $exp_billingno[1]);
+						if(!empty($exp_billingno2[0])){
+							$billing_no_title = $exp_billingno2[0];
+							$billing_no_title = str_replace('"',"",$billing_no_title);
+							$billing_no_title = str_replace('\'',"",$billing_no_title);
+						}
+					}
+					$cashierReceipt_layout = str_replace('{billing_no='.$billing_no_title.'}',"{billing_no}",$cashierReceipt_layout);
+					$cashierReceipt_layout = str_replace('{billing_no="'.$billing_no_title.'"}',"{billing_no}",$cashierReceipt_layout);
+					$cashierReceipt_layout = str_replace('{billing_no=\''.$billing_no_title.'\'}',"{billing_no}",$cashierReceipt_layout);
+				}
+				$billing_no_receipt = $billing_no_title.$billingData->billing_no;
 				
 				if(empty($grand_total)){
 					$grand_total_show = '.0';
@@ -5410,7 +5447,7 @@ class BillingCashier extends MY_Controller {
 					"{date_time}"	=> date("d/m/Y H:i"),
 					"{user}"	=> $session_user,
 					"{table_no}"	=> $table_no_receipt,
-					"{billing_no}"	=> $billingData->billing_no,
+					"{billing_no}"	=> $billing_no_receipt,
 					"{order_data}"	=> $order_data,
 					"{order_data2}"	=> $order_data2,
 					"{subtotal}"	=> $subtotal_show,
@@ -5436,10 +5473,10 @@ class BillingCashier extends MY_Controller {
 				);
 				
 				if(!empty($single_rate_txt)){
-					$print_attr["{billing_no}"] = $billingData->billing_no.$single_rate_txt;
+					$print_attr["{billing_no}"] = $billing_no_receipt.$single_rate_txt;
 				}
 				if(!empty($is_void)){
-					$print_attr["{billing_no}"] = $billingData->billing_no.' (VOID)';
+					$print_attr["{billing_no}"] = $billing_no_receipt.' (VOID)';
 				}
 				
 				if($tax_total == 0){
@@ -10942,8 +10979,8 @@ class BillingCashier extends MY_Controller {
 		}
 		if($printer_pin_cashierReceipt == 48){
 			$max_text += 4;
-			$max_number_1 = 9;
-			$max_number_2 = 11;
+			$max_number_1 = 10;
+			$max_number_2 = 12;
 			$max_number_3 = 13;
 		}
 		

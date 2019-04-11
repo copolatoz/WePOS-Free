@@ -63,7 +63,7 @@ class UserData extends MY_Controller {
 			$params['where'][] = "c.role_name = '".$role_name."'";
 		}
 		if(!empty($role_id)){
-			$params['where'][] = "b2.role_id = '".$role_id."'";
+			$params['where'][] = "b2.role_id IN (".$role_id.")";
 		}
 		
 		if(!empty($searching)){
