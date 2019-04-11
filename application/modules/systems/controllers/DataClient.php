@@ -650,7 +650,7 @@ class DataClient extends MY_Controller {
 						$return_data['data_option'] = $ret_data['data_option'];
 					}
 					
-					if(!function_exists('wepos_log_update')){
+					if(method_exists( $this->m, 'wepos_log_update')){
 						$ret = $this->m->wepos_log_update($force_update);
 					}else{
 						$ret = wepos_log_update($force_update);
@@ -699,7 +699,7 @@ class DataClient extends MY_Controller {
 						$return_data['data_option'] = $ret_data['data_option'];
 					}
 					
-					if(!function_exists('wepos_log_update')){
+					if(method_exists( $this->m, 'wepos_log_update')){
 						$ret = $this->m->wepos_log_update($force_update);
 					}else{
 						$ret = wepos_log_update($force_update);
