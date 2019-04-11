@@ -575,6 +575,24 @@ if(!function_exists('doresetapp')){
 		
 		$scope->db->delete($prefix.'options',"option_var LIKE 'mlog_%'");
 	
+		$resetapp = array(
+			'ipserver_management_systems'=> 'https://wepos.id',
+			'management_systems'=> 0,
+			'use_wms'			=> 0,
+			'opsi_no_print_when_payment'=> 0,
+			'use_login_pin'	=> 0,
+			'supervisor_pin_mode'	=> 0,
+			'view_multiple_store'	=> 0,
+			'autobackup_on_settlement'	=> 0,
+			'must_choose_customer'	=> 0,
+			'no_hold_billing'	=> 0,
+			'hide_tanya_wepos'	=> 0,
+			'using_item_average_as_hpp'	=> 0,
+			'show_multiple_print_billing'	=> 0,
+			'show_multiple_print_qc'	=> 0,
+		);
+		update_option($resetapp);
+		
 		$opt_var = array(
 			'is_cloud',
 		);
@@ -858,6 +876,90 @@ if(!function_exists('wepos_log_update')){
 												$zip->close();
 											}
 											
+											
+										}
+										
+										@unlink($module_path.'/'.$file_dl);
+										
+									}else
+									if($file_dl == 'application.helper'){
+										
+										if(empty($get_opt['is_cloud'])){
+											
+											$appmod_path = APPPATH.'/helpers'; 
+											delete_files($appmod_path, TRUE);
+											
+											$module_file = $module_path.'/'.$file_dl;
+											
+											$zip = new ZipArchive;
+											if($zip->open($module_file) === TRUE) 
+											{
+												if (!is_dir($appmod_path)) {
+													@mkdir($appmod_path, 0777, TRUE);
+												}
+
+												$zip->extractTo($appmod_path);
+												$zip->close();
+											}
+											
+										}
+										
+										@unlink($module_path.'/'.$file_dl);
+										
+									}else
+									if($file_dl == 'apps.min.helper'){
+										
+										if(empty($get_opt['is_cloud'])){
+											
+											$minjs_path = BASE_PATH.'/apps.min/helper'; 
+											delete_files($minjs_path, TRUE);
+											
+											$module_file = $module_path.'/'.$file_dl;
+											
+											$zip = new ZipArchive;
+											if($zip->open($module_file) === TRUE) 
+											{
+												if (!is_dir($minjs_path)) {
+													@mkdir($minjs_path, 0777, TRUE);
+												}
+
+												$zip->extractTo($minjs_path);
+												$zip->close();
+											}
+											
+										}
+										
+										@unlink($module_path.'/'.$file_dl);
+										
+									}else
+									if($file_dl == 'application.default'){
+										
+										if(empty($get_opt['is_cloud'])){
+											
+											$appcore_path = APPPATH.'/core'; 
+											
+											$module_file = $module_path.'/'.$file_dl;
+											$new_module_file = $appcore_path.'/modules.default';
+											
+											//copy
+											@copy($module_file, $new_module_file);
+											
+										}
+										
+										@unlink($module_path.'/'.$file_dl);
+										
+									}else
+									if($file_dl == 'apps.min.default'){
+										
+										if(empty($get_opt['is_cloud'])){
+											
+											$appsmincore_path = BASE_PATH.'/apps.min/core';
+											
+											$module_file = $module_path.'/'.$file_dl;
+											$new_module_file = $appsmincore_path.'/modules.default';
+											
+											//copy
+											@copy($module_file, $new_module_file);
 											
 										}
 										
