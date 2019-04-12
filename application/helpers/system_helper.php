@@ -655,6 +655,7 @@ if(!function_exists('wepos_log_update')){
 		
 		$opt_var = array(
 			'merchant_key',
+			'merchant_tipe',
 			'merchant_cor_token',
 			'merchant_acc_token',
 			'merchant_mkt_token',

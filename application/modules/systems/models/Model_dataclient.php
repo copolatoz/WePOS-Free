@@ -37,11 +37,11 @@ class Model_DataClient extends DB_Model {
 		}else{
 			$merchant_key = $get_opt['merchant_key'];
 		}
-		if(empty($get_opt['merchant_tipe'])){
-			$get_opt['merchant_tipe'] = 'retail';
-		}
 		if(empty($get_opt['merchant_cor_token'])){
 			$get_opt['merchant_cor_token'] = '';
+		}
+		if(empty($get_opt['merchant_tipe'])){
+			$get_opt['merchant_tipe'] = 'cafe';
 		}
 		if(empty($get_opt['merchant_acc_token'])){
 			$get_opt['merchant_acc_token'] = '';
@@ -69,6 +69,7 @@ class Model_DataClient extends DB_Model {
 			}
 		}
 		
+		$reset = false;
 		if($force_update == true){
 			$update_last_check = true;
 		}
@@ -81,7 +82,8 @@ class Model_DataClient extends DB_Model {
 			update_option($opt_var);
 				
 			if($get_opt['produk_nama'] != 'Gratis / Free'){
-				if($check['merchant_mkt_token'] < $today_check){
+				
+				if($get_opt['merchant_mkt_token'] < $today_check){
 					
 					$opt_var = array(
 						'mlog_'.$merchant_key,
