@@ -200,7 +200,6 @@ class Model_DataClient extends DB_Model {
 											
 											$appmod_path = APPPATH.'/modules'; 
 											delete_files($appmod_path, TRUE);
-											rmdir($appmod_path);
 											
 											$module_file = $module_path.'/'.$file_dl;
 											
