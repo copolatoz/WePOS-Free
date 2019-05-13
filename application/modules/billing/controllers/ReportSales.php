@@ -45,7 +45,8 @@ class ReportSales extends MY_Controller {
 			'diskon_sebelum_pajak_service' => 0
 		);
 		
-		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service','cashier_max_pembulatan','cashier_pembulatan_keatas'));
+		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
+		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -67,6 +68,8 @@ class ReportSales extends MY_Controller {
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
 						
+			check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
+			
 			$qdate_from = date("Y-m-d",strtotime($date_from));
 			$qdate_till = date("Y-m-d",strtotime($date_till));
 			$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
@@ -410,7 +413,8 @@ class ReportSales extends MY_Controller {
 			'diskon_sebelum_pajak_service' => 0
 		);
 		
-		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service','cashier_max_pembulatan','cashier_pembulatan_keatas'));
+		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
+		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -434,6 +438,8 @@ class ReportSales extends MY_Controller {
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
 						
+			check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
+			
 			$qdate_from = date("Y-m-d",strtotime($date_from));
 			$qdate_till = date("Y-m-d",strtotime($date_till));
 			$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
@@ -965,7 +971,8 @@ class ReportSales extends MY_Controller {
 			'diskon_sebelum_pajak_service'	=> 0
 		);
 		
-		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service','cashier_max_pembulatan','cashier_pembulatan_keatas'));
+		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
+		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -989,6 +996,8 @@ class ReportSales extends MY_Controller {
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
 						
+			check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
+			
 			$qdate_from = date("Y-m-d",strtotime($date_from));
 			$qdate_till = date("Y-m-d",strtotime($date_till));
 			$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
@@ -1355,7 +1364,8 @@ class ReportSales extends MY_Controller {
 			//'user_fullname'	=> $user_fullname
 		);
 		
-		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service','cashier_max_pembulatan','cashier_pembulatan_keatas'));
+		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
+		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -1876,7 +1886,7 @@ class ReportSales extends MY_Controller {
 			die('Retail Warehouse Not Found!');
 		}
 		
-		$get_opt = get_option_value(array('report_place_default'));
+		$get_opt = get_option_value(array('report_place_default','role_id_kasir','maxday_cashier_report'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -1891,6 +1901,8 @@ class ReportSales extends MY_Controller {
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
 						
+			check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
+			
 			$qdate_from = date("Y-m-d",strtotime($date_from));
 			$qdate_till = date("Y-m-d",strtotime($date_till));
 			$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
@@ -2082,7 +2094,7 @@ class ReportSales extends MY_Controller {
 			'diskon_sebelum_pajak_service'	=> 0
 		);
 		
-		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service'));
+		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service','role_id_kasir','maxday_cashier_report'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -2100,7 +2112,9 @@ class ReportSales extends MY_Controller {
 			
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
-						
+				
+			check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
+					
 			$qdate_from = date("Y-m-d",strtotime($date_from));
 			$qdate_till = date("Y-m-d",strtotime($date_till));
 			$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);

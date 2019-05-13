@@ -1719,4 +1719,65 @@ if( ! function_exists('cek_server_backup')){
 		}
     } 
 }
+
+
+if( ! function_exists('check_maxview_cashierReport')){
+	function check_maxview_cashierReport($get_opt = array(), $tglmktime = 0, $tglmktime2 = 0) {
+		
+		if(empty($scope)){
+			$scope =& get_instance();
+		}
+		
+		$role_id = $scope->session->userdata('role_id');	
+		
+		if(!empty($get_opt)){
+		   if(empty($get_opt['maxday_cashier_report'])){
+				$get_opt_var = array('role_id_kasir','maxday_cashier_report');
+				$get_opt = get_option_value($get_opt_var);
+		   }
+		}else{
+			$get_opt_var = array('role_id_kasir','maxday_cashier_report');
+			$get_opt = get_option_value($get_opt_var);
+		}
+
+		$maxday_cashier_report = 1;
+		if(!empty($get_opt['maxday_cashier_report'])){
+			$maxday_cashier_report = $get_opt['maxday_cashier_report'];
+		}
+		$role_id_kasir = explode(",",$get_opt['role_id_kasir']);
+		
+		$is_kasir = false;
+		if(in_array($role_id, $role_id_kasir)){
+			//kasir
+			$is_kasir = true;
+		}
+		
+		if($role_id == 1 OR $role_id == 2){
+			$is_kasir = false;
+		}
+		
+		
+		if($is_kasir == true){
+			
+			if(!empty($tglmktime) OR !empty($tglmktime2)){
+				
+				$todaydate = strtotime(date("d-m-Y"));
+				$todaydate_maxView = $todaydate - (ONE_DAY_UNIX*$maxday_cashier_report);
+				if($tglmktime < $todaydate_maxView OR $tglmktime2 < $todaydate_maxView){
+					echo 'Silahkan Pilih Tanggal Laporan<br/>
+					Maksimal Lihat Laporan s/d Tanggal: <b>'.date("d-m-Y", $todaydate_maxView).'</b>';
+					die();
+				}
+				
+			}else{
+				echo 'Silahkan Pilih Tanggal Laporan';
+				die();
+			}
+		}
+		
+		return true;
+		//echo $role_id.' = '.$is_kasir.'<pre>'; print_r($role_id_kasir);die();
+		
+    } 
+}
 ?>
