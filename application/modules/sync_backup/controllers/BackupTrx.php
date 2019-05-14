@@ -123,6 +123,7 @@ class BackupTrx extends MY_Controller {
 		$this->curl->option('POST', 1);
 		$this->curl->option('POSTFIELDS', $post_data);
 		$this->curl->option('CAINFO', $crt_file);
+		$this->curl->option('HTTP_VERSION', 1);
 		$curl_ret = $this->curl->execute();
 		
 		$data_client['client_ip'] = '-';
@@ -352,6 +353,7 @@ class BackupTrx extends MY_Controller {
 		$this->curl->option('POST', 1);
 		$this->curl->option('POSTFIELDS', $post_data);
 		$this->curl->option('CAINFO', $crt_file);
+		$this->curl->option('HTTP_VERSION', 1);
 		$curl_ret = $this->curl->execute();
 		
 		//$curl_ret = $this->curl->simple_post($client_url, $post_data);
@@ -3796,6 +3798,7 @@ class BackupTrx extends MY_Controller {
 		$this->curl->option('POST', 1);
 		$this->curl->option('POSTFIELDS', $post_data);
 		$this->curl->option('CAINFO', $crt_file);
+		$this->curl->option('HTTP_VERSION', 1);
 		$curl_ret = $this->curl->execute();
 		
 		//$curl_ret = $this->curl->simple_post($client_url, $post_data);
@@ -3961,6 +3964,7 @@ class BackupTrx extends MY_Controller {
 		$this->curl->option('POST', 1);
 		$this->curl->option('POSTFIELDS', $post_data);
 		$this->curl->option('CAINFO', $crt_file);
+		$this->curl->option('HTTP_VERSION', 1);
 		$curl_ret = $this->curl->execute();
 		
 		//$curl_ret = $this->curl->simple_post($client_url, $post_data);
