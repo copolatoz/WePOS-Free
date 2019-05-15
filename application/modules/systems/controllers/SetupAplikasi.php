@@ -31,7 +31,8 @@ class SetupAplikasi extends MY_Controller {
 			'use_pembulatan','pembulatan_dinamis','cashier_pembulatan_keatas','cashier_max_pembulatan','autohold_create_billing','billing_log',
 			'table_available_after_paid','hide_takeaway_order_apps','default_discount_payment','save_order_note','must_choose_customer','order_timer',
 			'hide_button_invoice','hide_button_halfpayment','hide_button_mergebill','hide_button_splitbill','hide_button_logoutaplikasi',
-			'cashier_credit_ar','min_noncash','no_hold_billing','print_preview_billing','default_tipe_billing','maxday_cashier_report',
+			'cashier_credit_ar','min_noncash','no_hold_billing','print_preview_billing','default_tipe_billing',
+			'maxday_cashier_report','jam_operasional_from','jam_operasional_to','jam_operasional_extra',
 		
 			'print_order_peritem_kitchen','print_order_peritem_bar','print_order_peritem_other','print_chinese_text','show_multiple_print_qc',
 			'multiple_print_qc','show_multiple_print_billing','multiple_print_billing',
@@ -56,6 +57,9 @@ class SetupAplikasi extends MY_Controller {
 		
 		$get_opt = get_option_value($opt_val);
 		
+		if(empty($get_opt['jam_operasional_extra'])){
+			$get_opt['jam_operasional_extra'] = 0;
+		}
 		$get_opt['wepos_tipe_display'] = '-';
 		if(!empty($get_opt['wepos_tipe'])){
 			$get_opt['wepos_tipe_display'] = $get_opt['wepos_tipe'];
@@ -104,7 +108,8 @@ class SetupAplikasi extends MY_Controller {
 			'use_pembulatan','pembulatan_dinamis','cashier_pembulatan_keatas','cashier_max_pembulatan','autohold_create_billing','billing_log',
 			'table_available_after_paid','hide_takeaway_order_apps','default_discount_payment','save_order_note','must_choose_customer','order_timer',
 			'hide_button_invoice','hide_button_halfpayment','hide_button_mergebill','hide_button_splitbill','hide_button_logoutaplikasi',
-			'cashier_credit_ar','min_noncash','no_hold_billing','print_preview_billing','default_tipe_billing','maxday_cashier_report',
+			'cashier_credit_ar','min_noncash','no_hold_billing','print_preview_billing','default_tipe_billing',
+			'maxday_cashier_report','jam_operasional_from','jam_operasional_to','jam_operasional_extra',
 			
 			'print_order_peritem_kitchen','print_order_peritem_bar','print_order_peritem_other','print_chinese_text','show_multiple_print_qc',
 			'multiple_print_qc','show_multiple_print_billing','multiple_print_billing',
@@ -179,7 +184,9 @@ class SetupAplikasi extends MY_Controller {
 			'default_tipe_billing'			=> 0,
 			'print_preview_billing'			=> 0,
 			'maxday_cashier_report'			=> 1,
-
+			'jam_operasional_from'			=> '07:00',
+			'jam_operasional_to'			=> '22:00',
+			'jam_operasional_extra'			=> 0,
 					
 			'print_order_peritem_kitchen'	=> 0,
 			'print_order_peritem_bar'		=> 0,

@@ -780,11 +780,91 @@ class BillingCashier extends MY_Controller {
 		$billing_date = date('ymd');
 		$billing_time = date('G');
 		$datenowstr = strtotime(date("d-m-Y H:i:s"));
+		$datenowstr0 = strtotime(date("d-m-Y 00:00:00"));
 		
-		if($billing_time < 7){
-			$datenowstr = strtotime(date("d-m-Y H:i:s"))-ONE_DAY_UNIX;
-			$billing_date = date('ymd', $datenowstr);
+		$get_opt_var = array('jam_operasional_from','jam_operasional_to','jam_operasional_extra');
+		$get_opt = get_option_value($get_opt_var);
+		
+		$jam_operasional_from = 7;
+		$jam_operasional_from_Hi = 7;
+		if(!empty($get_opt['jam_operasional_from'])){
+			$jm_opr_mktime = strtotime(date("d-m-Y")." ".$get_opt['jam_operasional_from']);
+			$jam_operasional_from = date('G',$jm_opr_mktime);
+			$jam_operasional_from_Hi = date('H:i',$jm_opr_mktime);
 		}
+		
+		$jam_operasional_to = 22;
+		$jam_operasional_to_Hi = 22;
+		if(!empty($get_opt['jam_operasional_to'])){
+			if($get_opt['jam_operasional_to'] == '24:00'){
+				$get_opt['jam_operasional_to'] = '23:59:59';
+			}
+			$jm_opr_mktime = strtotime(date("d-m-Y")." ".$get_opt['jam_operasional_to']);
+			$jam_operasional_to = date('G',$jm_opr_mktime);
+			$jam_operasional_to_Hi = date('H:i',$jm_opr_mktime);
+		}
+		
+		$jam_operasional_extra = 0;
+		if(!empty($get_opt['jam_operasional_extra'])){
+			$jam_operasional_extra = $get_opt['jam_operasional_extra'];
+		}
+		
+		if($billing_time < $jam_operasional_from){
+			//extra / early??
+			
+			//check extra
+			$datenowstrmin1 = $datenowstr0-ONE_DAY_UNIX;
+			$datenowstr_oprfrom = strtotime(date("d-m-Y", $datenowstrmin1)." ".$jam_operasional_from_Hi.":00");
+			$datenowstr_oprto_org = strtotime(date("d-m-Y", $datenowstrmin1)." ".$jam_operasional_to_Hi.":00");
+			$datenowstr_oprto = strtotime(date("d-m-Y", $datenowstrmin1)." ".$jam_operasional_to_Hi.":00");
+			//add extra
+			if(!empty($jam_operasional_extra)){
+				$datenowstr_oprto += ($jam_operasional_extra*3600);
+			}
+			
+			if($datenowstr < $datenowstr_oprto){
+				$billing_date = date('ymd', $datenowstrmin1);
+				$datenowstr = $datenowstrmin1;
+			}else{
+				
+				if(!empty($jam_operasional_extra)){
+					$r = array('success' => false, 'info' => 'Jam Operasional: '.date("d-m-Y H:i",$datenowstr_oprfrom).' s/d '.date("H:i",$datenowstr_oprto_org).'<br/>Jam Operasional Extra = '.date("d-m-Y H:i",$datenowstr_oprto));
+				}else{
+					$r = array('success' => false, 'info' => 'Jam Operasional: '.date("d-m-Y H:i",$datenowstr_oprfrom).' s/d '.date("H:i",$datenowstr_oprto));
+				}
+				echo json_encode($r);
+				die();
+			}
+			
+		}else{
+			
+			$datenowstr_oprfrom = strtotime(date("d-m-Y", $datenowstr0)." ".$jam_operasional_from_Hi.":00");
+			$datenowstr_oprto_org = strtotime(date("d-m-Y", $datenowstr0)." ".$jam_operasional_to_Hi.":00");
+			$datenowstr_oprto = strtotime(date("d-m-Y", $datenowstr0)." ".$jam_operasional_to_Hi.":00");
+			//add extra
+			if(!empty($jam_operasional_extra)){
+				$datenowstr_oprto += ($jam_operasional_extra*3600);
+			}
+			
+			if($datenowstr < $datenowstr_oprto){
+				$billing_date = date('ymd', $datenowstr0);
+				$datenowstr = $datenowstr0;
+			}else{
+				if(!empty($jam_operasional_extra)){
+					$r = array('success' => false, 'info' => 'Jam Operasional: '.date("d-m-Y H:i",$datenowstr_oprfrom).' s/d '.date("H:i",$datenowstr_oprto_org).'<br/>Jam Operasional Extra = '.date("d-m-Y H:i",$datenowstr_oprto));
+				}else{
+					$r = array('success' => false, 'info' => 'Jam Operasional: '.date("d-m-Y H:i",$datenowstr_oprfrom).' s/d '.date("H:i",$datenowstr_oprto));
+				}
+				echo json_encode($r);
+				die();
+			}
+			
+		}
+		
+		//if($billing_time < 7){
+		//	$datenowstr = strtotime(date("d-m-Y H:i:s"))-ONE_DAY_UNIX;
+		//	$billing_date = date('ymd', $datenowstr);
+		//}
 		
 		$this->db->select("id,billing_no");
 		$this->db->from($this->table);
