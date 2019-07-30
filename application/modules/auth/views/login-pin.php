@@ -1,329 +1,240 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/html">
+<html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="target-densitydpi=device-dpi, width=device-width, initial-scale=1.0, maximum-scale=1">
-    <meta name="description" content="<?php echo $meta_description; ?>">
+    <title><?php echo $title; ?></title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="chrome=1">
+	<meta name="description" content="<?php echo $meta_description; ?>">
     <meta name="author" content="<?php echo $meta_author; ?>">
     <meta name="keywords" content="<?php echo $meta_keywords; ?>">
 
-    <link rel="shortcut icon" href="<?php echo BASE_URL; ?>assets/themes/frontend/images/favicon.ico" />
-	<link href="<?php echo BASE_URL; ?>assets/themes/frontend/css/modern.css" rel="stylesheet">
-    <link href="<?php echo BASE_URL; ?>assets/themes/frontend/css/site-red.css" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="<?php echo BASE_URL; ?>assets/login/favicon.ico" />
 	
-	<script type="text/javascript" src="<?php echo BASE_URL; ?>assets/themes/frontend/js/jquery-1.9.0.min.js"></script>
-    <script type="text/javascript" src="<?php echo BASE_URL; ?>assets/themes/frontend/js/buttonset.js"></script>
-    <script type="text/javascript" src="<?php echo BASE_URL; ?>assets/themes/frontend/js/input-control.js"></script>
-	
+	<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>assets/js/extjs.4.2/theme/css/ext-all<?php echo $theme; ?>.css" />
+	<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>assets/desktop/css/modules.css" />	
+	<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>assets/desktop/css/ext-modules.css" />	
 	<script>
 		var appUrl 		= "<?php echo BASE_URL; ?>";
 		var programName	= "<?php echo config_item('program_name'); ?>";
 		var copyright	= "<?php echo config_item('copyright'); ?>";
 	</script>
-	<script type="text/javascript">
+	<style>
+		.button-login .x-btn-inner {
+			font-weight:bold; font-size:14px; color:<?php echo $button_color; ?>; padding-bottom:5px;
+		}
+	</style>
+</head>
+<body style="background:#83aac0 url(<?php echo BASE_URL; ?>apps.min/helper/login/background.jpg) center top no-repeat;">
+	<div style="width:400px; margin:90px auto 0px;"><img src="<?php echo BASE_URL; ?>apps.min/helper/login/logo.png"></div>
+	<script src="<?php echo BASE_URL; ?>assets/js/extjs.4.2/ext-all.js" type="text/javascript" charset="utf-8"></script>	
+	<?php 
+	$login_title = 'LOGIN';
+	if(!empty($cloud_data)){
+		$login_title = 'LOGIN &mdash; MERCHANT';
+	}
+
+	if(!empty($view_multiple_store) AND !empty($data_multiple_store)){
+		
+	}
+	?>
 	
-		$(document).ready(function(e)
-		{
-			
-			$('#store_data').change(function(){
-				
-				// Target url
-				var target = appUrl + "login";
-				if (!target || target == '')
-				{
-					// Page url without hash
-					target = document.location.href.match(/^([^#]+)/)[1];
-				}
-				
-				// Request
-				var data = {
-					view_multiple_store: $('#view_multiple_store').val(),
-					store_data: $('#store_data').val(),
-					type_login: 'store'
-				};
-				
-				
-				$('#login-message').attr('class','');
-				$('#login-message').addClass('fg-color-white');	
-				
-				
-				// Send
-				$.ajax({
-					url: target,
-					dataType: 'json',
-					type: 'POST',
-					data: data,
-					success: function(data, textStatus, XMLHttpRequest)
+	<script type="text/javascript" charset="utf-8">
+	
+	var win = new Ext.Window ({
+		title: '<?php echo $login_title; ?>',
+		width:400,
+		height:230,
+		iconCls: 'btn-lock',
+		animCollapse:false,
+		constrainHeader:true,
+		resizable:false,
+		minimizable: false,
+		maximizable: false,
+		closable: false,
+		draggable: false,
+		layout: 'fit',
+		border: 0,
+		items: [
+			{
+				xtype: 'form',
+				id: 'form_loginAplikasi',
+				//margin: '0 20 0 0',
+				defaults:{
+					labelWidth: 100,
+				},
+				bodyPadding: 10,
+				border: 0,
+				items: [
 					{
-						//alert(data.errors.reason);
-						if (data.success)
+						xtype: 'hidden', 
+						id : 'a',
+						name: 'a',
+						value: 'send'
+					},
+					{
+						xtype: 'hidden', 
+						id : 'type_login',
+						name: 'type_login',
+						value: 'pin'
+					},
+					{
+						xtype: 'hidden', 
+						id : 'view_multiple_store',
+						name: 'view_multiple_store',
+						value: 0
+					},
+					{
+						xtype: 'hidden', 
+						id : 'store_data',
+						name: 'store_data',
+						value: ''
+					},
+					{
+						xtype: 'hidden', 
+						id : 'mkey',
+						name: 'mkey',
+						value: '<?php echo $mkey; ?>'
+					},
+					{
+					  xtype : 'textfield',
+					  name : 'loginUsernamePin',
+					  id : 'loginUsernamePin',
+					  labelSeparator: '',
+					  fieldLabel: 'PIN ACCESS',
+					  inputType: 'password',
+					  height: 30,
+					  anchor: '100%',
+					  margin: '0 0 15 0',
+					  fieldStyle: 'font-weight:bold; font-size:14px; text-align:left; color:#666;',
+					  labelStyle: 'font-weight:bold; font-size:14px; text-align:left; color:#666; padding-top:3px;',
+					  allowBlank: false,
+					  listeners: {
+						specialkey: function(field, e){
+							if (e.getKey() == e.ENTER) {
+								doLogin();
+							}
+						}
+					  }
+				   },
+				   {
+						xtype: 'fieldcontainer',
+						layout: {
+							type: 'column'
+						},
+						width: 390,
+						fieldLabel: '',
+						items: [
+							{
+								xtype : 'displayfield',
+								id : 'login-message',
+								value: '',
+								margin: '0 10 0 0',
+								width: 250
+							},
+							{
+								xtype: 'button',
+								text : 'Login',
+								id : 'btnSave_Login',
+								iconCls:'btn-lock-open',
+								iconAlign: 'top',
+								cls: 'button-login',
+								width: 100,
+								height: 45,
+								handler : function() {
+									doLogin();
+								}
+							}
+						]
+					}
+				]
+			}
+		],
+		dockedItems: [
+		{
+			xtype: 'toolbar',
+			dock: 'bottom',
+			items: [
+				{
+					xtype: 'displayfield',
+					width: 390,
+					value: copyright,
+					fieldStyle: 'text-align:center;',
+				}
+			]
+		}]
+		
+	});
+
+	function doLogin(){
+		
+		Ext.getCmp('login-message').setValue('');
+		
+		var form = Ext.getCmp('form_loginAplikasi').getForm();
+		if (form.isValid()) {
+			
+			Ext.getCmp('login-message').setValue('Harap Menunggu...');
+			Ext.getCmp('btnSave_Login').setDisabled(true);
+			
+			var redirect 	= appUrl+'backend';
+			var sendTimer = new Date().getTime();
+						
+			form.submit({
+				url : appUrl + "login",												
+				method: 'POST',
+				params:{
+					
+				},
+				waitMsg : 'Login...',
+				success : function(mainObj, formObj) {
+					var rsp = Ext.decode(formObj.response.responseText);
+					Ext.getCmp('btnSave_Login').setDisabled(false);
+					
+					if(rsp.success == false){
+						if(!rsp.info){
+							rsp.info = '';
+						}
+						Ext.getCmp('login-message').setValue(rsp.info);
+						Ext.getCmp('loginUsernamePin').focus();
+						//ExtApp.Msg.error(rsp.info);
+						return;
+					}else{
+					
+						// Small timer to allow the 'cheking login' message to show when server is too fast
+						var receiveTimer = new Date().getTime();
+						if (receiveTimer-sendTimer < 500)
 						{
-							$('#login-message').fadeOut();
-							$('#login-message').html(' DB Connected..');
-							$('#login-message').removeClass('bg-color-blue');
-							$('#login-message').addClass('bg-color-green');
-							$('#login-message').addClass('icon-checkmark');
-							$('#login-message').fadeIn();
+							setTimeout(function()
+							{
+								document.location.href = redirect;
+								
+							}, 500-(receiveTimer-sendTimer));
 						}
 						else
 						{
-							// Message
-							//$('#login-message').html(data.errors.reason);
-							$('#login-message').html(' Connect DB Failed!');
-							$('#login-message').removeClass('bg-color-blue');
-							$('#login-message').addClass('bg-color-red');
-							$('#login-message').addClass('icon-warning');
-							$('#login-message').fadeIn();
-							$('#loadBox').hide();
-							$('#loginBox').fadeIn();
-							
+							document.location.href = redirect;
 						}
-					},
-					error: function(XMLHttpRequest, textStatus, errorThrown)
-					{
-						// Message
-						//$('#login-message').html(data.errors.reason);
-						$('#login-message').html(' Connect DB Failed!');
-						$('#login-message').removeClass('bg-color-blue');
-						$('#login-message').addClass('bg-color-red');
-						$('#login-message').addClass('icon-warning');	
-						$('#login-message').fadeIn();
-						$('#loadBox').hide();
-						$('#loginBox').fadeIn();
-					}
-				});
-					
-			});
-			
-			$('#button_option_menu').click(function(event){
-				event.preventDefault();
-				document.location.href = appUrl;
-			});
-			
-			$('#login-form').submit(function(){
-				$('#button_submit').trigger('click');
-				return false;
-			});
-			
-			$('.helper.loginUsernamePin').click(function(){
-				$('#loginUsernamePin').val('');
-				return false;
-			});
-			
-			$('#button_submit').click(function(event)
-			{
-				$('#login-message').fadeOut();
-				
-				//Stop full page load
-				event.preventDefault();
-				
-				$('#login-message').attr('class','');
-				$('#login-message').addClass('fg-color-white');	
-				
-				// Check fields
-				var loginUsernamePin = $('#loginUsernamePin').val();
-				var view_multiple_store = $('#view_multiple_store').val();
-				var store_data = $('#store_data').val();
-				var mkey = $('#mkey').val();
-				
-				if (!loginUsernamePin || loginUsernamePin.length == 0)
-				{
-					$('#login-message').html(' PIN is Empty!');
-					//change style input
-					$('#login-message').addClass('bg-color-red');
-					$('#login-message').addClass('icon-warning');
-					$('#login-message').fadeIn();
-				}
-				else
-				{
-					
-					// Target url
-					var target = appUrl + "login";
-					if (!target || target == '')
-					{
-						// Page url without hash
-						target = document.location.href.match(/^([^#]+)/)[1];
+						
 					}
 					
-					// Request
-					var data = {
-						a: $('#a').val(),
-						type_login: 'pin',
-						loginUsernamePin: loginUsernamePin,
-						view_multiple_store: view_multiple_store,
-						store_data: store_data,
-						mkey: mkey
-					};
-					
-					var redirect 	= appUrl+'backend';
-									
-					// Start timer
-					var sendTimer = new Date().getTime();
-					
-					//message loading
-					$('#loadBox').show();
-					$('#loginBox').hide();
-					$('#login-message').html(' Process, Please Wait...');
-					$('#login-message').addClass('bg-color-blue');
-					$('#login-message').addClass('icon-busy');
-					$('#login-message').fadeIn();
-					
-					// Send
-					$.ajax({
-						url: target,
-						dataType: 'json',
-						type: 'POST',
-						data: data,
-						success: function(data, textStatus, XMLHttpRequest)
-						{
-							//alert(data.errors.reason);
-							if (data.success)
-							{
-								$('#login-message').fadeOut();
-								$('#login-message').html(' Redirecting, Please Wait..');
-								$('#login-message').removeClass('bg-color-blue');
-								$('#login-message').addClass('bg-color-green');
-								$('#login-message').addClass('icon-checkmark');
-								$('#login-message').fadeIn();
-								
-								// Small timer to allow the 'cheking login' message to show when server is too fast
-								var receiveTimer = new Date().getTime();
-								if (receiveTimer-sendTimer < 500)
-								{
-									setTimeout(function()
-									{
-										document.location.href = redirect;
-										
-									}, 500-(receiveTimer-sendTimer));
-								}
-								else
-								{
-									document.location.href = redirect;
-								}
-							}
-							else
-							{
-								// Message
-								//$('#login-message').html(data.errors.reason);
-								$('#login-message').html(' Login Failed!');
-								$('#login-message').removeClass('bg-color-blue');
-								$('#login-message').addClass('bg-color-red');
-								$('#login-message').addClass('icon-warning');
-								$('#login-message').fadeIn();
-								$('#loadBox').hide();
-								$('#loginBox').fadeIn();
-								
-							}
-						},
-						error: function(XMLHttpRequest, textStatus, errorThrown)
-						{
-							// Message
-							//$('#login-message').html(data.errors.reason);
-							$('#login-message').html(' Login Failed!');
-							$('#login-message').removeClass('bg-color-blue');
-							$('#login-message').addClass('bg-color-red');
-							$('#login-message').addClass('icon-warning');	
-							$('#login-message').fadeIn();
-							$('#loadBox').hide();
-							$('#loginBox').fadeIn();
-						}
-					});
-					
+				},
+				failure : function(mainObj, formObj) {
+					var rsp = Ext.decode(formObj.response.responseText);
+					Ext.getCmp('btnSave_Login').setDisabled(false);
+						
+					if(!rsp.info){
+						rsp.info = '';
+					}
+					Ext.getCmp('login-message').setValue(rsp.info);
+					Ext.getCmp('loginUsernamePin').focus();
+					//ExtApp.Msg.error(rsp.info);
 				}
 			});
-		});
-	
-	</script>
-    <title><?php echo $title; ?></title>
-</head>
-<body class="modern-ui login_bg" >
-	
-<div class="page" id="page-login">
-    <div class="page-region">
-        <div class="page-region-content">
-            
-            <div class="grid" style="">
-                <div class="row">
-                    <div class="span4">
-                        <?php
-						if(!empty($cloud_data)){
-							echo '<h2 class="icon-user-3 fg-color-darken" > LOGIN MERCHANT</h2>';
-						}else{
-							echo '<h1 class="icon-user-3 fg-color-darken" > LOGIN</h1>';
-						}
-						?>
-                    </div>
-                </div>               
-            </div>
-			<div class="grid">
-                <div class="row">
-                    <div class="span4">                        
-						<form id="login-form" method="post" action="">						
-							<input type="hidden" name="a" id="a" value="send" />
-							<p class="fg-color-white" id="login-message" style="display:none; padding:6px 10px;"></p>
-							
-							<div id="loginBox">
-								<?php
-								if(!empty($view_multiple_store) AND !empty($data_multiple_store)){
-									?>
-									<div class="input-control">
-										<select id="store_data" name="store_data">
-										<?php
-										foreach($data_multiple_store as $dt){
-											$sent_val = $dt['client_ip'].'|'.$dt['mysql_user'].'|'.$dt['mysql_pass'].'|'.$dt['mysql_port'].'|'.$dt['mysql_database'];
-											echo '<option value="'.$sent_val.'">'.$dt['client_name'].'</option>';
-										}
-										?>
-										</select>
-									</div>
-									<?php
-									echo '<input type="hidden" name="view_multiple_store" id="view_multiple_store" value="1" />';
-								}else{
-									echo '<input type="hidden" name="store_data" id="store_data" value="" />';
-									echo '<input type="hidden" name="view_multiple_store" id="view_multiple_store" value="0" />';
-								}
-								?>
-								<input type="hidden" name="mkey" id="mkey" value="<?php echo $mkey; ?>" />
-								
-								<div class="input-control text loginUsernamePin">
-									<input type="password" id="loginUsernamePin" name="loginUsernamePin" class="with-helper" tabindex="0" placeholder="PIN"/>
-									<a href="javascript:void(0);" class="helper loginUsernamePin"></a>
-								</div>
-								
-								<button class="bg-color-green fg-color-white" id="button_submit" style="float:right; margin-right:0px;">LOGIN <i class="icon-enter"></i></button>
-								<!--<button class="bg-color-darken fg-color-white" id="button_option_menu" style="float:left; margin-right:0px;">OPTION <i class="icon-list"></i></button>
-								-->
-							</div>
-							<div class="clearfix"></div>
-							<div id="loadBox" class="padding20" style="display:none; text-align:center;">
-								<img src="<?php echo BASE_URL; ?>assets/themes/frontend/images/loader.gif" width="64"/>
-							</div>
-							
-						</form>
-						<div class="clearfix"></div>
-						<br/>
-						<div class="footer_login">
-							
-							<?php
-							if(!empty($cloud_data)){
-								echo '<p>'.$cloud_data['merchant_nama'].'</p>';
-							}else{
-								echo '<p>'.config_item('program_name').'</p>';
-							}
-							
-							echo config_item('copyright'); 
-							?>
-							<br/>
-							
-						</div>
-                    </div>
-                </div>
-               
-            </div>
-        </div>
-    </div>
-</div>
+		}
+		
+	}
 
-
-</body>
+	Ext.onReady(function() {
+		win.show();
+	});
+	</script>	
 </html>

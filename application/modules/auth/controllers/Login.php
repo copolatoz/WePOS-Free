@@ -22,6 +22,25 @@ class Login extends MX_Controller {
 		$data['meta_author']		=	config_item('program_author');
 		$data['program_name']		=	config_item('program_name');
 		
+		$theme = config_item('theme'); 
+		$button_color = '#666';
+		if(!empty($theme)){
+			if($theme == 'default'){
+				$theme = '-neptune';
+				$button_color = '#fff';
+			}else
+			if($theme == 'classic'){
+				$theme = '';
+			}else{
+				$theme = '-'.$theme;
+			}
+		}else{
+			$theme = '-neptune';
+			$button_color = '#fff';
+		}
+		$data['theme'] = $theme;
+		$data['button_color'] = $button_color;
+		
 		$opt_val = array(
 			'use_login_pin', 'view_multiple_store','current_date','is_cloud'
 		);
