@@ -26,7 +26,8 @@ class DataBilling extends MY_Controller {
 			'payment_id_cash',
 			'payment_id_debit',
 			'payment_id_credit',
-			'wepos_tipe'
+			'wepos_tipe',
+			'jam_operasional_from','jam_operasional_to','jam_operasional_extra'
 		);
 		$get_opt = get_option_value($opt_value);
 		
@@ -127,16 +128,23 @@ class DataBilling extends MY_Controller {
 				
 				$mktime_dari = strtotime($date_from);
 							
-				$date_from = date("Y-m-d",strtotime($date_from));		
+				//$date_from = date("Y-m-d",strtotime($date_from));		
 			}
 			
 			$qdate_from_plus1 = date("Y-m-d",strtotime($date_from)+ONE_DAY_UNIX);
+			
+			//jam_operasional
+			$mktime_dari = strtotime($date_from);
+			$mktime_sampai = strtotime($date_from);
+			$ret_dt = check_report_jam_operasional($get_opt, $mktime_dari, $mktime_sampai);
+			$qdate_from = $ret_dt['qdate_from'];
+			$qdate_from_plus1_max = $ret_dt['qdate_till_max'];
 			
 			//get shift range
 			$this->db->from($this->prefix.'open_close_shift');
 			$this->db->where("user_shift",$shift_billing);
 			$this->db->where("(tanggal_shift = '".$date_from."' OR (tipe_shift = 'close' AND tanggal_shift = '".$qdate_from_plus1."' 
-				AND created <= '".$qdate_from_plus1." 06:00:00'))");
+				AND created <= '".$qdate_from_plus1_max."'))");
 			$get_shift = $this->db->get();
 			
 			if($get_shift->num_rows() > 0){
@@ -215,15 +223,16 @@ class DataBilling extends MY_Controller {
 					
 					$params['where'][] = "(a.payment_date >= '".$date_from." ".$data_shift[$shift_billing]['jam_from']."' AND a.payment_date <= '".$qdate_till_max." ".$data_shift[$shift_billing]['jam_till']."')";
 					
-					/*$params['where'][] = "(DATE_FORMAT(a.payment_date, '%Y-%m-%d') = '".$date_from."') 
-					AND (DATE_FORMAT(a.payment_date, '%H:%i:%s') BETWEEN '".$data_shift[$shift_billing]['jam_from']."' AND '".$data_shift[$shift_billing]['jam_till']."')";*/
 				}
 			}else{
 			
-				$qdate_till_max = date("Y-m-d",strtotime($date_from)+ONE_DAY_UNIX);
-				$params['where'][] = "(a.payment_date >= '".$date_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
+				//$qdate_till_max = date("Y-m-d",strtotime($date_from)+ONE_DAY_UNIX);
+				//$params['where'][] = "(a.payment_date >= '".$date_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
 				
-				/*$params['where'][] = "(DATE_FORMAT(a.payment_date, '%Y-%m-%d') = '".$date_from."')  AND (DATE_FORMAT(a.payment_date, '%H:%i:%s') BETWEEN '07:00:01' AND '24:00:00')";*/
+				$qdate_from = $ret_dt['qdate_from'];
+				$qdate_till_max = $ret_dt['qdate_till_max'];
+				$params['where'][] = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
+				
 			}
 		}
 		
@@ -295,9 +304,19 @@ class DataBilling extends MY_Controller {
 				
 				$qdate_till_max = date("Y-m-d",strtotime($qdate_till)+ONE_DAY_UNIX);
 				
+				//jam_operasional
+				$mktime_dari = strtotime($date_from);
+				$mktime_sampai = strtotime($date_till);
+				$ret_dt = check_report_jam_operasional($get_opt, $mktime_dari, $mktime_sampai);
+				$qdate_from = $ret_dt['qdate_from'];
+				$qdate_till = $ret_dt['qdate_till'];
+				$qdate_till_max = $ret_dt['qdate_till_max'];
+				
+				
 				if(!empty($use_payment_date)){
 					//07:00:00
-					$params['where'][] = "(a.payment_date >= '".$qdate_from." 00:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
+					//$params['where'][] = "(a.payment_date >= '".$qdate_from." 00:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
+					$params['where'][] = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
 				}else{
 				
 					//exception
@@ -315,9 +334,11 @@ class DataBilling extends MY_Controller {
 					}
 				
 					if($billing_status == 'paid'){
-						$params['where'][] = "(a.payment_date >= '".$qdate_from." 00:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
+						//$params['where'][] = "(a.payment_date >= '".$qdate_from." 00:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
+						$params['where'][] = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
 					}else{
-						$params['where'][] = "(a.updated >= '".$qdate_from." 00:00:01' AND a.updated <= '".$qdate_till_max." 06:00:00')";
+						//$params['where'][] = "(a.updated >= '".$qdate_from." 00:00:01' AND a.updated <= '".$qdate_till_max." 06:00:00')";
+						$params['where'][] = "(a.updated >= '".$qdate_from."' AND a.updated <= '".$qdate_till_max."')";
 					}
 					
 					
@@ -335,7 +356,7 @@ class DataBilling extends MY_Controller {
 			if(!empty($searching)){
 				$this->db->where("b.product_name LIKE '%".$searching."%'");
 			}else{
-				$this->db->where("b.product_id = -1");
+				$this->db->where("a.product_id = -1");
 			}
 			
 			$get_det = $this->db->get();
@@ -1033,11 +1054,17 @@ class DataBilling extends MY_Controller {
 				$mktime_dari = strtotime($date_from);
 				$mktime_sampai = strtotime($date_till);
 							
-				$qdate_from = date("Y-m-d 07:00:00",strtotime($date_from));
-				$qdate_till = date("Y-m-d 23:59:59",strtotime($date_till));
-				$qdate_from_plus1 = date("Y-m-d",strtotime($qdate_till)+ONE_DAY_UNIX);
+				$ret_dt = check_report_jam_operasional(array(), $mktime_dari, $mktime_sampai);
 				
-				$params['where'][] = "(b.payment_date >= '".$qdate_from."' AND b.payment_date <= '".$qdate_till."')";
+				//$qdate_from = date("Y-m-d 07:00:00",strtotime($date_from));
+				//$qdate_till = date("Y-m-d 23:59:59",strtotime($date_till));
+				//$qdate_from_plus1 = date("Y-m-d",strtotime($qdate_till)+ONE_DAY_UNIX);
+				//$params['where'][] = "(b.payment_date >= '".$qdate_from."' AND b.payment_date <= '".$qdate_till."')";
+				
+				$qdate_from = $ret_dt['qdate_from'];
+				$qdate_till = $ret_dt['qdate_till'];
+				$qdate_till_max = $ret_dt['qdate_till_max'];
+				$params['where'][] = "(b.payment_date >= '".$qdate_from."' AND b.payment_date <= '".$qdate_till_max."')";
 						
 			}
 		}

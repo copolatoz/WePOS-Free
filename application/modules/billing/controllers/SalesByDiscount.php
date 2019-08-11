@@ -42,11 +42,15 @@ class SalesByDiscount extends MY_Controller {
 			'date_till'	=> $date_till,
 			'user_fullname'	=> $user_fullname,
 			'sorting'	=> $sorting,
-			'diskon_sebelum_pajak_service' => 0
+			'diskon_sebelum_pajak_service' => 0,
+			'display_discount_type'	=> array()
 		);
 		
+		$display_discount_type = array();
+
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
-		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report'));
+		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report',
+		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -68,13 +72,18 @@ class SalesByDiscount extends MY_Controller {
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
 						
-			check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
+			$ret_dt = check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
 			
-			$qdate_from = date("Y-m-d",strtotime($date_from));
-			$qdate_till = date("Y-m-d",strtotime($date_till));
-			$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
+			//$qdate_from = date("Y-m-d",strtotime($date_from));
+			//$qdate_till = date("Y-m-d",strtotime($date_till));
+			//$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
+			//$add_where = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
 			
-			$add_where = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
+			//laporan = jam_operasional
+			$qdate_from = $ret_dt['qdate_from'];
+			$qdate_till = $ret_dt['qdate_till'];
+			$qdate_till_max = $ret_dt['qdate_till_max'];
+			$add_where = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
 			
 			$billing_promo = array();
 			$billing_promo_discount_id = array();
@@ -224,6 +233,14 @@ class SalesByDiscount extends MY_Controller {
 			//CHECKING BILLING HAS DISCOUNT
 			if(!empty($data_post['report_data'])){
 				foreach ($data_post['report_data'] as $s){
+					
+					if(empty($display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']] = array();
+					}
+					if(!in_array($s['billing_id'], $display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']][] = $s['billing_id'];
+					}
+					
 					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
 					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 					
@@ -245,7 +262,7 @@ class SalesByDiscount extends MY_Controller {
 					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
 						
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
+							if($s['diskon_sebelum_pajak_service'] == 1){
 								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
 								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 								$s['total_billing'] = $get_total_billing;
@@ -255,7 +272,7 @@ class SalesByDiscount extends MY_Controller {
 							
 						}else{
 							if(!empty($s['include_tax'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
+								if($s['diskon_sebelum_pajak_service'] == 1){
 									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
 									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 									$s['total_billing'] = $get_total_billing;
@@ -264,7 +281,7 @@ class SalesByDiscount extends MY_Controller {
 								}
 							}
 							if(!empty($s['include_service'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
+								if($s['diskon_sebelum_pajak_service'] == 1){
 									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
 									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 									$s['total_billing'] = $get_total_billing;
@@ -275,17 +292,51 @@ class SalesByDiscount extends MY_Controller {
 						}
 					}
 					
+					//COMPLIMENT
 					if(!empty($s['is_compliment'])){
-						$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
+						//$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
 						$s['service_total'] = 0;
 						$s['tax_total'] = 0;
 					}
 					
-					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];		
+					//SUBTOTAL : diskon_sebelum_pajak_service
+					if($s['diskon_sebelum_pajak_service'] == 0){
+						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];	
+						
+						//GRAND TOTAL
+						$s['grand_total'] = $s['sub_total'];
+						$s['grand_total'] -= $s['discount_total'];
+						$s['grand_total'] -= $s['discount_billing_total'];
+						
 					}else{
 						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+						
+						if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+							//CHECKING BALANCE #1
+							if(empty($s['discount_total'])){
+								
+								if($s['sub_total'] != $s['total_billing_awal']){
+									$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
+									$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+								}
+								
+							}else{
+								
+								if(($s['sub_total'] + $s['total_pembulatan']) != $s['grand_total']){
+									$s['sub_total'] = ($s['grand_total']-$s['total_pembulatan'])+$s['compliment_total'];
+								}
+								
+								$cek_total_billing = $s['sub_total'] - ($s['tax_total'] + $s['service_total']) + $s['discount_total'];
+								if($s['total_billing'] != $cek_total_billing){
+									$s['total_billing'] = $cek_total_billing;
+								}
+								
+							}
+							
+						}
+						
+						//GRAND TOTAL
+						$s['grand_total'] = $s['sub_total'];
 					}
 					
 					//SPLIT DISCOUNT TYPE
@@ -300,14 +351,15 @@ class SalesByDiscount extends MY_Controller {
 					//	$s['sub_total'] = $s['total_billing'];
 					//}
 					
-					$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
+					//$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
+					$s['grand_total'] += $s['total_pembulatan'];
 					$s['grand_total'] -= $s['compliment_total'];
 					
-					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['grand_total'] -= $s['discount_total'];
-						$s['grand_total'] -= $s['discount_billing_total'];
-					}
+					//GRANDTOTAL : diskon_sebelum_pajak_service
+					//if($s['diskon_sebelum_pajak_service'] == 0){
+						//$s['grand_total'] -= $s['discount_total'];
+						//$s['grand_total'] -= $s['discount_billing_total'];
+					//}
 					
 					if($s['grand_total'] <= 0){
 						$s['grand_total'] = 0;
@@ -591,6 +643,14 @@ class SalesByDiscount extends MY_Controller {
 							'total_hpp_show'	=> 0,
 							'total_dp'	=> 0,
 							'total_dp_show'	=> 0,
+							'discount_total_before'	=> 0,
+							'discount_total_before_show'	=> 0,
+							'discount_billing_total_before'	=> 0,
+							'discount_billing_total_before_show'	=> 0,
+							'discount_total_after'	=> 0,
+							'discount_total_after_show'	=> 0,
+							'discount_billing_total_after'	=> 0,
+							'discount_billing_total_after_show'	=> 0,
 						
 						);
 						
@@ -710,6 +770,7 @@ class SalesByDiscount extends MY_Controller {
 						$tax_total_order = 0;
 						$service_total_order = 0;
 						$compliment_total = 0;
+						$sub_total = 0;
 						
 						//cek if discount is disc billing
 						/*$total_discount_product = 0;
@@ -750,52 +811,90 @@ class SalesByDiscount extends MY_Controller {
 								}
 							}
 							
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
-								
-								$grand_total_order = ($s['product_price_real']*$s['order_qty'])- $s['discount_total'];
-								
-							}else{
-								
-								$grand_total_order = ($s['product_price_real']*$s['order_qty']);
-							
-							}
-							
 							$total_billing_order = ($s['product_price_real']*$s['order_qty']);
 							$tax_total_order = $s['tax_total'];
 							$service_total_order = $s['service_total'];
 							
-						}else
-						{
+							if($s['diskon_sebelum_pajak_service'] == 1){
 								
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
+								//$grand_total_order = ($s['product_price_real']*$s['order_qty'])- $s['discount_total'];
 								
-								$grand_total_order = ($s['product_price']*$s['order_qty'])- $s['discount_total'];
+								$sub_total = ($s['product_price_real']*$s['order_qty']);
+								$sub_total += $s['tax_total'];
+								$sub_total += $s['service_total'];
+								
+								$grand_total_order = $sub_total;
+								$sub_total -= $s['discount_total'];
 								
 							}else{
 								
-								$grand_total_order = ($s['product_price']*$s['order_qty']);
+								//$grand_total_order = ($s['product_price_real']*$s['order_qty']);
 							
+								$sub_total = ($s['product_price_real']*$s['order_qty']);
+								$sub_total += $s['tax_total'];
+								$sub_total += $s['service_total'];
+								
+								$grand_total_order = $sub_total;
+								//$grand_total_order -= $s['discount_total'];
+								
 							}
 							
+						}else
+						{
+								
 							$total_billing_order = ($s['product_price']*$s['order_qty']);
 							$tax_total_order = $s['tax_total'];
 							$service_total_order = $s['service_total'];
 							
+							if($s['diskon_sebelum_pajak_service'] == 1){
+								
+								//$grand_total_order = ($s['product_price']*$s['order_qty'])- $s['discount_total'];
+								$sub_total = ($s['product_price']*$s['order_qty']);
+								$sub_total += $s['tax_total'];
+								$sub_total += $s['service_total'];
+								
+								$grand_total_order = $sub_total;
+								$sub_total -= $s['discount_total'];
+								
+							}else{
+								
+								//$grand_total_order = ($s['product_price']*$s['order_qty']);
+								$sub_total = ($s['product_price']*$s['order_qty']);
+								$sub_total += $s['tax_total'];
+								$sub_total += $s['service_total'];
+								
+								$grand_total_order = $sub_total;
+								//$sub_total -= $s['discount_total'];
+								
+							}
+							
 						}
 						
 						
+						if($s['free_item'] == 1){
+							if(!empty($include_tax) OR !empty($include_service)){
+								$total_billing_order = ($s['product_price_real']*$s['order_qty']); 
+							}else{
+								$total_billing_order = ($s['product_price']*$s['order_qty']); 
+							}
+							$grand_total_order = $s['discount_total'];
+							$total_billing = $grand_total_order;
+						}else{
+							$total_billing = $total_billing_order;
+						}
+
 						//BALANCING TOTAL BILLING
-						$total_billing = $grand_total_order + $s['discount_total'];
-						$grand_total_order += $s['tax_total'];
-						$grand_total_order += $s['service_total'];
+						//$total_billing = $grand_total_order + $s['discount_total'];
+						//$grand_total_order += $s['tax_total'];
+						//$grand_total_order += $s['service_total'];
 						
 						//$sub_total = $grand_total_order;
 						
 						//diskon_sebelum_pajak_service
-						if($data_post['diskon_sebelum_pajak_service'] == 0){
-							$sub_total = $total_billing + $s['tax_total'] + $s['service_total'];		
+						if($s['diskon_sebelum_pajak_service'] == 0){
+							//$sub_total = $total_billing + $s['tax_total'] + $s['service_total'];		
 						}else{
-							$sub_total = $total_billing - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+							//$sub_total = $total_billing - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
 						}
 						
 						//OVERRIDE PEMBULATAN PERITEM
@@ -967,6 +1066,7 @@ class SalesByDiscount extends MY_Controller {
 			$data_post['report_data'] = $newData;
 			$data_post['buyget_data'] = $newData_buyget;
 			$data_post['payment_data'] = $dt_payment_name;
+			$data_post['display_discount_type'] = $display_discount_type;
 			//$data_post['total_hpp'] = $total_hpp;
 		}
 		
@@ -1017,11 +1117,13 @@ class SalesByDiscount extends MY_Controller {
 			'date_till'	=> $date_till,
 			'user_fullname'	=> $user_fullname,
 			'sorting'	=> $sorting,
-			'diskon_sebelum_pajak_service' => 0
+			'diskon_sebelum_pajak_service' => 0,
+			'display_discount_type'	=> array()
 		);
 		
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
-		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report'));
+		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report',
+		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -1043,13 +1145,18 @@ class SalesByDiscount extends MY_Controller {
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
 				
-			check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
+			$ret_dt = check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
 					
-			$qdate_from = date("Y-m-d",strtotime($date_from));
-			$qdate_till = date("Y-m-d",strtotime($date_till));
-			$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
+			//$qdate_from = date("Y-m-d",strtotime($date_from));
+			//$qdate_till = date("Y-m-d",strtotime($date_till));
+			//$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
+			//$add_where = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
 			
-			$add_where = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
+			//laporan = jam_operasional
+			$qdate_from = $ret_dt['qdate_from'];
+			$qdate_till = $ret_dt['qdate_till'];
+			$qdate_till_max = $ret_dt['qdate_till_max'];
+			$add_where = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
 			
 			$billing_promo = array();
 			$billing_promo_discount_id = array();
@@ -1223,12 +1330,28 @@ class SalesByDiscount extends MY_Controller {
 				'total_hpp_show'	=> 0,
 				'total_dp'	=> 0,
 				'total_dp_show'	=> 0,
+				'discount_total_before'	=> 0,
+				'discount_total_before_show'	=> 0,
+				'discount_billing_total_before'	=> 0,
+				'discount_billing_total_before_show'	=> 0,
+				'discount_total_after'	=> 0,
+				'discount_total_after_show'	=> 0,
+				'discount_billing_total_after'	=> 0,
+				'discount_billing_total_after_show'	=> 0,
 			);
 			//NOPROMO DEFAULT -----------------------
 			
 			//CHECKING BILLING HAS DISCOUNT
 			if(!empty($data_post['report_data'])){
 				foreach ($data_post['report_data'] as $s){
+					
+					if(empty($display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']] = array();
+					}
+					if(!in_array($s['billing_id'], $display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']][] = $s['billing_id'];
+					}
+					
 					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
 					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 					
@@ -1250,7 +1373,7 @@ class SalesByDiscount extends MY_Controller {
 					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
 						
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
+							if($s['diskon_sebelum_pajak_service'] == 1){
 								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
 								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 								$s['total_billing'] = $get_total_billing;
@@ -1260,7 +1383,7 @@ class SalesByDiscount extends MY_Controller {
 							
 						}else{
 							if(!empty($s['include_tax'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
+								if($s['diskon_sebelum_pajak_service'] == 1){
 									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
 									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 									$s['total_billing'] = $get_total_billing;
@@ -1269,7 +1392,7 @@ class SalesByDiscount extends MY_Controller {
 								}
 							}
 							if(!empty($s['include_service'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
+								if($s['diskon_sebelum_pajak_service'] == 1){
 									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
 									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 									$s['total_billing'] = $get_total_billing;
@@ -1288,9 +1411,41 @@ class SalesByDiscount extends MY_Controller {
 					
 					//diskon_sebelum_pajak_service
 					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];		
+						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];	
+						
+						//GRAND TOTAL
+						$s['grand_total'] = $s['sub_total'];
+						$s['grand_total'] -= $s['discount_total'];
+						$s['grand_total'] -= $s['discount_billing_total'];	
 					}else{
 						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+						
+						if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+							//CHECKING BALANCE #1
+							if(empty($s['discount_total'])){
+								
+								if($s['sub_total'] != $s['total_billing_awal']){
+									$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
+									$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+								}
+								
+							}else{
+								
+								if(($s['sub_total'] + $s['total_pembulatan']) != $s['grand_total']){
+									$s['sub_total'] = ($s['grand_total']-$s['total_pembulatan'])+$s['compliment_total'];
+								}
+								
+								$cek_total_billing = $s['sub_total'] - ($s['tax_total'] + $s['service_total']) + $s['discount_total'];
+								if($s['total_billing'] != $cek_total_billing){
+									$s['total_billing'] = $cek_total_billing;
+								}
+								
+							}
+							
+						}
+						
+						//GRAND TOTAL
+						$s['grand_total'] = $s['sub_total'];
 					}
 					
 					//SPLIT DISCOUNT TYPE
@@ -1305,13 +1460,14 @@ class SalesByDiscount extends MY_Controller {
 					//	$s['sub_total'] = $s['total_billing'];
 					//}
 					
-					$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
+					//$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
+					$s['grand_total'] += $s['total_pembulatan'];
 					$s['grand_total'] -= $s['compliment_total'];
 					
 					//diskon_sebelum_pajak_service
 					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['grand_total'] -= $s['discount_total'];
-						$s['grand_total'] -= $s['discount_billing_total'];
+						//$s['grand_total'] -= $s['discount_total'];
+						//$s['grand_total'] -= $s['discount_billing_total'];
 					}
 					
 					if($s['grand_total'] <= 0){
@@ -1387,6 +1543,11 @@ class SalesByDiscount extends MY_Controller {
 					$get_discount_type = '-';
 					$get_discount_type_var = 'no_promo';
 					
+					$discount_billing_total_before = 0;
+					$discount_billing_total_after = 0;
+					$discount_total_before = 0;
+					$discount_total_after = 0;
+					
 					if(!empty($s['discount_id'])){
 						
 						if(!in_array($s['discount_id'], $all_discount_id)){
@@ -1448,6 +1609,16 @@ class SalesByDiscount extends MY_Controller {
 								
 							}
 							
+							
+							if($s['diskon_sebelum_pajak_service'] == 1){
+								$discount_billing_total_before = $s['discount_billing_total'];
+								//echo 'DISK BILLING : '.$s['diskon_sebelum_pajak_service'].' -> '.$s['discount_billing_total'].'<br/>';
+							}else{
+								$discount_billing_total_after = $s['discount_billing_total'];
+								//echo 'DISK BILLING : '.$s['diskon_sebelum_pajak_service'].' -> '.$s['discount_billing_total'].'<br/>';
+							}
+
+							
 						}else{
 							
 							$get_discount_type = 'ITEM';
@@ -1498,6 +1669,13 @@ class SalesByDiscount extends MY_Controller {
 								
 							}
 							
+							
+							if($s['diskon_sebelum_pajak_service'] == 1){
+								$discount_total_before = $s['discount_total'];
+							}else{
+								$discount_total_after = $s['discount_total'];
+							}
+							
 						}
 						
 					}else{
@@ -1544,7 +1722,18 @@ class SalesByDiscount extends MY_Controller {
 							}
 							
 						}
+							
+						if($s['diskon_sebelum_pajak_service'] == 1){
+							$discount_total_before = $s['discount_total'];
+						}else{
+							$discount_total_after = $s['discount_total'];
+						}
 					}
+					
+					$s['discount_billing_total_before'] = $discount_billing_total_before;
+					$s['discount_billing_total_after'] = $discount_billing_total_after;
+					$s['discount_total_before'] = $discount_total_before;
+					$s['discount_total_after'] = $discount_total_after;
 					
 					$new_var = $s['discount_id'];
 					if(empty($newData[$new_var])){
@@ -1576,6 +1765,14 @@ class SalesByDiscount extends MY_Controller {
 							'total_hpp_show'	=> 0,
 							'total_dp'	=> 0,
 							'total_dp_show'	=> 0,
+							'discount_total_before'	=> 0,
+							'discount_total_before_show'	=> 0,
+							'discount_billing_total_before'	=> 0,
+							'discount_billing_total_before_show'	=> 0,
+							'discount_total_after'	=> 0,
+							'discount_total_after_show'	=> 0,
+							'discount_billing_total_after'	=> 0,
+							'discount_billing_total_after_show'	=> 0,
 						
 						);
 						$newData_sort_qty[$new_var] = 0;
@@ -1642,6 +1839,14 @@ class SalesByDiscount extends MY_Controller {
 							'total_hpp_show'	=> 0,
 							'total_dp'	=> 0,
 							'total_dp_show'	=> 0,
+							'discount_total_before'	=> 0,
+							'discount_total_before_show'	=> 0,
+							'discount_billing_total_before'	=> 0,
+							'discount_billing_total_before_show'	=> 0,
+							'discount_total_after'	=> 0,
+							'discount_total_after_show'	=> 0,
+							'discount_billing_total_after'	=> 0,
+							'discount_billing_total_after_show'	=> 0,
 						
 						);
 						$newData_buyget_sort_qty[$getDiscID] = 0;
@@ -1759,6 +1964,7 @@ class SalesByDiscount extends MY_Controller {
 						$tax_total_order = 0;
 						$service_total_order = 0;
 						$compliment_total = 0;
+						$sub_total = 0;
 						
 						//cek if discount is disc billing
 						/*$total_discount_product = 0;
@@ -1777,16 +1983,38 @@ class SalesByDiscount extends MY_Controller {
 						
 						$discount_total = 0;
 						$discount_billing_total = 0;
+						$discount_total_before = 0;
+						$discount_total_after = 0;
+						$discount_billing_total_before = 0;
+						$discount_billing_total_after = 0;
 						if($s['discount_perbilling'] == 1){
 							$discount_billing_total = $s['discount_total'];
+							
+							if($s['diskon_sebelum_pajak_service'] == 1){
+								$discount_billing_total_before = $s['discount_total'];
+							}else{
+								$discount_billing_total_after = $s['discount_total'];
+							}
+
 						}else{
 							$discount_total = ($s['discount_total']);
+							
+							if($s['diskon_sebelum_pajak_service'] == 1){
+								$discount_total_before = $s['discount_total'];
+							}else{
+								$discount_total_after = $s['discount_total'];
+							}
 						}
 							
 						if($has_buyget == 1){
 							
 							$discount_total = ($s['discount_total']);
 							
+							if($s['diskon_sebelum_pajak_service'] == 1){
+								$discount_total_before = $s['discount_total'];
+							}else{
+								$discount_total_after = $s['discount_total'];
+							}
 						}
 						
 						
@@ -1799,53 +2027,87 @@ class SalesByDiscount extends MY_Controller {
 								}
 							}
 							
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
-								
-								$grand_total_order = ($s['product_price_real']*$s['order_qty'])- $s['discount_total'];
-								
-							}else{
-								
-								$grand_total_order = ($s['product_price_real']*$s['order_qty']);
-							
-							}
-							
 							$total_billing_order = ($s['product_price_real']*$s['order_qty']);
 							$tax_total_order = $s['tax_total'];
 							$service_total_order = $s['service_total'];
 							
-						}else
-						{
+							if($s['diskon_sebelum_pajak_service'] == 1){
 								
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
+								//$grand_total_order = ($s['product_price_real']*$s['order_qty'])- $s['discount_total'];
 								
-								$grand_total_order = ($s['product_price']*$s['order_qty'])- $s['discount_total'];
+								$sub_total = ($s['product_price_real']*$s['order_qty']);
+								$sub_total += $s['tax_total'];
+								$sub_total += $s['service_total'];
+								
+								$grand_total_order = $sub_total;
+								$sub_total -= $s['discount_total'];
 								
 							}else{
 								
-								$grand_total_order = ($s['product_price']*$s['order_qty']);
+								//$grand_total_order = ($s['product_price_real']*$s['order_qty']);
 							
+								$sub_total = ($s['product_price_real']*$s['order_qty']);
+								$sub_total += $s['tax_total'];
+								$sub_total += $s['service_total'];
+								
+								$grand_total_order = $sub_total;
+								//$grand_total_order -= $s['discount_total'];
+								
 							}
 							
+							//$total_billing_order = ($s['product_price_real']*$s['order_qty']);
+							//$tax_total_order = $s['tax_total'];
+							//$service_total_order = $s['service_total'];
+							
+						}else
+						{
+								
 							$total_billing_order = ($s['product_price']*$s['order_qty']);
 							$tax_total_order = $s['tax_total'];
 							$service_total_order = $s['service_total'];
+							
+							if($s['diskon_sebelum_pajak_service'] == 1){
+								
+								//$grand_total_order = ($s['product_price']*$s['order_qty'])- $s['discount_total'];
+								$sub_total = ($s['product_price']*$s['order_qty']);
+								$sub_total += $s['tax_total'];
+								$sub_total += $s['service_total'];
+								
+								$grand_total_order = $sub_total;
+								$sub_total -= $s['discount_total'];
+								
+							}else{
+								
+								//$grand_total_order = ($s['product_price']*$s['order_qty']);
+								$sub_total = ($s['product_price']*$s['order_qty']);
+								$sub_total += $s['tax_total'];
+								$sub_total += $s['service_total'];
+								
+								$grand_total_order = $sub_total;
+								//$sub_total -= $s['discount_total'];
+								
+							}
+							
+							//$total_billing_order = ($s['product_price']*$s['order_qty']);
+							//$tax_total_order = $s['tax_total'];
+							//$service_total_order = $s['service_total'];
 							
 						}
 						
 						
 						//BALANCING TOTAL BILLING
-						$total_billing = $grand_total_order + $s['discount_total'];
-						$grand_total_order += $s['tax_total'];
-						$grand_total_order += $s['service_total'];
+						//$total_billing = $grand_total_order + $s['discount_total'];
+						//$grand_total_order += $s['tax_total'];
+						//$grand_total_order += $s['service_total'];
 						
 						//$sub_total = $grand_total_order;
 						
 						//diskon_sebelum_pajak_service
-						if($data_post['diskon_sebelum_pajak_service'] == 0){
-							$sub_total = $total_billing + $s['tax_total'] + $s['service_total'];		
-						}else{
-							$sub_total = $total_billing - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
-						}
+						//if($data_post['diskon_sebelum_pajak_service'] == 0){
+							//$sub_total = $total_billing + $s['tax_total'] + $s['service_total'];		
+						//}else{
+							//$sub_total = $total_billing - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+						//}
 						
 						//OVERRIDE PEMBULATAN PERITEM
 						$total_pembulatan = 0;
@@ -1914,6 +2176,11 @@ class SalesByDiscount extends MY_Controller {
 									$newData[$new_var]['grand_total'] += $dtbill['grand_total'];
 									$newData[$new_var]['total_dp'] += $dtbill['total_dp'];
 									
+									$newData[$new_var]['discount_total_before'] += $dtbill['discount_total_before'];
+									$newData[$new_var]['discount_total_after'] += $dtbill['discount_total_after'];
+									$newData[$new_var]['discount_billing_total_before'] += $dtbill['discount_billing_total_before'];
+									$newData[$new_var]['discount_billing_total_after'] += $dtbill['discount_billing_total_after'];
+									
 									
 								}
 							}
@@ -1952,7 +2219,6 @@ class SalesByDiscount extends MY_Controller {
 								$newData_buyget[$get_disc_id]['service_total'] += $s['service_total'];
 								$newData_buyget[$get_disc_id]['discount_total'] += $discount_total;
 								$newData_buyget[$get_disc_id]['discount_billing_total'] += $discount_billing_total;
-								
 								$newData_buyget[$get_disc_id]['total_compliment'] += $compliment_total;
 								
 								if(empty($billing_id_buyget_detail[$get_disc_id])){
@@ -1969,6 +2235,12 @@ class SalesByDiscount extends MY_Controller {
 								$newData_buyget[$get_disc_id]['grand_total'] += $grand_total_order;
 								
 								$newData_buyget_sort_qty[$get_disc_id] += $total_qty;
+								
+								$newData_buyget[$get_disc_id]['discount_total_before'] += $discount_total_before;
+								$newData_buyget[$get_disc_id]['discount_total_after'] += $discount_total_after;
+								$newData_buyget[$get_disc_id]['discount_billing_total_before'] += $discount_billing_total_before;
+								$newData_buyget[$get_disc_id]['discount_billing_total_after'] += $discount_billing_total_after;
+								
 							}
 								
 						}
@@ -2030,6 +2302,11 @@ class SalesByDiscount extends MY_Controller {
 							$dt['total_compliment_show'] = priceFormat($dt['total_compliment']);
 							$dt['grand_total_show'] = priceFormat($dt['grand_total']);
 							
+							$dt['discount_total_before_show'] = priceFormat($dt['discount_total_before']);
+							$dt['discount_billing_total_before_show'] = priceFormat($dt['discount_billing_total_before']);
+							$dt['discount_total_after_show'] = priceFormat($dt['discount_total_after']);
+							$dt['discount_billing_total_after_show'] = priceFormat($dt['discount_billing_total_after']);
+							
 							//if(!empty($dt['grand_total'])){
 								$newData[] = $dt;
 							//}
@@ -2084,6 +2361,11 @@ class SalesByDiscount extends MY_Controller {
 							$dt['total_compliment_show'] = priceFormat($dt['total_compliment']);
 							$dt['grand_total_show'] = priceFormat($dt['grand_total']);
 							
+							$dt['discount_total_before_show'] = priceFormat($dt['discount_total_before']);
+							$dt['discount_billing_total_before_show'] = priceFormat($dt['discount_billing_total_before']);
+							$dt['discount_total_after_show'] = priceFormat($dt['discount_total_after']);
+							$dt['discount_billing_total_after_show'] = priceFormat($dt['discount_billing_total_after']);
+							
 							//if(!empty($dt['grand_total'])){
 								$newData_buyget[] = $dt;
 							//}
@@ -2119,6 +2401,7 @@ class SalesByDiscount extends MY_Controller {
 			$data_post['buyget_data'] = $newData_buyget;
 			$data_post['payment_data'] = $dt_payment_name;
 			//$data_post['total_hpp'] = $total_hpp;
+			$data_post['display_discount_type'] = $display_discount_type;
 		}
 		
 		//DO-PRINT

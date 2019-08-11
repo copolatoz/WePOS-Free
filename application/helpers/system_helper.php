@@ -1111,7 +1111,7 @@ if(!function_exists('printing_process')){
 		//CHAR PIN
 		$set_tab[32] = array(
 			'1' => array(
-						1, 5, 16, 23
+						1, 5, 18, 26
 					),
 			'2' => array(
 						1, 4, 18
@@ -1309,10 +1309,14 @@ if(!function_exists('printing_process')){
 <body>
 <div class="report_area" style="padding:0px; margin:0px auto; text-align:left; border:0px solid #ccc; width:<?php echo $set_width[$printer_pin].'px'; ?>;">
 		<?php
-		if($data_printer['print_logo'] == 1 AND $print_logo == 1){
+		if($data_printer['print_logo'] == 1 OR $print_logo == 1){
+			$print_logo_image = $objCI->session->userdata('client_logo');
+			if(empty($print_logo_image)){
+				$print_logo_image = 'logo-default.png';
+			}
 			?>
 			<center>
-				<img height="100" src="<?php echo base_url(); ?>assets/resources/client_logo/<?php echo $objCI->session->userdata('client_logo'); ?>">
+				<img height="100" src="<?php echo base_url(); ?>assets/resources/client_logo/<?php echo $print_logo_image; ?>">
 			</center>
 			<?php
 		}
@@ -1721,8 +1725,52 @@ if( ! function_exists('cek_server_backup')){
 }
 
 
+if( ! function_exists('check_report_jam_operasional')){
+	function check_report_jam_operasional($get_opt = array(), $mktime_dari = 0, $mktime_sampai = 0) {
+		
+		if(!empty($get_opt)){
+		   if(empty($get_opt['jam_operasional_from']) OR empty($get_opt['jam_operasional_to'])){
+				$get_opt_var = array('jam_operasional_from','jam_operasional_to','jam_operasional_extra');
+				$get_opt = get_option_value($get_opt_var);
+		   }
+		}else{
+			$get_opt_var = array('jam_operasional_from','jam_operasional_to','jam_operasional_extra');
+			$get_opt = get_option_value($get_opt_var);
+		}
+		
+		$date_from = date("d-m-Y",$mktime_dari);
+		$date_till = date("d-m-Y",$mktime_sampai);
+			
+		//update report = jam_operasional
+		if(empty($get_opt['jam_operasional_from'])){
+			$jam_operasional_from = '07:00:01';
+		}else{
+			$jam_operasional_from = $get_opt['jam_operasional_from'].':01';
+		}
+		if(empty($get_opt['jam_operasional_to'])){
+			$jam_operasional_to = '23:00:00';
+		}else{
+			$jam_operasional_to = $get_opt['jam_operasional_to'].':00';
+		}
+		if(empty($get_opt['jam_operasional_extra'])){
+			$jam_operasional_extra = 0;
+		}else{
+			$jam_operasional_extra = $get_opt['jam_operasional_extra']*3600;
+		}
+		$jam_operasional_from = strtotime($date_from." ".$jam_operasional_from);
+		$jam_operasional_to = strtotime($date_till." ".$jam_operasional_to)+$jam_operasional_extra;
+		
+		$qdate_from = date("Y-m-d H:i:s",$jam_operasional_from);
+		$qdate_till = date("Y-m-d H:i:s",strtotime($date_till));
+		$qdate_till_max = date("Y-m-d H:i:s",$jam_operasional_to);
+		
+		$data_return = array('qdate_from' => $qdate_from, 'qdate_till' => $qdate_till, 'qdate_till_max' => $qdate_till_max);
+		return $data_return;
+	}
+}
+
 if( ! function_exists('check_maxview_cashierReport')){
-	function check_maxview_cashierReport($get_opt = array(), $tglmktime = 0, $tglmktime2 = 0) {
+	function check_maxview_cashierReport($get_opt = array(), $mktime_dari = 0, $mktime_sampai = 0) {
 		
 		if(empty($scope)){
 			$scope =& get_instance();
@@ -1731,12 +1779,12 @@ if( ! function_exists('check_maxview_cashierReport')){
 		$role_id = $scope->session->userdata('role_id');	
 		
 		if(!empty($get_opt)){
-		   if(empty($get_opt['maxday_cashier_report'])){
-				$get_opt_var = array('role_id_kasir','maxday_cashier_report');
+		   if(empty($get_opt['maxday_cashier_report']) OR empty($get_opt['jam_operasional_from']) OR empty($get_opt['jam_operasional_to'])){
+				$get_opt_var = array('role_id_kasir','maxday_cashier_report','jam_operasional_from','jam_operasional_to','jam_operasional_extra');
 				$get_opt = get_option_value($get_opt_var);
 		   }
 		}else{
-			$get_opt_var = array('role_id_kasir','maxday_cashier_report');
+			$get_opt_var = array('role_id_kasir','maxday_cashier_report','jam_operasional_from','jam_operasional_to','jam_operasional_extra');
 			$get_opt = get_option_value($get_opt_var);
 		}
 
@@ -1759,11 +1807,11 @@ if( ! function_exists('check_maxview_cashierReport')){
 		
 		if($is_kasir == true){
 			
-			if(!empty($tglmktime) OR !empty($tglmktime2)){
+			if(!empty($mktime_dari) OR !empty($mktime_sampai)){
 				
 				$todaydate = strtotime(date("d-m-Y"));
 				$todaydate_maxView = $todaydate - (ONE_DAY_UNIX*$maxday_cashier_report);
-				if($tglmktime < $todaydate_maxView OR $tglmktime2 < $todaydate_maxView){
+				if($mktime_dari < $todaydate_maxView OR $mktime_sampai < $todaydate_maxView){
 					echo 'Silahkan Pilih Tanggal Laporan<br/>
 					Maksimal Lihat Laporan s/d Tanggal: <b>'.date("d-m-Y", $todaydate_maxView).'</b>';
 					die();
@@ -1775,7 +1823,8 @@ if( ! function_exists('check_maxview_cashierReport')){
 			}
 		}
 		
-		return true;
+		$data_return = check_report_jam_operasional($get_opt, $mktime_dari, $mktime_sampai);
+		return $data_return;
 		//echo $role_id.' = '.$is_kasir.'<pre>'; print_r($role_id_kasir);die();
 		
     } 

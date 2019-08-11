@@ -45,11 +45,13 @@ class ReportSalesBagiHasil extends MY_Controller {
 			'date_till'	=> $date_till,
 			'user_fullname'	=> $user_fullname,
 			'session_user'	=> $session_user,
-			'diskon_sebelum_pajak_service' => 0
+			'diskon_sebelum_pajak_service' => 0,
+			'display_discount_type'	=> array()
 		);
 		
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
-		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report'));
+		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report',
+		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -71,13 +73,18 @@ class ReportSalesBagiHasil extends MY_Controller {
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
 						
-			check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
+			$ret_dt = check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
 			
-			$qdate_from = date("Y-m-d",strtotime($date_from));
-			$qdate_till = date("Y-m-d",strtotime($date_till));
-			$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
+			//$qdate_from = date("Y-m-d",strtotime($date_from));
+			//$qdate_till = date("Y-m-d",strtotime($date_till));
+			//$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
+			//$add_where = "(b.payment_date >= '".$qdate_from." 07:00:01' AND b.payment_date <= '".$qdate_till_max." 06:00:00')";
 			
-			$add_where = "(b.payment_date >= '".$qdate_from." 07:00:01' AND b.payment_date <= '".$qdate_till_max." 06:00:00')";
+			//laporan = jam_operasional
+			$qdate_from = $ret_dt['qdate_from'];
+			$qdate_till = $ret_dt['qdate_till'];
+			$qdate_till_max = $ret_dt['qdate_till_max'];
+			$add_where = "(b.payment_date >= '".$qdate_from."' AND b.payment_date <= '".$qdate_till_max."')";
 			
 			$this->db->select("a.*, b.id as billing_id, a.updated as billing_date, c.product_name, d.item_code, e.supplier_name");
 			$this->db->from($this->table2." as a");
@@ -219,38 +226,38 @@ class ReportSalesBagiHasil extends MY_Controller {
 			//trim prod name
 			$max_text = 18; //44
 			$max_number_1 = 9;
-			$max_number_2 = 13;
-			$max_number_3 = 14;
+			$max_number_2 = 11;
+			$max_number_3 = 13;
 
 			if($printer_pin_cashierReceipt == 32){
-				$max_text -= 7;
+				$max_text -= 6;
 				$max_number_1 = 7;
-				$max_number_2 = 9;
-				$max_number_3 = 14;
+				$max_number_2 = 8;
+				$max_number_3 = 13;
 			}
 			if($printer_pin_cashierReceipt == 40){
-				$max_text -= 4;
+				$max_text -= 2;
 				$max_number_1 = 7;
 				$max_number_2 = 11;
-				$max_number_3 = 14;
+				$max_number_3 = 13;
 			}
 			if($printer_pin_cashierReceipt == 42){
-				$max_text -= 3;
+				$max_text -= 2;
 				$max_number_1 = 9;
-				$max_number_2 = 13;
-				$max_number_3 = 14;
+				$max_number_2 = 11;
+				$max_number_3 = 13;
 			}
 			if($printer_pin_cashierReceipt == 46){
 				$max_text += 2;
 				$max_number_1 = 9;
-				$max_number_2 = 13;
-				$max_number_3 = 14;
+				$max_number_2 = 11;
+				$max_number_3 = 13;
 			}
 			if($printer_pin_cashierReceipt == 48){
 				$max_text += 4;
-				$max_number_1 = 9;
-				$max_number_2 = 13;
-				$max_number_3 = 14;
+				$max_number_1 = 10;
+				$max_number_2 = 12;
+				$max_number_3 = 13;
 			}
 			
 			$sales_data_title = "";
@@ -480,13 +487,17 @@ class ReportSalesBagiHasil extends MY_Controller {
 			'date_till'	=> $date_till,
 			'user_fullname'	=> $user_fullname,
 			'session_user'	=> $session_user,
-			'diskon_sebelum_pajak_service' => 0
+			'diskon_sebelum_pajak_service' => 0,
+			'display_discount_type'	=> array()
 		);
 		
+		$display_discount_type = array();
+
 		//$data_post['supplier_name'] = $supplier_name;
 		
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
-		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report'));
+		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report',
+		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -510,13 +521,18 @@ class ReportSalesBagiHasil extends MY_Controller {
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
 						
-			check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
+			$ret_dt = check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
 			
-			$qdate_from = date("Y-m-d",strtotime($date_from));
-			$qdate_till = date("Y-m-d",strtotime($date_till));
-			$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
+			//$qdate_from = date("Y-m-d",strtotime($date_from));
+			//$qdate_till = date("Y-m-d",strtotime($date_till));
+			//$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
+			//$add_where = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
 			
-			$add_where = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
+			//laporan = jam_operasional
+			$qdate_from = $ret_dt['qdate_from'];
+			$qdate_till = $ret_dt['qdate_till'];
+			$qdate_till_max = $ret_dt['qdate_till_max'];
+			$add_where = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
 			
 			$this->db->select("a.*, a.id as billing_id, a.updated as billing_date, d.payment_type_name, e.bank_name");
 			$this->db->from($this->table." as a");
@@ -565,6 +581,14 @@ class ReportSalesBagiHasil extends MY_Controller {
 			$no_id = 1;
 			if(!empty($data_post['report_data'])){
 				foreach ($data_post['report_data'] as $s){
+					
+					if(empty($display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']] = array();
+					}
+					if(!in_array($s['billing_id'], $display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']][] = $s['billing_id'];
+					}
+					
 					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
 					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 					
@@ -576,7 +600,7 @@ class ReportSalesBagiHasil extends MY_Controller {
 					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
 						
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
+							if($s['diskon_sebelum_pajak_service'] == 1){
 								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
 								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 								$s['total_billing'] = $get_total_billing;
@@ -586,7 +610,7 @@ class ReportSalesBagiHasil extends MY_Controller {
 							
 						}else{
 							if(!empty($s['include_tax'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
+								if($s['diskon_sebelum_pajak_service'] == 1){
 									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
 									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 									$s['total_billing'] = $get_total_billing;
@@ -595,7 +619,7 @@ class ReportSalesBagiHasil extends MY_Controller {
 								}
 							}
 							if(!empty($s['include_service'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
+								if($s['diskon_sebelum_pajak_service'] == 1){
 									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
 									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 									$s['total_billing'] = $get_total_billing;
@@ -607,7 +631,7 @@ class ReportSalesBagiHasil extends MY_Controller {
 					}
 					
 					if(!empty($s['is_compliment'])){
-						$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
+						//$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
 						//if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 						//	$s['total_billing'] = $s['total_billing'];
 						//}
@@ -616,10 +640,37 @@ class ReportSalesBagiHasil extends MY_Controller {
 					}
 					
 					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
+					if($s['diskon_sebelum_pajak_service'] == 0){
 						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
+						
+						//GRANDTOTAL
+						$s['grand_total'] = $s['sub_total'];
+						$s['grand_total'] -= $s['discount_total'];
+						$s['grand_total'] -= $s['discount_billing_total'];
+						
 					}else{
 						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+						
+						if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+							//CHECKING BALANCE #1
+							if(empty($s['discount_total'])){
+								if($s['sub_total'] != $s['total_billing_awal']){
+									$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
+									$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+								}
+							}else{
+								if(($s['sub_total'] + $s['total_pembulatan']) != $s['grand_total']){
+									$s['sub_total'] = ($s['grand_total']-$s['total_pembulatan'])+$s['compliment_total'];
+								}
+								
+								$cek_total_billing = $s['sub_total'] - ($s['tax_total'] + $s['service_total']) + $s['discount_total'];
+								if($s['total_billing'] != $cek_total_billing){
+									$s['total_billing'] = $cek_total_billing;
+								}
+							}
+						}
+						
+						$s['grand_total'] = $s['sub_total'];
 					}
 					
 					
@@ -635,13 +686,14 @@ class ReportSalesBagiHasil extends MY_Controller {
 					//	$s['sub_total'] = $s['total_billing'];
 					//}
 					
-					$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
+					//$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
+					$s['grand_total'] += $s['total_pembulatan'];
 					
 					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['grand_total'] -= $s['discount_total'];
-						$s['grand_total'] -= $s['discount_billing_total'];
-					}
+					//if($data_post['diskon_sebelum_pajak_service'] == 0){
+					//	$s['grand_total'] -= $s['discount_total'];
+					//	$s['grand_total'] -= $s['discount_billing_total'];
+					//}
 					
 					if($s['grand_total'] <= 0){
 						$s['grand_total'] = 0;
@@ -758,7 +810,15 @@ class ReportSalesBagiHasil extends MY_Controller {
 							'total_hpp'			=> 0, 
 							'total_hpp_show'	=> 0, 
 							'total_profit'		=> 0, 
-							'total_profit_show'=> 0
+							'total_profit_show'=> 0,
+							'discount_total_before'	=> 0,
+							'discount_total_before_show'	=> 0,
+							'discount_billing_total_before'	=> 0,
+							'discount_billing_total_before_show'	=> 0,
+							'discount_total_after'	=> 0,
+							'discount_total_after_show'	=> 0,
+							'discount_billing_total_after'	=> 0,
+							'discount_billing_total_after_show'	=> 0,
 						);
 						
 						foreach($payment_data as $key_id => $dtPay){
@@ -788,6 +848,14 @@ class ReportSalesBagiHasil extends MY_Controller {
 					$all_group_date[$payment_date]['sub_total'] += $s['sub_total'];
 					$all_group_date[$payment_date]['total_pembulatan'] += $s['total_pembulatan'];
 					$all_group_date[$payment_date]['total_compliment'] += $s['compliment_total'];
+					
+					if($s['diskon_sebelum_pajak_service'] == 1){
+						$all_group_date[$payment_date]['discount_total_before'] += $s['discount_total'];
+						$all_group_date[$payment_date]['discount_billing_total_before'] += $s['discount_billing_total'];
+					}else{
+						$all_group_date[$payment_date]['discount_total_after'] += $s['discount_total'];
+						$all_group_date[$payment_date]['discount_billing_total_after'] += $s['discount_billing_total'];
+					}
 					
 					/* if(!empty($s['discount_total'])){
 						echo '<pre>';
@@ -965,11 +1033,6 @@ class ReportSalesBagiHasil extends MY_Controller {
 					$detail['total_dp_show'] = priceFormat($detail['total_dp']);
 					$detail['total_compliment_show'] = priceFormat($detail['total_compliment']);
 					
-
-					if(!empty($total_hpp[$key])){
-						$detail['total_hpp'] = $total_hpp[$key];
-					}
-
 					if(!empty($total_price_toko[$key])){
 						$detail['total_price_toko'] = $total_price_toko[$key];
 					}
@@ -978,9 +1041,20 @@ class ReportSalesBagiHasil extends MY_Controller {
 						$detail['total_price_supplier'] = $total_price_supplier[$key];
 					}
 
-					$detail['total_profit'] = $detail['total_billing']-$detail['total_hpp'];
+					if(!empty($total_hpp[$key])){
+						$detail['total_hpp'] = $total_hpp[$key];
+					}
 					$detail['total_hpp_show'] = priceFormat($detail['total_hpp']);
-					$detail['total_profit_show'] = priceFormat($detail['total_profit']);
+					
+					$detail['total_billing_profit'] = $detail['total_billing'];
+					$detail['total_billing_profit'] -= $detail['discount_total'];
+					$detail['total_billing_profit'] -= $detail['discount_billing_total'];
+					$detail['total_billing_profit'] -= $detail['total_compliment'];
+					$detail['total_billing_profit_show'] = priceFormat($detail['total_billing_profit']);
+					
+					$detail['total_profit'] = $detail['total_billing_profit']-$detail['total_hpp'];
+					$detail['total_profit_show'] = priceFormat($detail['total_profit']);					
+					
 						
 					
 					$newData[$key] = $detail;
@@ -1002,6 +1076,7 @@ class ReportSalesBagiHasil extends MY_Controller {
 			
 			$data_post['report_data'] = $newData;
 			$data_post['payment_data'] = $dt_payment_name;
+			$data_post['display_discount_type'] = $display_discount_type;
 		}
 		
 		//DO-PRINT

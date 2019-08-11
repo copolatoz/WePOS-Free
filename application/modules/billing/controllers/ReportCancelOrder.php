@@ -33,6 +33,9 @@ class ReportCancelOrder extends MY_Controller {
 		if(empty($sorting)){
 			$sorting = 'payment_date';
 		}
+		if(empty($tipe_cancel)){
+			$tipe_cancel = 'all';
+		}
 		
 		$data_post = array(
 			'do'	=> '',
@@ -41,11 +44,13 @@ class ReportCancelOrder extends MY_Controller {
 			'report_name'	=> 'CANCEL ORDER REPORT',
 			'date_from'	=> $date_from,
 			'date_till'	=> $date_till,
+			'tipe_cancel'	=> $tipe_cancel,
 			'user_fullname'	=> $user_fullname,
 			'sorting'	=> $sorting
 		);
 		
-		$get_opt = get_option_value(array('report_place_default'));
+		$get_opt = get_option_value(array('report_place_default','role_id_kasir','maxday_cashier_report',
+		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -56,18 +61,30 @@ class ReportCancelOrder extends MY_Controller {
 				
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
-						
-			$qdate_from = date("Y-m-d",strtotime($date_from));
-			$qdate_till = date("Y-m-d",strtotime($date_till));
-			$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
+					
+			$ret_dt = check_report_jam_operasional($get_opt, $mktime_dari, $mktime_sampai);
+				
+			//$qdate_from = date("Y-m-d",strtotime($date_from));
+			//$qdate_till = date("Y-m-d",strtotime($date_till));
+			//$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
+			//$add_where = "(b.created >= '".$qdate_from." 07:00:01' AND b.created <= '".$qdate_till_max." 06:00:00')";
 			
-			$add_where = "(b.created >= '".$qdate_from." 07:00:01' AND b.created <= '".$qdate_till_max." 06:00:00')";
+			//laporan = jam_operasional
+			$qdate_from = $ret_dt['qdate_from'];
+			$qdate_till = $ret_dt['qdate_till'];
+			$qdate_till_max = $ret_dt['qdate_till_max'];
+			$add_where = "(b.created  >= '".$qdate_from."' AND b.created <= '".$qdate_till_max."')";
 			
 			$this->db->select("a.*, a.updated as order_date, b.billing_no, c.product_name");
 			$this->db->from($this->table2." as a");
 			$this->db->join($this->table." as b","b.id = a.billing_id","LEFT");
 			$this->db->join($this->table_product." as c","c.id = a.product_id","LEFT");
 			$this->db->where("a.order_status", 'cancel');
+			
+			if($tipe_cancel == 'paid'){
+				$this->db->where("a.cancel_order_notes NOT LIKE 'cancel order unpaid:%'");
+			}
+			
 			$this->db->where("a.is_deleted", 1);
 			$this->db->where($add_where);
 			
