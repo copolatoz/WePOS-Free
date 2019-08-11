@@ -4430,6 +4430,7 @@ class BillingCashier extends MY_Controller {
 		
 		$printer_tipe = $this->input->get_post('printer_tipe', true);	
 		$do_print = $this->input->get_post('do_print', true);	
+		$new_no = $this->input->get_post('new_no', true);	
 		
 		if(!empty($initialize_printing)){
 			die();
@@ -4841,7 +4842,7 @@ class BillingCashier extends MY_Controller {
 
 				if($printer_pin_cashierReceipt == 32){
 					$max_text -= 6;
-					$max_number_1 = 8;
+					$max_number_1 = 7;
 					$max_number_2 = 8;
 					$max_number_3 = 13;
 				}
@@ -4864,7 +4865,7 @@ class BillingCashier extends MY_Controller {
 					$max_number_3 = 13;
 				}
 				if($printer_pin_cashierReceipt == 48){
-					$max_text += 4;
+					$max_text += 3;
 					$max_number_1 = 10;
 					$max_number_2 = 12;
 					$max_number_3 = 13;
@@ -5479,6 +5480,10 @@ class BillingCashier extends MY_Controller {
 				$table_no_receipt = $table_no_title.$billingData->table_no;
 				$table_no_receipt = printer_command_align_right($table_no_receipt, 15);
 				
+				if(!empty($new_no)){
+					$billingData->billing_no = $new_no;
+				}
+				
 				//$billingData->billing_no
 				$billing_no_receipt = $billingData->billing_no;
 				$billing_no_title = 'NO:';
@@ -5551,6 +5556,13 @@ class BillingCashier extends MY_Controller {
 					"{guest}"=> $billingData->total_guest,
 					"{compliment}"=> $compliment_total_show
 				);
+				
+				//DATE PAID
+				if($billingData->billing_status == 'paid'){
+					$print_attr['{date}'] = date("d/m/Y",strtotime($billingData->payment_date));
+					$print_attr['{date_time}'] = date("d/m/Y H:i",strtotime($billingData->payment_date));
+					$print_attr['{user}'] = $billingData->updatedby;
+				}
 				
 				if(!empty($single_rate_txt)){
 					$print_attr["{billing_no}"] = $billing_no_receipt.$single_rate_txt;
@@ -5670,7 +5682,8 @@ class BillingCashier extends MY_Controller {
 					if(!empty($bill_preview)){
 						printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt,'noprint');
 					}else{
-						printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt, 'print', 1);
+						//printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt, 'print', 1);
+						printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt, 'print');
 					}
 					
 					
