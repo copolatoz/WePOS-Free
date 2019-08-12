@@ -11066,8 +11066,8 @@ class BillingCashier extends MY_Controller {
 		}
 		if($printer_pin_cashierReceipt == 46){
 			$max_text += 2;
-			$max_number_1 = 9;
-			$max_number_2 = 11;
+			$max_number_1 = 10;
+			$max_number_2 = 12;
 			$max_number_3 = 13;
 		}
 		if($printer_pin_cashierReceipt == 48){
@@ -11082,7 +11082,9 @@ class BillingCashier extends MY_Controller {
 		$this->table_billing = $this->prefix.'billing';
 		$this->table_billing_detail = $this->prefix.'billing_detail';
 	
-		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service','cashier_max_pembulatan','cashier_pembulatan_keatas','pembulatan_dinamis'));
+		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
+		'cashier_max_pembulatan','cashier_pembulatan_keatas','pembulatan_dinamis',
+		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -11117,12 +11119,19 @@ class BillingCashier extends MY_Controller {
 		
 		$mktime_dari = strtotime($date_from);
 		$mktime_sampai = strtotime($date_till);
-					
-		$qdate_from = date("Y-m-d",strtotime($date_from));
-		$qdate_till = date("Y-m-d",strtotime($date_till));
-		$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
+			
+		$ret_dt = check_report_jam_operasional($get_opt, $mktime_dari, $mktime_sampai);
+						
+		//$qdate_from = date("Y-m-d",strtotime($date_from));
+		//$qdate_till = date("Y-m-d",strtotime($date_till));
+		//$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
+		//$add_where = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
 		
-		$add_where = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
+		//laporan = jam_operasional
+		$qdate_from = $ret_dt['qdate_from'];
+		$qdate_till = $ret_dt['qdate_till'];
+		$qdate_till_max = $ret_dt['qdate_till_max'];
+		$add_where = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
 		
 		$this->db->select("a.*, a.id as billing_id, a.updated as billing_date, d.payment_type_name, e.bank_name");
 		$this->db->from($this->table_billing." as a");
