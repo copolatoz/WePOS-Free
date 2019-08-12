@@ -81,9 +81,9 @@ class Model_DataClient extends DB_Model {
 			);
 			update_option($opt_var);
 				
-			if($get_opt['produk_nama'] != 'Gratis / Free'){
+			if($get_opt['produk_nama'] != 'Gratis / Free' OR !empty($merchant_key)){
 				
-				if($get_opt['merchant_mkt_token'] < $today_check){
+				if($get_opt['merchant_mkt_token'] < $today_check AND !empty($get_opt['merchant_mkt_token'])){
 					
 					$opt_var = array(
 						'mlog_'.$merchant_key,
