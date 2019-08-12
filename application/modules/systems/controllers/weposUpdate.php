@@ -169,7 +169,11 @@ class WeposUpdate extends MY_Controller {
 		}
 		
 		if($wepos_connected_id != $get_opt['wepos_connected_id']){
+			
+			$get_opt = array();
+			$get_opt['wepos_version'] = $wepos_version;
 			$get_opt['wepos_connected_id'] = $wepos_connected_id;
+			
 			//update options
 			$update_option = update_option($get_opt);
 		}
