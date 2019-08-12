@@ -459,6 +459,21 @@ ALTER TABLE `pos_product`
 ADD UNIQUE KEY `item_product_idx` (`product_code`);
 #
 UPDATE pos_items SET item_code = CONCAT('I',(category_id*1000)+id) WHERE (item_code IS NULL OR item_code = '');
-
- 
-  
+#
+UPDATE apps_options SET option_value = '3.42.20', updated = '2019-03-11 00:00:01' WHERE option_var IN ('wepos_version');
+#
+INSERT  INTO `apps_modules`(`module_name`,`module_author`,`module_version`,`module_description`,`module_folder`,`module_controller`,`module_is_menu`,`module_breadcrumb`,`module_order`,`module_icon`,`module_shortcut_icon`,`module_glyph_icon`,`module_glyph_font`,`module_free`,`running_background`,`show_on_start_menu`,`show_on_right_start_menu`,`start_menu_path`,`start_menu_order`,`start_menu_icon`,`start_menu_glyph`,`show_on_context_menu`,`context_menu_icon`,`context_menu_glyph`,`show_on_shorcut_desktop`,`desktop_shortcut_icon`,`desktop_shortcut_glyph`,`show_on_preference`,`preference_icon`,`preference_glyph`,`createdby`,`created`,`updatedby`,`updated`,`is_active`,`is_deleted`) VALUES 
+('Pembayaran PPOB','dev@wepos.id','v.1.0.0','Pembayaran PPOB','cashier','ppob',0,'3. Cashier & Reservation>Pembayaran PPOB',1,'icon-grid','icon-grid','','',1,0,1,0,'3. Cashier & Reservation>Pembayaran PPOB',3401,'icon-grid','',0,'icon-grid','',1,'icon-grid','',1,'icon-grid','','administrator','2019-04-09 08:25:57','administrator','2019-04-09 17:49:57',1,0);
+#
+INSERT  INTO `apps_roles_module`(`role_id`,`module_id`,`start_menu_path`,`module_order`,`createdby`,`created`,`updatedby`,`updated`,`is_active`,`is_deleted`) VALUES 
+(1,169,NULL,0,'administrator','2019-04-09 16:18:38','administrator','2019-04-09 16:18:38',1,0),
+(2,169,NULL,0,'administrator','2019-04-09 16:18:38','administrator','2019-04-09 16:18:38',1,0);
+#
+UPDATE apps_options 
+SET option_value = REPLACE(option_value, 'NO: ', ''), 
+option_value = REPLACE(option_value, 'NO:', ''), 
+option_value = REPLACE(option_value, 'MEJA: ', ''), 
+option_value = REPLACE(option_value, 'MEJA:', '');
+#
+INSERT INTO `apps_options`(`option_var`,`option_value`,`option_description`,`created`,`createdby`,`updated`,`updatedby`,`is_active`,`is_deleted`) VALUES 
+('maxday_cashier_report',1,NULL,'2019-05-11 00:00:00','administrator',NULL,NULL,'1','0');
