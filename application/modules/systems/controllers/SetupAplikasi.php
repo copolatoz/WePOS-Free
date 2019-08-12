@@ -185,7 +185,7 @@ class SetupAplikasi extends MY_Controller {
 			'print_preview_billing'			=> 0,
 			'maxday_cashier_report'			=> 1,
 			'jam_operasional_from'			=> '07:00',
-			'jam_operasional_to'			=> '22:00',
+			'jam_operasional_to'			=> '23:00',
 			'jam_operasional_extra'			=> 0,
 					
 			'print_order_peritem_kitchen'	=> 0,

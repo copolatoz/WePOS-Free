@@ -65,7 +65,7 @@ class FraudCancelOrder extends MY_Controller {
 				
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
-						
+					
 			$ret_dt = check_report_jam_operasional($get_opt, $mktime_dari, $mktime_sampai);
 			
 			//$qdate_from = date("Y-m-d",strtotime($date_from));

@@ -37,6 +37,7 @@ class LogCashierActivity extends MY_Controller {
 				'user_fullname'	=> $user_fullname
 		);
 		
+		
 		$get_opt = get_option_value(array('report_place_default','role_id_kasir','maxday_cashier_report',
 		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
 		if(!empty($get_opt['report_place_default'])){

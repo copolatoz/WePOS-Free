@@ -128,7 +128,7 @@ class DataBilling extends MY_Controller {
 				
 				$mktime_dari = strtotime($date_from);
 							
-				//$date_from = date("Y-m-d",strtotime($date_from));		
+				$date_from = date("Y-m-d",strtotime($date_from));		
 			}
 			
 			$qdate_from_plus1 = date("Y-m-d",strtotime($date_from)+ONE_DAY_UNIX);
@@ -232,7 +232,6 @@ class DataBilling extends MY_Controller {
 				$qdate_from = $ret_dt['qdate_from'];
 				$qdate_till_max = $ret_dt['qdate_till_max'];
 				$params['where'][] = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
-				
 			}
 		}
 		
@@ -356,7 +355,7 @@ class DataBilling extends MY_Controller {
 			if(!empty($searching)){
 				$this->db->where("b.product_name LIKE '%".$searching."%'");
 			}else{
-				$this->db->where("a.product_id = -1");
+				$this->db->where("b.product_id = -1");
 			}
 			
 			$get_det = $this->db->get();
@@ -1060,7 +1059,7 @@ class DataBilling extends MY_Controller {
 				//$qdate_till = date("Y-m-d 23:59:59",strtotime($date_till));
 				//$qdate_from_plus1 = date("Y-m-d",strtotime($qdate_till)+ONE_DAY_UNIX);
 				//$params['where'][] = "(b.payment_date >= '".$qdate_from."' AND b.payment_date <= '".$qdate_till."')";
-				
+						
 				$qdate_from = $ret_dt['qdate_from'];
 				$qdate_till = $ret_dt['qdate_till'];
 				$qdate_till_max = $ret_dt['qdate_till_max'];
