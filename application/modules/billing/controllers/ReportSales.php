@@ -1032,11 +1032,6 @@ class ReportSales extends MY_Controller {
 			$this->db->where($add_where);
 			
 
-
-
-
-
-
 			if(empty($sorting)){
 				$this->db->order_by("payment_date","ASC");
 			}else{
