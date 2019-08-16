@@ -1443,6 +1443,7 @@ class MasterProduct extends MY_Controller {
 								
 								/*$var = array(
 									'fields'	=>	array(
+										'product_code'	=> 	$product_code,
 										'product_name'	=> 	$product_name,
 										'product_desc'	=>	$product_desc,
 										'product_price'	=>	$product_price,
@@ -1465,6 +1466,7 @@ class MasterProduct extends MY_Controller {
 								*/
 								
 								$all_new_data[] = array(
+										'product_code'	=> 	$product_code,
 										'product_name'	=> 	$product_name,
 										'product_desc'	=>	$product_desc,
 										'product_price'	=>	$product_price,
@@ -1487,6 +1489,7 @@ class MasterProduct extends MY_Controller {
 								
 								/*$var = array(
 									'fields'	=>	array(
+										'product_code'	=> 	$product_code,
 										'product_name'	=> 	$product_name,
 										'product_desc'	=>	$product_desc,
 										'product_price'	=>	$product_price,
@@ -1513,6 +1516,7 @@ class MasterProduct extends MY_Controller {
 										$all_new_id[] = $id;
 										$all_new_data_with_id[] = array(
 											'id'	=> 	$id,
+											'product_code'	=> 	$product_code,
 											'product_name'	=> 	$product_name,
 											'product_desc'	=>	$product_desc,
 											'product_price'	=>	$product_price,
