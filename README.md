@@ -1,15 +1,16 @@
 
-WePOS - Cafe v.3.42.19 (Free Version)
+WePOS - Cafe v.3.42.20 (Free Version)
 
 Cocok untuk:
 Cafe/Resto/Rumah Makan (semua penjualan berbasis Cafe)
 
 Terima Kasih sudah Download dan Support WePOS.id, 
-WePOS sudah dibuat sejak tahun 2015, update bertahap sesuai kebutuhan Cafe 
+WePOS sudah dibuat sejak tahun 2015, update bertahap sesuai kebutuhan Cafe & Resto
+untuk versi Retail/Toko: https://github.com/copolatoz/wepos-retail
 
-WePOS merupakan Karya anak bangsa, support Team WePOS dengan Donasi dari rekan-rekan
+*untuk auto update: silahkan daftarkan merchant/cafe/resto untuk mendapatkan merchant-key
 
-#Cara Instalasi:
+#Cara Instalasi Aplikasi:
 1. Install XAMPP 5.5.24 atau 5.6.32
 2. copy-paste folder hasil download aplikasi 'wepos-free' ke xampp/htdocs/
 
@@ -40,13 +41,12 @@ WePOS merupakan Karya anak bangsa, support Team WePOS dengan Donasi dari rekan-r
 4. untuk setup printer Thermal -> silahkan download extension PHP di website (login wepos.id)
 
 *Untuk Instalasi lengkap bisa baca di dokumentasi (login website, wepos.id)
-
-#Silahkan Donasi untuk versi yang lebih baik ^^ 
+#Silahkan Donasi untuk versi gratisan yang lebih baik ^^ 
 #terima kasih untuk rekan-rekan yang sudah support WePOS
 
 Team WePOS ^^
-
-contact@wepos.id / angga.nugraha@gmail.com
+contact@wepos.id 
+081222549676 // 087722294411
 
 *SELALU DUKUNG KARYA ANAK BANGSA!! 
 *JANGAN MALU UNTUK BERTANYA - GRATIS KONSULTASI
