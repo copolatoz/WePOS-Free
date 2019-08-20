@@ -29,7 +29,7 @@ function do_thumb($data, $folder, $thumb_folder, $prefix_thumb = "", $limit_thum
 	$img['image_library'] = 'GD2';
 	$img['create_thumb']  = TRUE;
 	$img['maintain_ratio']= $maintain_ratio;
-	$img['master_dim']= $master_dim;
+	//$img['master_dim']= $master_dim;
 				 
 	/// Limit Width Resize
 	//$limit_thumb    = 64 ;
