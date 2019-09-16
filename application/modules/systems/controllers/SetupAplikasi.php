@@ -33,6 +33,7 @@ class SetupAplikasi extends MY_Controller {
 			'hide_button_invoice','hide_button_halfpayment','hide_button_mergebill','hide_button_splitbill','hide_button_logoutaplikasi',
 			'cashier_credit_ar','min_noncash','no_hold_billing','print_preview_billing','default_tipe_billing',
 			'maxday_cashier_report','jam_operasional_from','jam_operasional_to','jam_operasional_extra',
+			'hide_detail_taxservice','hide_detail_takeaway','hide_detail_compliment','hold_table_timer','use_block_table',
 		
 			'print_order_peritem_kitchen','print_order_peritem_bar','print_order_peritem_other','print_chinese_text','show_multiple_print_qc',
 			'multiple_print_qc','show_multiple_print_billing','multiple_print_billing',
@@ -110,6 +111,7 @@ class SetupAplikasi extends MY_Controller {
 			'hide_button_invoice','hide_button_halfpayment','hide_button_mergebill','hide_button_splitbill','hide_button_logoutaplikasi',
 			'cashier_credit_ar','min_noncash','no_hold_billing','print_preview_billing','default_tipe_billing',
 			'maxday_cashier_report','jam_operasional_from','jam_operasional_to','jam_operasional_extra',
+			'hide_detail_taxservice','hide_detail_takeaway','hide_detail_compliment','hold_table_timer','use_block_table',
 			
 			'print_order_peritem_kitchen','print_order_peritem_bar','print_order_peritem_other','print_chinese_text','show_multiple_print_qc',
 			'multiple_print_qc','show_multiple_print_billing','multiple_print_billing',
@@ -187,6 +189,11 @@ class SetupAplikasi extends MY_Controller {
 			'jam_operasional_from'			=> '07:00',
 			'jam_operasional_to'			=> '23:00',
 			'jam_operasional_extra'			=> 0,
+			'hide_detail_taxservice'		=> 0,
+			'hide_detail_takeaway'			=> 0,
+			'hide_detail_compliment'		=> 0,
+			'hold_table_timer'				=> 0,
+			'use_block_table'				=> 0,
 					
 			'print_order_peritem_kitchen'	=> 0,
 			'print_order_peritem_bar'		=> 0,

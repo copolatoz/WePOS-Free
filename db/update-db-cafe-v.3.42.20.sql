@@ -477,3 +477,16 @@ option_value = REPLACE(option_value, 'MEJA:', '');
 #
 INSERT INTO `apps_options`(`option_var`,`option_value`,`option_description`,`created`,`createdby`,`updated`,`updatedby`,`is_active`,`is_deleted`) VALUES 
 ('maxday_cashier_report',1,NULL,'2019-05-11 00:00:00','administrator',NULL,NULL,'1','0');
+#
+ALTER TABLE `pos_billing_detail` 
+ADD `diskon_sebelum_pajak_service` TINYINT(1) DEFAULT 0;
+#
+ALTER TABLE `pos_billing_detail_split` 
+ADD `storehouse_id` INT(11) DEFAULT 0,
+ADD `diskon_sebelum_pajak_service` TINYINT(1) DEFAULT 0;
+#
+INSERT INTO `apps_roles_module` (`role_id`, `module_id`, `start_menu_path`, `module_order`, `createdby`, `created`, `updatedby`, `updated`, `is_active`, `is_deleted`) VALUES
+(1, 170, NULL, 0, 'admin', '2018-09-04 10:14:10', 'admin', '2018-09-04 10:14:10', 1, 0),
+(2, 170, NULL, 0, 'admin', '2018-09-04 10:14:10', 'admin', '2018-09-04 10:14:10', 1, 0),
+(1, 171, NULL, 0, 'admin', '2018-09-04 10:14:10', 'admin', '2018-09-04 10:14:10', 1, 0),
+(2, 171, NULL, 0, 'admin', '2018-09-04 10:14:10', 'admin', '2018-09-04 10:14:10', 1, 0);

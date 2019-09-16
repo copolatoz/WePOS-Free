@@ -160,7 +160,8 @@ class Backend extends MY_Controller {
 		'use_item_sku','reservation_cashier','salesorder_cashier','autohold_create_billing',
 		'hide_button_invoice','hide_button_halfpayment','hide_button_mergebill','hide_button_splitbill',
 		'hide_button_logoutaplikasi','min_noncash','autobackup_on_settlement','no_hold_billing',
-		'print_preview_billing','opsi_no_print_when_payment','must_choose_customer');
+		'print_preview_billing','opsi_no_print_when_payment','must_choose_customer',
+		'hide_detail_taxservice','hide_detail_takeaway','hide_detail_compliment','hold_table_timer','use_block_table');
 		
 		$get_opt = get_option_value($opt_var);
 		
@@ -248,8 +249,6 @@ class Backend extends MY_Controller {
 		//REPORT PATH
 		echo '
 		ExtApp.asCashier = '.$asCashier.';
-        var ReportViewerURL   =   "'.BASE_URL.'reports/core/index.php?stimulsoft_client_key=ViewerFx";
-        var ReportDesignerURL =   "'.BASE_URL.'reports/core/index.php?stimulsoft_client_key=DesignerFx";
 		';
 		
 		//MODULES-MENU INIT

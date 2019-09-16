@@ -591,6 +591,24 @@ class WeposNotify extends MY_Controller {
 		
 		$this->db->query("UPDATE ".$this->prefix_pos."billing SET total_credit = grand_total WHERE payment_id = 1 AND ((total_credit = 0 AND is_half_payment = 0) OR (total_credit = 0 AND total_cash = 0 AND is_half_payment = 1))");
 		
+		//clean yesterday billing
+		$opt_value = array(
+			'reset_billing_yesterday'
+		);
+		
+		$get_opt = get_option_value($opt_value);
+		if(!empty($get_opt['reset_billing_yesterday'])){
+			$mktime_yesterday = strtotime(date("d-m-Y")." 24:00:00") - ONE_DAY_UNIX;
+			$date_yesterday = date("Y-m-d H:i:s", $mktime_yesterday);
+			$this->db->query("DELETE FROM ".$this->prefix_pos."billing WHERE created <= '".$date_yesterday."'");
+			$this->db->query("DELETE FROM ".$this->prefix_pos."billing_detail WHERE created <= '".$date_yesterday."'");
+			$this->db->query("DELETE FROM ".$this->prefix_pos."billing_detail_split WHERE created <= '".$date_yesterday."'");
+			$this->db->query("DELETE FROM ".$this->prefix_pos."billing_additional_price WHERE created <= '".$date_yesterday."'");
+			$this->db->query("DELETE FROM ".$this->prefix_pos."billing_detail_timer WHERE created <= '".$date_yesterday."'");
+			$this->db->query("DELETE FROM ".$this->prefix_pos."billing_log WHERE created <= '".$date_yesterday."'");
+
+		}
+		
 		$r = array('success' => true, 'info' => 'Bersihkan Data - Selesai');
 		die(json_encode($r));
 		

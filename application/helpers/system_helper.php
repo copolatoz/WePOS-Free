@@ -74,7 +74,8 @@ function do_thumb($data, $folder, $thumb_folder, $prefix_thumb = "", $limit_thum
 	$img['quality']      = '100%' ;
 	$img['source_image'] = $source ;
 	$img['new_image']    = $destination_thumb ;
-						 
+	$img['width'] = 230;
+	
 	// Do Resizing
 	$objCI->image_lib->initialize($img);
 	$objCI->image_lib->resize();
@@ -383,7 +384,7 @@ if( ! function_exists('replace_to_printer_command')){
 		//42
 		if($tipe_pin == 42){
 			$string_to_hexa['[set_tab1]'] = "\x1b\x44\x04\x16\x1f";
-			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x12\x1d";
+			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x11\x1d";
 			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x1d";
 			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x1d";
 			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x1b";

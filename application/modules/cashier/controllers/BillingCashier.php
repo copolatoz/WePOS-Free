@@ -130,6 +130,7 @@ class BillingCashier extends MY_Controller {
 			$wepos_tipe = $get_opt['wepos_tipe'];
 		}
 		
+		$is_express = $this->input->post('is_express', true);	
 		$get_id = $this->input->post('id', true);		
 		$spv_valid = $this->input->post('spv_valid', true);		
 		$keterangan = $this->input->post('keterangan', true);		
@@ -156,20 +157,25 @@ class BillingCashier extends MY_Controller {
 		if($get_billing->num_rows() > 0){
 			$billingData = $get_billing->row();
 			
-			if($billingData->billing_status == 'paid'){
-				$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' Been Paid!<br/>Cannot Hold Billing, Please Refresh List Billing'); 
-				echo json_encode($r);
-				die();
+			if($is_express == 1){
+				$qty = $billingData->order_qty;
+				$keterangan = 'bypass';
+			}else{
+				if($billingData->billing_status == 'paid'){
+					$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' sudah dibayar!<br/>Tidak bisa cancel order, lakukan void billing atau hold billing'); 
+					echo json_encode($r);
+					die();
+				}
 			}
 			
 			if($billingData->package_item == 1 AND $billingData->free_item == 1 AND !empty($billingData->ref_order_id)){
-				$r = array('success' => false, 'info' => 'This Item/Product including on Package!<br/>Please Cancel Main Item/Order Package'); 
+				$r = array('success' => false, 'info' => 'Menu/Product termasuk dalam Paket!<br/>Silahkan Cancel Menu/Product Utama Paket'); 
 				echo json_encode($r);
 				die();
 			}
 			
 			if($billingData->package_item == 0 AND $billingData->free_item == 1 AND !empty($billingData->ref_order_id)){
-				$r = array('success' => false, 'info' => 'This Free Item/Product including on Promo<br/>Please Cancel Main Item/Order'); 
+				$r = array('success' => false, 'info' => 'Menu/Product termasuk dalam Promo<br/>Please Cancel Menu/Product Utama'); 
 				echo json_encode($r);
 				die();
 			}
@@ -178,7 +184,7 @@ class BillingCashier extends MY_Controller {
 			//die(json_encode($r));
 		}
 		
-		$r = array('success' => false, 'info' => 'Cancel Order Failed!'); 
+		$r = array('success' => false, 'info' => 'Cancel Order Gagal!'); 
 		if(!empty($billingData)){
 			
 			//CLOSING DATE
@@ -194,7 +200,7 @@ class BillingCashier extends MY_Controller {
 			
 			if($billingData->order_status == 'done'){
 				
-				$r = array('success' => false, 'info' => 'Cancel Order Failed!'); 
+				$r = array('success' => false, 'info' => 'Cancel Order Gagal!'); 
 				if(!empty($spv_valid)){
 					
 					//CHECK
@@ -357,7 +363,7 @@ class BillingCashier extends MY_Controller {
 					}  
 					else
 					{  
-						$r = array('success' => false, 'info' => 'Cancel Order Failed!', 'billingData' => $billingData); 
+						$r = array('success' => false, 'info' => 'Cancel Order Gagal!', 'billingData' => $billingData); 
 					}
 				}
 				
@@ -409,7 +415,7 @@ class BillingCashier extends MY_Controller {
 				}  
 				else
 				{  
-					$r = array('success' => false, 'info' => 'Cancel Order Failed!', 'billingData' => array()); 
+					$r = array('success' => false, 'info' => 'Cancel Order Gagal!', 'billingData' => array()); 
 				}
 			}
 		}
@@ -477,14 +483,14 @@ class BillingCashier extends MY_Controller {
 				if($billingData->billing_status == 'unpaid' OR $billingData->billing_status == 'hold'){
 					$holdBilling = $this->doHoldBilling($hold_billing_id);
 					if($holdBilling == false){
-						$r = array('success' => false, 'info' => 'Hold Billing Failed!');
+						$r = array('success' => false, 'info' => 'Hold Billing, Gagal!');
 						echo json_encode($r);
 						die();
 					}
 				}
 				
 			}else{
-				$r = array('success' => false, 'info' => 'Billing Id: #'.$hold_billing_id.' Not Found!');
+				$r = array('success' => false, 'info' => 'Billing Id: #'.$hold_billing_id.' tidak ditemukan!');
 				echo json_encode($r);
 				die();
 			}
@@ -494,7 +500,7 @@ class BillingCashier extends MY_Controller {
 		
 		$billingData = $this->getBilling();
 		if($billingData == false OR empty($billingData->billing_id)){
-			$r = array('success' => false, 'info' => 'Create New Billing Failed!');
+			$r = array('success' => false, 'info' => 'Membuat Billing Baru, Gagal!');
 			echo json_encode($r);
 			die();
 		}
@@ -503,7 +509,7 @@ class BillingCashier extends MY_Controller {
 			$billingData->created_datetime = date('d.m.Y H:i', strtotime($billingData->created));
 			
 			//SAVE TO LOG
-			//$this->logBilling($billingData, 'Create', 'Create Billing '.$billingData->billing_no);
+			//$this->logBilling($billingData, 'Create', 'Membuat Billing '.$billingData->billing_no);
 		}
 		
 		$r = array('success' => true, 'billingData' => $billingData); 
@@ -516,7 +522,7 @@ class BillingCashier extends MY_Controller {
 		
 		$billing_id = $this->input->post('billing_id', true);
 		
-		$r = array('success' => false, 'info' => 'Billing Id Not Found!');
+		$r = array('success' => false, 'info' => 'Billing Id tidak ditemukan!');
 		if(empty($billing_id)){
 			echo json_encode($r);
 			die();
@@ -739,7 +745,7 @@ class BillingCashier extends MY_Controller {
 		}
 		
 		if($is_new AND !empty($billingData)){
-			$this->logBilling($billingData, 'Create', 'Create Billing '.$billingData->billing_no);
+			$this->logBilling($billingData, 'Create', 'Membuat Billing '.$billingData->billing_no);
 		}
 		
 		return $billingData;
@@ -954,12 +960,12 @@ class BillingCashier extends MY_Controller {
 			$billingData = $get_billing->row();
 			
 			//if($billingData->billing_status == 'paid'){
-			//	$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' Been Paid!<br/>Cannot Cancel Billing, Please Refresh List Billing'); 
+			//	$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' Been Paid!<br/>Cannot Void/Cancel Billing, Please Refresh List Billing'); 
 			//	echo json_encode($r);
 			//	die();
 			//}
 		}else{
-			$r = array('success' => false, 'info' => 'Billing Id: #'.$cancel_billing_id.' Not Found!');
+			$r = array('success' => false, 'info' => 'Billing Id: #'.$cancel_billing_id.' tidak ditemukan!');
 			echo json_encode($r);
 			die();
 		}
@@ -979,7 +985,7 @@ class BillingCashier extends MY_Controller {
 		if(!empty($cancel_billing_id)){
 			$cancelBilling = $this->doCancelBilling($cancel_billing_id, $is_paid, $cancel_notes);
 			if($cancelBilling == false){
-				$r = array('success' => false, 'info' => 'Cancel Billing Failed!');
+				$r = array('success' => false, 'info' => 'Void/Void/Cancel Billing, Gagal!');
 				echo json_encode($r);
 				die();
 			}
@@ -989,7 +995,7 @@ class BillingCashier extends MY_Controller {
 		$r = array('success' => true, 'billingData' => $billingData); 
 		
 		//SAVE TO LOG
-		$this->logBilling($billingData, 'Cancel', 'Cancel Billing '.$billingData->billing_no);
+		$this->logBilling($billingData, 'Cancel', 'Void/Cancel Billing '.$billingData->billing_no);
 		
 		echo json_encode($r);
 		die();
@@ -1502,7 +1508,7 @@ class BillingCashier extends MY_Controller {
 				//$this->doPrint('void_paid_hold', $billingData->id);
 				
 			}else{
-				$r = array('success' => false, 'info' => 'Billing Id: #'.$hold_billing_id.' Not Found!');
+				$r = array('success' => false, 'info' => 'Billing Id: #'.$hold_billing_id.' tidak ditemukan!');
 				echo json_encode($r);
 				die();
 			}
@@ -1518,13 +1524,13 @@ class BillingCashier extends MY_Controller {
 				$billingData = $get_billing->row();
 				
 				if($billingData->billing_status == 'paid'){
-					$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' Been Paid!<br/>Cannot Hold Billing, Please Refresh List Billing'); 
+					$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' sudah dibayar!<br/>Tidak bisa cancel order, lakukan void billing atau hold billing'); 
 					echo json_encode($r);
 					die();
 				}
 				
 			}else{
-				$r = array('success' => false, 'info' => 'Billing Id: #'.$hold_billing_id.' Not Found!');
+				$r = array('success' => false, 'info' => 'Billing Id: #'.$hold_billing_id.' tidak ditemukan!');
 				echo json_encode($r);
 				die();
 			}
@@ -1560,7 +1566,7 @@ class BillingCashier extends MY_Controller {
 		if(!empty($hold_billing_id)){
 			$holdBilling = $this->doHoldBilling($hold_billing_id);
 			if($holdBilling == false){
-				$r = array('success' => false, 'info' => 'Hold Billing Failed!');
+				$r = array('success' => false, 'info' => 'Hold Billing, Gagal!');
 				echo json_encode($r);
 				die();
 			}
@@ -2147,6 +2153,7 @@ class BillingCashier extends MY_Controller {
 		
 		
 		$form_type_orderProduct = $this->input->post('form_type_orderProduct');
+		$is_express = $this->input->post('is_express');
 		
 		if(empty($main_billing_id)){
 			
@@ -2195,7 +2202,7 @@ class BillingCashier extends MY_Controller {
 			$get_ooo = $this->db->get();
 			if($get_ooo->num_rows() > 0){
 				$dt_ooo = $get_ooo->row();
-				$r = array('success' => false, 'info' => 'Product/Menu Out Of Order!<br/>Ket: '.$dt_ooo->keterangan); 
+				$r = array('success' => false, 'info' => 'Product/Menu Habis (Out of Order)<br/>Ket: '.$dt_ooo->keterangan); 
 				die(json_encode($r));
 			}
 		}	
@@ -2209,24 +2216,38 @@ class BillingCashier extends MY_Controller {
 				$billingData->created_datetime = date('d-m-Y H:i', strtotime($billingData->created));
 				
 				//SAVE TO LOG
-				//$this->logBilling($billingData, 'Create', 'Create Billing '.$billingData->billing_no);
+				//$this->logBilling($billingData, 'Create', 'Membuat Billing '.$billingData->billing_no);
 			}			
 		}
 		
+		if($form_type_orderProduct == 'add' AND $is_express == 1 AND !empty($main_billing_id))
+		{
+			$this->db->from($this->table2);
+			$this->db->where("billing_id = ".$main_billing_id." AND product_id = ".$product_id);
+			$get_old_detail = $this->db->get();
+			if($get_old_detail->num_rows() > 0){
+				$dt_old_detail = $get_old_detail->row();
+				$form_type_orderProduct = 'edit';
+				$id = $dt_old_detail->id;
+				$order_qty =  $dt_old_detail->order_qty+$order_qty;
+			}
+			
+		}
+		
 		if($billingData->lock_billing == 1){
-			$r = array('success' => false, 'info' => 'Billing is locked by cashier<br/>Cannot do order!');
+			$r = array('success' => false, 'info' => 'Billing di kunci oleh kasir<br/>tidak bisa melakukan pesanan/order!');
 			echo json_encode($r);
 			die();
 		}
 		
 		if($billingData == false OR empty($main_billing_id)){
-			$r = array('success' => false, 'info' => 'Billing not Found!', 'billingData' => $billingData);
+			$r = array('success' => false, 'info' => 'Billing tidak ditemukan!', 'billingData' => $billingData);
 			echo json_encode($r);
 			die();
 		}
 		
 		if($billingData->billing_status == 'paid'){
-			$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' Been Paid!<br/>Cannot Order, Please Refresh List Billing'); 
+			$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' sudah dibayar!<br/>Tidak bisa melakukan pesanan/order, Silahkan lakukan Refresh List Billing'); 
 			echo json_encode($r);
 			die();
 		}
@@ -2618,79 +2639,6 @@ class BillingCashier extends MY_Controller {
 					}
 				}
 				
-				/*
-				//update 2018-02-13
-				//check package
-				if($product_type == 'package'){
-					
-					//get product detail
-					$data_package_item = array();
-					$this->db->select("a.id, a.product_id, a.product_hpp, a.product_price, a.normal_price, 
-					a.has_varian, a.product_varian_id, a.varian_id, b.category_id, b.product_type");
-					$this->db->from($this->prefix.'product_package as a');
-					$this->db->join($this->prefix.'product as b',"b.id = a.product_id","LEFT");
-					$this->db->where("a.package_id",$product_id);
-					$this->db->where("b.product_type", 'item');
-					$get_prod = $this->db->get();
-					if($get_prod->num_rows() > 0){
-						foreach($get_prod->result() as $data_prod){
-							$product_id_package = $data_prod->product_id;
-							$product_type_package = $data_prod->product_type;
-							$category_id = $data_prod->category_id;
-							$product_varian_id = $data_prod->product_varian_id;
-							$varian_id	= $data_prod->varian_id;
-							$has_varian = $data_prod->has_varian;
-							$product_price_hpp = $data_prod->product_hpp;
-							$product_price = $data_prod->product_price;
-							$product_price_real = $data_prod->product_price;
-							$product_normal_price = $data_prod->normal_price;
-							
-							$data_package_item[] = array(
-								'billing_id'  	=> 	$main_billing_id,
-								'billing_id_before_merge'  	=> 	$billing_id_before_merge,
-								'product_id'	=>	$product_id_package,
-								'product_type'	=>	$product_type_package,
-								'category_id'	=>	$category_id,
-								'product_varian_id'	=>	$product_varian_id,
-								'varian_id'		=>	$varian_id,
-								'has_varian'	=>	$has_varian,
-								'include_tax'	=>	$include_tax,
-								'tax_percentage'	=>	$tax_percentage,
-								'tax_total'			=>	0,
-								'include_service'	=>	$include_service,
-								'service_percentage'	=>	$service_percentage,
-								'service_total'	=>	0,
-								'is_takeaway'	=>	$is_takeaway,
-								'takeaway_no_tax'	=>	$takeaway_no_tax,
-								'takeaway_no_service'	=>	$takeaway_no_service,
-								'is_compliment'	=>	$is_compliment,
-								'product_price_real'	=>	$product_price_real,
-								'product_price'	=>	$product_price,
-								'product_price_hpp'		=>	$product_price_hpp,
-								'product_normal_price'	=>	$product_normal_price,
-								'order_qty'		=>	$order_qty,
-								'order_notes'	=>	'',
-								'order_status'	=>	'order',
-								'order_counter'	=>	$order_counter,
-								'order_day_counter'	=>	$order_day_counter,
-								'created'		=>	$date_now,
-								'createdby'		=>	$session_user,
-								'updated'		=>	$date_now,
-								'updatedby'		=>	$session_user,
-								'package_item'		=>	1,
-								'free_item'			=>	1,
-								'ref_order_id'		=>	$insert_id
-							);
-						}
-						
-					}
-					
-					if(!empty($data_package_item)){
-						$this->db->insert_batch($this->table2, $data_package_item);
-					}
-				
-				}*/
-				
 				$r = array('success' => true, 'id' => $insert_id, 'billingData' => $billingData); 
 				
 			}  
@@ -2722,7 +2670,7 @@ class BillingCashier extends MY_Controller {
 					$dt_old_detail = $get_old_detail->row();
 					
 					if($dt_old_detail->order_qty < $order_qty){
-						$r = array('success' => false, 'info' => 'Tidak Bisa Menambah Qty, Product/Menu Out Of Order!<br/>Ket: '.$dt_ooo->keterangan); 
+						$r = array('success' => false, 'info' => 'Tidak Bisa Menambah Qty, Product/Menu Habis (Out of Order)<br/>Ket: '.$dt_ooo->keterangan); 
 						die(json_encode($r));
 					}
 					
@@ -3440,7 +3388,7 @@ class BillingCashier extends MY_Controller {
 		}
 		
 		if(empty($retail_warehouse)){
-			$r = array('success' => false, 'info' => 'Please set stock warehouse!');
+			$r = array('success' => false, 'info' => 'Silahkan lakukan Set Stock Warehouse/Gudang!');
 			echo json_encode($r);
 			die();
 		}
@@ -3451,13 +3399,13 @@ class BillingCashier extends MY_Controller {
 				
 			}else
 			{
-				$r = array('success' => false, 'info' => 'Only Cashier Can Paid Billing!');
+				$r = array('success' => false, 'info' => 'Hanya User Kasir yang dapat melakukan pembayaran!');
 				echo json_encode($r);
 				die();
 			}
 		}else
 		{
-			$r = array('success' => false, 'info' => 'Only Cashier Can Paid Billing!');
+			$r = array('success' => false, 'info' => 'Hanya User Kasir yang dapat melakukan pembayaran!');
 			echo json_encode($r);
 			die();
 		}
@@ -3467,13 +3415,13 @@ class BillingCashier extends MY_Controller {
 		$total_guest = $this->input->post('total_guest');
 		
 		if(empty($table_id) OR empty($table_no)){
-			$r = array('success' => false, 'info' => 'Select Table!');
+			$r = array('success' => false, 'info' => 'Pilih Table/Meja!');
 			echo json_encode($r);
 			die();
 		}
 		
 		if(empty($total_guest)){
-			$r = array('success' => false, 'info' => 'Total Guest Tidak Boleh Kosong!');
+			$r = array('success' => false, 'info' => 'Total Guest/Tamu Tidak Boleh Kosong!');
 			echo json_encode($r);
 			die();
 		}	
@@ -3496,12 +3444,12 @@ class BillingCashier extends MY_Controller {
 			$billingData = $get_billing->row();
 			
 			if($billingData->billing_status == 'paid'){
-				$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' Been Paid Before!<br/>Cannot Re-Pay Billing, Please Refresh List Billing'); 
+				$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' sudah dibayar!<br/>tidak dapat melakukan pembayaran pada billing tersebut, Silahkan lakukan refresh pada list billing (paid)'); 
 				echo json_encode($r);
 				die();
 			}
 		}else{
-			$r = array('success' => false, 'info' => 'Paid Billing #'.$billing_no.' Failed!<br/>Please refresh and try to Pay billing again');
+			$r = array('success' => false, 'info' => 'Paid Billing #'.$billing_no.' Gagal!<br/>silahkan lakukan refresh dan coba lakukan pembayaran kembali!');
 			echo json_encode($r);
 			die();
 		}
@@ -3662,11 +3610,11 @@ class BillingCashier extends MY_Controller {
 		
 		
 		if($billingData->grand_total != $grand_total){
-			$r = array('success' => false, 'info' => 'Grand Total doesn\'t match with data<br/>Please refresh order data'); 
+			$r = array('success' => false, 'info' => 'Grand Total tidak sesuai dengan data pesanan<br/>Silahkan refresh data Order/Pesanan'); 
 			die(json_encode($r));
 		}
 		if($billingData->total_billing != $total_billing){
-			$r = array('success' => false, 'info' => 'Total Billing doesn\'t match with data<br/>Please refresh order data'); 
+			$r = array('success' => false, 'info' => 'Total Billing tidak sesuai dengan data pesanan<br/>Silahkan refresh data Order/Pesanan'); 
 			die(json_encode($r));
 		}
 		
@@ -3681,7 +3629,7 @@ class BillingCashier extends MY_Controller {
 				}
 				
 				if($total_paid != $grand_total){
-					$r = array('success' => false, 'info' => 'Grand Total doesn\'t match with Total Paid<br/>Please refresh order data'); 
+					$r = array('success' => false, 'info' => 'Grand Total tidak sesuai dengan Total Pembayaran<br/>Silahkan refresh data Order/Pesanan'); 
 					die(json_encode($r));
 				}
 			}
@@ -3696,13 +3644,7 @@ class BillingCashier extends MY_Controller {
 		}
 			
 		if(empty($billing_id)){
-			$r = array('success' => false, 'info' => 'Billing not Found!');
-			echo json_encode($r);
-			die();
-		}
-			
-		if(empty($billing_id)){
-			$r = array('success' => false, 'info' => 'Billing not Found!');
+			$r = array('success' => false, 'info' => 'Billing tidak ditemukan!');
 			echo json_encode($r);
 			die();
 		}
@@ -4498,7 +4440,9 @@ class BillingCashier extends MY_Controller {
 			'printMonitoring_bar',
 			'printMonitoring_other',
 			
-			'order_timer'
+			'order_timer',
+			'produk_nama',
+			'produk_expired'
 			
 		);
 		$get_opt = get_option_value($opt_value);
@@ -4848,13 +4792,13 @@ class BillingCashier extends MY_Controller {
 				}
 				if($printer_pin_cashierReceipt == 40){
 					$max_text -= 2;
-					$max_number_1 = 9;
+					$max_number_1 = 8;
 					$max_number_2 = 11;
 					$max_number_3 = 13;
 				}
 				if($printer_pin_cashierReceipt == 42){
 					//$max_text -= 2;
-					$max_number_1 = 9;
+					$max_number_1 = 8;
 					$max_number_2 = 11;
 					$max_number_3 = 13;
 				}
@@ -5125,8 +5069,8 @@ class BillingCashier extends MY_Controller {
 								}
 								
 								if(empty($cancel_order_kitchen_text)){
-									$cancel_order_kitchen_text = "[size=2]CANCEL ORDER[tab] \n[size=0]";
-									$order_data_kitchen[$bil_det->id] .= "[size=2]CANCEL ORDER[tab] \n[size=0]";
+									$cancel_order_kitchen_text = "[size=1]CANCEL ORDER[tab] \n[size=0]";
+									$order_data_kitchen[$bil_det->id] .= "[size=1]CANCEL ORDER[tab] \n[size=0]";
 								}else{
 									$order_data_kitchen[$bil_det->id] .= "[size=0]";
 								}
@@ -5134,10 +5078,10 @@ class BillingCashier extends MY_Controller {
 								$order_data_kitchen[$bil_det->id] .= $bil_det->order_qty."[tab]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
 								
 								//PER-ITEM KITCHEN
-								$order_data_kitchen_peritem_format = "[size=2][align=1]CANCEL ORDER\n";
-								$order_data_kitchen_peritem_format .= "[size=2][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
-								$order_data_kitchen_peritem_format .= "[size=2][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
-								$order_data_kitchen_peritem_format .= "[size=1][align=1]".$takeaway_name.$order_notes."\n";
+								$order_data_kitchen_peritem_format = "[size=1][align=1]CANCEL ORDER\n";
+								$order_data_kitchen_peritem_format .= "[size=1][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
+								$order_data_kitchen_peritem_format .= "[size=1][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
+								$order_data_kitchen_peritem_format .= "[size=0][align=1]".$takeaway_name.$order_notes."\n";
 								$order_data_kitchen_peritem[$bil_det->id] = $order_data_kitchen_peritem_format;
 								$order_data_kitchen_update[] = $bil_det->id;
 								
@@ -5150,9 +5094,9 @@ class BillingCashier extends MY_Controller {
 									$order_data_kitchen[$bil_det->id] = $bil_det->order_qty."[tab]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
 									
 									//PER-ITEM KITCHEN
-									$order_data_kitchen_peritem_format = "[size=2][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
-									$order_data_kitchen_peritem_format .= "[size=2][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
-									$order_data_kitchen_peritem_format .= "[size=1][align=1]".$takeaway_name.$order_notes."\n";
+									$order_data_kitchen_peritem_format = "[size=1][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
+									$order_data_kitchen_peritem_format .= "[size=1][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
+									$order_data_kitchen_peritem_format .= "[size=0][align=1]".$takeaway_name.$order_notes."\n";
 									$order_data_kitchen_peritem[$bil_det->id] = $order_data_kitchen_peritem_format;
 									
 								}
@@ -5171,8 +5115,8 @@ class BillingCashier extends MY_Controller {
 								}
 								
 								if(empty($cancel_order_bar_text)){
-									$cancel_order_bar_text = "[size=2]CANCEL ORDER[tab] \n[size=0]";
-									$order_data_bar[$bil_det->id] .= "[size=2]CANCEL ORDER[tab] \n[size=0]";
+									$cancel_order_bar_text = "[size=1]CANCEL ORDER[tab] \n[size=0]";
+									$order_data_bar[$bil_det->id] .= "[size=1]CANCEL ORDER[tab] \n[size=0]";
 								}else{
 									$order_data_bar[$bil_det->id] .= "[size=0]";
 								}
@@ -5180,10 +5124,10 @@ class BillingCashier extends MY_Controller {
 								$order_data_bar[$bil_det->id] .= $bil_det->order_qty."[tab]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
 								
 								//PER-ITEM BAR
-								$order_data_bar_peritem_format = "[size=2][align=1]CANCEL ORDER\n";
-								$order_data_bar_peritem_format .= "[size=2][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
-								$order_data_bar_peritem_format .= "[size=2][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
-								$order_data_bar_peritem_format .= "[size=1][align=1]".$takeaway_name.$order_notes."\n";
+								$order_data_bar_peritem_format = "[size=1][align=1]CANCEL ORDER\n";
+								$order_data_bar_peritem_format .= "[size=1][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
+								$order_data_bar_peritem_format .= "[size=1][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
+								$order_data_bar_peritem_format .= "[size=0][align=1]".$takeaway_name.$order_notes."\n";
 								$order_data_bar_peritem[$bil_det->id] = $order_data_bar_peritem_format;
 								$order_data_bar_update[] = $bil_det->id;
 								
@@ -5196,9 +5140,9 @@ class BillingCashier extends MY_Controller {
 									$order_data_bar[$bil_det->id] = $bil_det->order_qty."[tab]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
 									
 									//PER-ITEM BAR
-									$order_data_bar_peritem_format = "[size=2][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
-									$order_data_bar_peritem_format .= "[size=2][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
-									$order_data_bar_peritem_format .= "[size=1][align=1]".$takeaway_name.$order_notes."\n";
+									$order_data_bar_peritem_format = "[size=1][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
+									$order_data_bar_peritem_format .= "[size=1][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
+									$order_data_bar_peritem_format .= "[size=0][align=1]".$takeaway_name.$order_notes."\n";
 									$order_data_bar_peritem[$bil_det->id] = $order_data_bar_peritem_format;
 									
 								}
@@ -5214,8 +5158,8 @@ class BillingCashier extends MY_Controller {
 									}
 								
 									if(empty($cancel_order_other_text)){
-										$cancel_order_other_text = "[size=2]CANCEL ORDER[tab] \n[size=0]";
-										$order_data_other[$bil_det->id] .= "[size=2]CANCEL ORDER[tab] \n[size=0]";
+										$cancel_order_other_text = "[size=1]CANCEL ORDER[tab] \n[size=0]";
+										$order_data_other[$bil_det->id] .= "[size=1]CANCEL ORDER[tab] \n[size=0]";
 									}else{
 										$order_data_other[$bil_det->id] .= "[size=0]";
 									}
@@ -5223,10 +5167,10 @@ class BillingCashier extends MY_Controller {
 									$order_data_other[$bil_det->id] .= $bil_det->order_qty."[tab]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
 									
 									//PER-ITEM OTHER
-									$order_data_other_peritem_format = "[size=2][align=1]CANCEL ORDER\n";
-									$order_data_other_peritem_format .= "[size=2][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
-									$order_data_other_peritem_format .= "[size=2][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
-									$order_data_other_peritem_format .= "[size=1][align=1]".$takeaway_name.$order_notes."\n";
+									$order_data_other_peritem_format = "[size=1][align=1]CANCEL ORDER\n";
+									$order_data_other_peritem_format .= "[size=1][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
+									$order_data_other_peritem_format .= "[size=1][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
+									$order_data_other_peritem_format .= "[size=0][align=1]".$takeaway_name.$order_notes."\n";
 									$order_data_other_peritem[$bil_det->id] = $order_data_other_peritem_format;
 									
 								}else{
@@ -5238,9 +5182,9 @@ class BillingCashier extends MY_Controller {
 										$order_data_other[$bil_det->id] = $bil_det->order_qty."[tab]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name.$varian_name.$takeaway_name.$order_notes."\n";
 										
 										//PER-ITEM OTHER
-										$order_data_other_peritem_format = "[size=2][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
-										$order_data_other_peritem_format .= "[size=2][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
-										$order_data_other_peritem_format .= "[size=1][align=1]".$takeaway_name.$order_notes."\n";
+										$order_data_other_peritem_format = "[size=1][align=1]".$product_name_package.$bil_det->product_name.$product_name_free_buyget.$product_chinese_name."\n";
+										$order_data_other_peritem_format .= "[size=1][align=1]".$bil_det->order_qty." X ".$varian_name_2."\n";
+										$order_data_other_peritem_format .= "[size=0][align=1]".$takeaway_name.$order_notes."\n";
 										$order_data_other_peritem[$bil_det->id] = $order_data_other_peritem_format;
 										
 									}
@@ -5433,14 +5377,9 @@ class BillingCashier extends MY_Controller {
 						$payment_type_show .= '/Tunai';
 					}
 				}
-				if(!empty($billingData->bank_name)){
+				
+				if(!empty($billingData->bank_name) AND $billingData->payment_type_name != 'Cash'){
 					$payment_type_show = $billingData->bank_name;
-					
-					//card_no
-					if(!empty($billingData->card_no)){
-						$payment_type_show .= " / ".$billingData->card_no;
-					}
-					
 				}
 				
 				$is_half_payment = $billingData->is_half_payment;
@@ -5456,8 +5395,24 @@ class BillingCashier extends MY_Controller {
 					$half_payment_show .= "[align=0] - ".$payment_type_show." : ".$total_credit_show;
 					$payment_type_show = $half_payment_show;
 					
+					//card_no
+					if(!empty($billingData->card_no)){
+						$payment_type_show .= "\n";
+						$payment_type_show .= "[align=0] - Trx: ".$billingData->card_no;
+					}
+					
 				}else{
 					$payment_type_show = $payment_type_show;
+					
+					if(!empty($billingData->bank_name) AND $billingData->payment_type_name != 'Cash'){
+						
+						//card_no
+						if(!empty($billingData->card_no)){
+							$payment_type_show .= "\n";
+							$payment_type_show .= "[tab]Trx: ".$billingData->card_no;
+						}
+						
+					}
 				}
 				
 				//table no
@@ -5606,6 +5561,15 @@ class BillingCashier extends MY_Controller {
 				$cashierReceipt_layout = str_replace("{hide_empty}","", $cashierReceipt_layout);
 				
 				$cashierReceipt_layout .= $cashierReceipt_layout_footer;
+				
+				if(!empty($get_opt['produk_nama']) AND !empty($get_opt['produk_expired'])){
+					if($get_opt['produk_nama'] == 'Gratis / Free' AND $get_opt['produk_expired'] == 'unlimited'){
+						$str1 = 'U3VwcG9y'; $str2 = 'dGVkIEJ5IF'; $str3 = 'dlUE9TLmlk';
+						$extra_watermark = "\n[align=1]".base64_decode($str1.$str2.$str3);
+						$cashierReceipt_layout .= $extra_watermark;
+					}
+				}
+				
 				$print_content_cashierReceipt = strtr($cashierReceipt_layout, $print_attr);
 				$print_content_cashierReceipt_monitoring = strtr($cashierReceipt_layout, $print_attr);
 				
@@ -5673,7 +5637,7 @@ class BillingCashier extends MY_Controller {
 						$data_printer[$printer_id_cashierReceipt]['escpos_pass'] = 1;
 						
 						if($is_print_error){					
-							$r['info'] .= 'Communication with Printer Cashier Failed!<br/>';
+							$r['info'] .= 'Komunikasi dengan Printer Kasir Gagal!<br/>';
 							echo $r['info'];
 							die();
 						}
@@ -5694,7 +5658,7 @@ class BillingCashier extends MY_Controller {
 					
 					//if(empty($print_qcReceipt) AND $printMonitoring_qc == 0){
 					if(empty($print_qcReceipt)){
-						$r['info'] = 'IP: '.$ip_addr.' cant print to '.$printer_ip_qcReceipt;
+						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print ke '.$printer_ip_qcReceipt;
 						//echo json_encode($r);
 						//die();
 						echo $r['info'];
@@ -5831,7 +5795,7 @@ class BillingCashier extends MY_Controller {
 									$data_printer[$printer_id_qcReceipt]['escpos_pass'] = 1;
 									
 									if($is_print_error){					
-										$r['info'] .= 'Communication with Printer Cashier Failed!<br/>';
+										$r['info'] .= 'Komunikasi dengan Printer Kasir Gagal!<br/>';
 										
 										if($is_void_order == 0){
 											echo $r['info'];
@@ -5850,7 +5814,7 @@ class BillingCashier extends MY_Controller {
 							}
 							
 							if($is_print_error){					
-								$r['info'] .= 'Communication with Printer Cashier Failed!<br/>';
+								$r['info'] .= 'Komunikasi dengan Printer Kasir Gagal!<br/>';
 								if($is_void_order == 0){
 									echo $r['info'];
 									die();
@@ -5881,7 +5845,7 @@ class BillingCashier extends MY_Controller {
 					
 					//if(empty($print_kitchenReceipt) AND $printMonitoring_kitchen == 0){
 					if(empty($print_kitchenReceipt)){
-						$r['info'] = 'IP: '.$ip_addr.' cant print to '.$printer_ip_kitchenReceipt;
+						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print ke '.$printer_ip_kitchenReceipt;
 						//echo json_encode($r);
 						echo $r['info'];
 						die();
@@ -6242,7 +6206,7 @@ class BillingCashier extends MY_Controller {
 						
 						
 						if($is_print_error){					
-							$r['info'] .= 'Communication with Printer Cashier Failed!<br/>';
+							$r['info'] .= 'Komunikasi dengan Printer Kitchen Gagal!<br/>';
 							if($is_void_order == 0){
 								printing_process_error($r['info']);
 								die();
@@ -6277,7 +6241,7 @@ class BillingCashier extends MY_Controller {
 					
 					//if(empty($print_barReceipt) AND $printMonitoring_bar == 0){
 					if(empty($print_barReceipt)){
-						$r['info'] = 'IP: '.$ip_addr.' cant print to '.$printer_ip_barReceipt;
+						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print ke '.$printer_ip_barReceipt;
 						//echo json_encode($r);
 						printing_process_error($r['info']);
 						die();
@@ -6631,7 +6595,7 @@ class BillingCashier extends MY_Controller {
 						}
 						
 						if($is_print_error){					
-							$r['info'] .= 'Communication with Printer Bar Failed!<br/>';
+							$r['info'] .= 'Komunikasi dengan Printer Bar Gagal!<br/>';
 							if($is_void_order == 0){
 								printing_process_error($r['info']);
 								die();
@@ -6663,7 +6627,7 @@ class BillingCashier extends MY_Controller {
 					
 					//if(empty($print_otherReceipt) AND $printMonitoring_other == 0){
 					if(empty($print_otherReceipt)){
-						$r['info'] = 'IP: '.$ip_addr.' cant print to '.$printer_ip_otherReceipt;
+						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print ke '.$printer_ip_otherReceipt;
 						//echo json_encode($r);
 						printing_process_error($r['info']);
 						die();
@@ -7020,7 +6984,7 @@ class BillingCashier extends MY_Controller {
 						}
 						
 						if($is_print_error){					
-							$r['info'] .= 'Communication with Printer Other Failed!<br/>';
+							$r['info'] .= 'Komunikasi dengan Printer Other (Lainnya) Gagal!<br/>';
 							
 							if($is_void_order == 0){
 								printing_process_error($r['info']);
@@ -7159,11 +7123,11 @@ class BillingCashier extends MY_Controller {
 				}
 				
 			}else{
-				$r = array('success' => false, 'info' => 'Load Detail Failed, data not found!');
+				$r = array('success' => false, 'info' => 'Load data detail gagal, data tidak ditemukan!');
 			}
 			
 		}else{
-			$r = array('success' => false, 'info' => 'Load Detail Failed, data not found!');
+			$r = array('success' => false, 'info' => 'Load data detail gagal, data tidak ditemukan!');
 		}
 		
 		//echo '<pre>';
@@ -7216,7 +7180,7 @@ class BillingCashier extends MY_Controller {
 		$get_printer = $this->db->get();
 
 		$data_printer = array();
-		$r = array('success' => false, 'info' => 'IP: '.$ip_addr.' cant print '.$printSetting, 'ip_addr' => $ip_addr);
+		$r = array('success' => false, 'info' => 'IP: '.$ip_addr.' tidak dapat melakukan print '.$printSetting, 'ip_addr' => $ip_addr);
 			
 		if($get_printer->num_rows() > 0){
 			$data_printer = $get_printer->row_array();
@@ -7264,7 +7228,7 @@ class BillingCashier extends MY_Controller {
 			$data_printer['escpos_pass'] = 1;
 			
 			if($is_print_error){					
-				$r['info'] .= 'Communication with Printer Cashier Failed!<br/>';
+				$r['info'] .= 'Komunikasi dengan Printer Gagal!<br/>';
 				printing_process_error($r['info']);
 				die();
 			}
@@ -7621,7 +7585,7 @@ class BillingCashier extends MY_Controller {
 		
 		if($use_local_default_printer == false OR empty($use_local_default_printer)){
 			if(empty($printer_ip) OR empty($printer_pin)){
-				$r = array('success' => false, 'info' => '<br/>Printer IP and Tipe Print should be selected!');
+				$r = array('success' => false, 'info' => '<br/>Printer IP dan Tipe Printer harus dipilih!');
 				die(json_encode($r));
 			}else{
 				$data_options = array(
@@ -7875,7 +7839,7 @@ class BillingCashier extends MY_Controller {
 		$r = array('success' => false);
 		
 		if(empty($billing_id) OR empty($table_id)){
-			$r = array('success' => false, 'info' => 'Please Select Table!');
+			$r = array('success' => false, 'info' => 'Please Pilih Table/Meja!');
 		}else{
 			
 			$billingData = array();
@@ -8117,7 +8081,7 @@ class BillingCashier extends MY_Controller {
 		$r = array('success' => false);
 		
 		if(empty($billing_id) OR empty($total_guest)){
-			$r = array('success' => false, 'info' => 'Total Guest Tidak Boleh Kosong!');
+			$r = array('success' => false, 'info' => 'Total Guest/Tamu Tidak Boleh Kosong!');
 		}else{
 			
 			$billingData = array();
@@ -8200,7 +8164,7 @@ class BillingCashier extends MY_Controller {
 		$r = array('success' => false);
 		
 		if(empty($billing_id)){
-			$r = array('success' => false, 'info' => 'Billing not found!');
+			$r = array('success' => false, 'info' => 'Billing tidak ditemukan!');
 		}else{
 			
 			//check billing
@@ -8485,7 +8449,7 @@ class BillingCashier extends MY_Controller {
 		$r = array('success' => false);
 		
 		if(empty($billing_id)){
-			$r = array('success' => false, 'info' => 'Billing not found!');
+			$r = array('success' => false, 'info' => 'Billing tidak ditemukan!');
 		}else{
 			
 			
@@ -8767,7 +8731,7 @@ class BillingCashier extends MY_Controller {
 		$r = array('success' => false);
 		
 		if(empty($billing_id)){
-			$r = array('success' => false, 'info' => 'Billing not found!');
+			$r = array('success' => false, 'info' => 'Billing tidak ditemukan!');
 		}else{
 			
 			//check billing
@@ -8932,7 +8896,7 @@ class BillingCashier extends MY_Controller {
 		$r = array('success' => false);
 		
 		if(empty($billing_id)){
-			$r = array('success' => false, 'info' => 'Billing not found!');
+			$r = array('success' => false, 'info' => 'Billing tidak ditemukan!');
 		}else{
 			
 			//CLEAR DETAIL
@@ -9516,7 +9480,7 @@ class BillingCashier extends MY_Controller {
 		$r = array('success' => false);
 		
 		if(empty($billing_id)){
-			$r = array('success' => false, 'info' => 'Billing not found!');
+			$r = array('success' => false, 'info' => 'Billing tidak ditemukan!');
 		}else{
 			
 			
@@ -9814,7 +9778,7 @@ class BillingCashier extends MY_Controller {
 		$retur_reason = $this->input->post('retur_reason', true);		
 		
 		if(empty($billing_detail_id)){
-			$r = array('success' => false, 'info' => 'Order Item unidentified!');
+			$r = array('success' => false, 'info' => 'Pesanan tidak ditemukan!');
 			echo json_encode($r);
 			die();
 		}
@@ -9886,13 +9850,13 @@ class BillingCashier extends MY_Controller {
 		$merge_billing_id = $this->input->post('merge_billing_id', true);		
 		
 		if(empty($main_billing_id)){
-			$r = array('success' => false, 'info' => 'Main Billing unidentified!');
+			$r = array('success' => false, 'info' => 'Billing Utama tidak ada/tidak dikenali!');
 			echo json_encode($r);
 			die();
 		}
 		
 		if(empty($merge_billing_id)){
-			$r = array('success' => false, 'info' => 'All Merge Billing unidentified!');
+			$r = array('success' => false, 'info' => 'Semua Merge Billing tidak dikenali!');
 			echo json_encode($r);
 			die();
 		}
@@ -9923,7 +9887,7 @@ class BillingCashier extends MY_Controller {
 		
 		//make sure merge billing - detail are DONE!
 		if($cek_detail_done == false){
-			$r = array('success' => false, 'info' => 'Make Sure All Order is done!<br/>Merge Bill only used when pay billing');
+			$r = array('success' => false, 'info' => 'Cek kembali pesanan sudah selesai semua<br/>Merge Bill hanya digunakan ketika pembayaran billing');
 			echo json_encode($r);
 			die();
 		}
@@ -10035,7 +9999,7 @@ class BillingCashier extends MY_Controller {
 		$main_billing_id = $this->input->post('main_billing_id', true);				
 		
 		if(empty($main_billing_id)){
-			$r = array('success' => false, 'info' => 'Main Billing unidentified!');
+			$r = array('success' => false, 'info' => 'Billing Utama tidak ada/tidak dikenali!');
 			echo json_encode($r);
 			die();
 		}
@@ -10149,7 +10113,7 @@ class BillingCashier extends MY_Controller {
 		$billing_id = $this->input->post('billing_id', true);				
 		
 		if(empty($billing_id)){
-			$r = array('success' => false, 'info' => 'Merge Billing unidentified!');
+			$r = array('success' => false, 'info' => 'Merge Billing tidak dikenali!');
 			echo json_encode($r);
 			die();
 		}
@@ -10175,7 +10139,7 @@ class BillingCashier extends MY_Controller {
 				
 			}
 		}else{
-			$r = array('success' => false, 'info'	=> "Cannot Merge Billing<br/>There is no Billing Identified!!" );
+			$r = array('success' => false, 'info'	=> "Tidak dapat melakukan Merge Billing<br/>Tidak ada billing yang dikenali!" );
 			die(json_encode($r));
 		}
 		
@@ -10197,7 +10161,7 @@ class BillingCashier extends MY_Controller {
 				}
 			}
 		}else{
-			$r = array('success' => false, 'info'	=> "Cannot Merge Billing<br/>There is no Order!" );
+			$r = array('success' => false, 'info'	=> "Tidak dapat melakukan Merge Billing<br/>Tidak ada pesanan/order!" );
 			die(json_encode($r));
 		}
 		
@@ -10217,7 +10181,7 @@ class BillingCashier extends MY_Controller {
 		
 		if(!empty($no_order)){
 			$no_order_txt = implode(",", $no_order);
-			$r = array('success' => false, 'info'	=> "Cannot Merge Billing: ".$no_order_txt ."<br/>There is no order!" );
+			$r = array('success' => false, 'info'	=> "Tidak dapat melakukan Merge Billing: ".$no_order_txt ."<br/>Tidak ada pesanan/order!" );
 			die(json_encode($r));
 		}
 		
@@ -10235,7 +10199,7 @@ class BillingCashier extends MY_Controller {
 		
 		if(!empty($no_order_done)){
 			$no_order_done_txt = implode(",", $no_order_done);
-			$r = array('success' => false, 'info'	=> "Cannot Merge Billing: ".$no_order_done_txt."<br/>All Status Order should be done/printer!" );
+			$r = array('success' => false, 'info'	=> "Tidak dapat melakukan Merge Billing: ".$no_order_done_txt."<br/>Semua status pesanan harus sudah tercetak!" );
 			die(json_encode($r));
 		}
 		
@@ -10260,7 +10224,7 @@ class BillingCashier extends MY_Controller {
 		$billing_id = $this->input->post('billing_id', true);				
 		
 		if(empty($billing_id)){
-			$r = array('success' => false, 'info' => 'Split Billing unidentified!');
+			$r = array('success' => false, 'info' => 'Split Billing tidak dikenali!');
 			echo json_encode($r);
 			die();
 		}
@@ -10280,12 +10244,12 @@ class BillingCashier extends MY_Controller {
 			}
 			
 		}else{
-			$r = array('success' => false, 'info'	=> "Cannot Split Billing<br/>There is no Order!" );
+			$r = array('success' => false, 'info'	=> "Tidak dapat melakukan Split Billing<br/>Tidak ada pesanan/order!" );
 			die(json_encode($r));
 		}
 		
 		if(!empty($update_detail)){
-			$r = array('success' => false, 'info'	=> "Cannot Split Billing<br/>All Status Order should be done/printer!" );
+			$r = array('success' => false, 'info'	=> "Tidak dapat melakukan Split Billing<br/>Semua status pesanan harus sudah tercetak!" );
 		}else{
 			$r = array('success' => true);
 		}
@@ -10324,7 +10288,7 @@ class BillingCashier extends MY_Controller {
 		$billing_id = $this->input->post('billing_id', true);				
 		
 		if(empty($billing_id)){
-			$r = array('success' => false, 'info' => 'Split Billing unidentified!');
+			$r = array('success' => false, 'info' => 'Split Billing tidak dikenali!');
 			echo json_encode($r);
 			die();
 		}
@@ -10356,7 +10320,7 @@ class BillingCashier extends MY_Controller {
 		}
 		
 		if(!empty($status_order)){
-			$r = array('success' => false, 'info'	=> "Cannot Split Billing<br/>All Status Order should be done/printer!" );
+			$r = array('success' => false, 'info'	=> "Tidak dapat melakukan Split Billing<br/>Semua status pesanan harus sudah tercetak!" );
 			die(json_encode($r));
 		}
 		
@@ -10450,7 +10414,7 @@ class BillingCashier extends MY_Controller {
 		$billing_id = $this->input->post('billing_id');
 				
 		if(empty($billing_id)){
-			$r = array('success' => false, 'info' => 'Billing ID not Found!');
+			$r = array('success' => false, 'info' => 'Billing ID tidak ditemukan!');
 			echo json_encode($r);
 			die();
 		}
@@ -10683,12 +10647,12 @@ class BillingCashier extends MY_Controller {
 		}
 		
 		if(empty($total_item_split)){
-			$r = array('success' => false, 'info'	=> "Cannot Split Billing<br/>Total Order Cannot Empty" );
+			$r = array('success' => false, 'info'	=> "Tidak dapat melakukan Split Billing<br/>Total pesanan tidak boleh kosong" );
 			die(json_encode($r));
 		}
 		
 		if(!empty($status_order)){
-			$r = array('success' => false, 'info'	=> "Cannot Split Billing<br/>All Status Order should be done/printer!" );
+			$r = array('success' => false, 'info'	=> "Tidak dapat melakukan Split Billing<br/>Semua status pesanan harus sudah tercetak!" );
 			die(json_encode($r));
 		}
 		
@@ -10710,7 +10674,7 @@ class BillingCashier extends MY_Controller {
 		
 		
 		if($billingData == false OR empty($billingData->billing_id)){
-			$r = array('success' => false, 'info' => 'Create New Billing Failed!');
+			$r = array('success' => false, 'info' => 'Membuat Billing Baru, Gagal!');
 			echo json_encode($r);
 			die();
 		}else{
@@ -10795,7 +10759,7 @@ class BillingCashier extends MY_Controller {
 		
 		
 		if($show_multiple_print_qc == 0){
-			$r = array('success' => false, 'info' => 'Option Print Multiple QC is not active!');
+			$r = array('success' => false, 'info' => 'Opsi Print Multiple QC tidak aktif!');
 			echo json_encode($r);
 			die();
 		}
@@ -10841,7 +10805,7 @@ class BillingCashier extends MY_Controller {
 		
 		
 		if($show_multiple_print_billing == 0){
-			$r = array('success' => false, 'info' => 'Option Print Multiple Billing is not active!');
+			$r = array('success' => false, 'info' => 'Opsi Print Multiple Billing tidak aktif!');
 			echo json_encode($r);
 			die();
 		}
@@ -10966,7 +10930,7 @@ class BillingCashier extends MY_Controller {
 			//UPDATE BILLING
 			$this->db->update($this->table, $update_data, "id = '".$billing_id."'");
 			
-			$r = array('success' => true, 'info' => 'Bill Info been Saved!', 'retData' => $update_data);
+			$r = array('success' => true, 'info' => 'Info Billing sudah disimpan!', 'retData' => $update_data);
 			
 		}
 		
@@ -11054,13 +11018,13 @@ class BillingCashier extends MY_Controller {
 		}
 		if($printer_pin_cashierReceipt == 40){
 			$max_text -= 2;
-			$max_number_1 = 7;
+			$max_number_1 = 8;
 			$max_number_2 = 11;
 			$max_number_3 = 13;
 		}
 		if($printer_pin_cashierReceipt == 42){
-			$max_text -= 2;
-			$max_number_1 = 9;
+			//$max_text -= 2;
+			$max_number_1 = 8;
 			$max_number_2 = 11;
 			$max_number_3 = 13;
 		}
@@ -12167,7 +12131,7 @@ class BillingCashier extends MY_Controller {
 			$data_printer['escpos_pass'] = 1;
 			
 			if($is_print_error){					
-				$r['info'] = 'Communication with Printer Cashier Failed!<br/>';
+				$r['info'] = 'Komunikasi dengan Printer Gagal!<br/>';
 				printing_process_error($r['info']);
 				die();
 			}
@@ -12232,14 +12196,14 @@ class BillingCashier extends MY_Controller {
 				if($billingData->billing_status == 'unpaid' OR $billingData->billing_status == 'hold'){
 					$holdBilling = $this->doHoldBilling($hold_billing_id);
 					if($holdBilling == false){
-						$r = array('success' => false, 'info' => 'Hold Billing Failed!');
+						$r = array('success' => false, 'info' => 'Hold Billing, Gagal!');
 						echo json_encode($r);
 						die();
 					}
 				}
 				
 			}else{
-				$r = array('success' => false, 'info' => 'Billing Id: #'.$hold_billing_id.' Not Found!');
+				$r = array('success' => false, 'info' => 'Billing Id: #'.$hold_billing_id.' tidak ditemukan!');
 				echo json_encode($r);
 				die();
 			}
@@ -12268,7 +12232,7 @@ class BillingCashier extends MY_Controller {
 		
 		$billingData = $this->getBilling();
 		if($billingData == false OR empty($billingData->billing_id)){
-			$r = array('success' => false, 'info' => 'Create New Billing Failed!');
+			$r = array('success' => false, 'info' => 'Membuat Billing Baru, Gagal!');
 			echo json_encode($r);
 			die();
 		}

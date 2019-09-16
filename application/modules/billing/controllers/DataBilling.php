@@ -44,7 +44,11 @@ class DataBilling extends MY_Controller {
 		//is_active_text
 		$sortAlias = array(
 			'is_active_text' => 'a.is_active',
-			'billing_date' => 'a.created'
+			'billing_date' => 'a.created',
+			'updated_date' => 'a.updated',
+			'table_no' => 'a.table_no',
+			'billing_no_show' => 'a.billing_no',
+			'updatedby' => 'a.updatedby'
 		);		
 		
 		// Default Parameter
@@ -128,7 +132,7 @@ class DataBilling extends MY_Controller {
 				
 				$mktime_dari = strtotime($date_from);
 							
-				$date_from = date("Y-m-d",strtotime($date_from));		
+				//$date_from = date("Y-m-d",strtotime($date_from));		
 			}
 			
 			$qdate_from_plus1 = date("Y-m-d",strtotime($date_from)+ONE_DAY_UNIX);
@@ -232,6 +236,7 @@ class DataBilling extends MY_Controller {
 				$qdate_from = $ret_dt['qdate_from'];
 				$qdate_till_max = $ret_dt['qdate_till_max'];
 				$params['where'][] = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
+				
 			}
 		}
 		
@@ -348,14 +353,14 @@ class DataBilling extends MY_Controller {
 		
 		if(!empty($by_product_order)){
 			
-			$this->db->select("DISTINCT(a.billing_id)");
+			$this->db->select("DISTINCT(a.billing_id), b.product_name");
 			$this->db->from($this->table2." as a");
 			$this->db->join($this->prefix.'product as b',"b.id = a.product_id","LEFT");
 			
 			if(!empty($searching)){
 				$this->db->where("b.product_name LIKE '%".$searching."%'");
 			}else{
-				$this->db->where("b.product_id = -1");
+				$this->db->where("a.product_id = -1");
 			}
 			
 			$get_det = $this->db->get();
@@ -416,6 +421,7 @@ class DataBilling extends MY_Controller {
 				$s['item_no'] = $no;
 				$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 				$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));
+				$s['group_date'] = date("d-m-Y",strtotime($s['created']));
 				$s['created_datetime'] = date("d.m.Y H:i",strtotime($s['created']));
 				
 				$s['created_date'] = date("d-m-Y H:i",strtotime($s['created']));
@@ -1059,7 +1065,7 @@ class DataBilling extends MY_Controller {
 				//$qdate_till = date("Y-m-d 23:59:59",strtotime($date_till));
 				//$qdate_from_plus1 = date("Y-m-d",strtotime($qdate_till)+ONE_DAY_UNIX);
 				//$params['where'][] = "(b.payment_date >= '".$qdate_from."' AND b.payment_date <= '".$qdate_till."')";
-						
+				
 				$qdate_from = $ret_dt['qdate_from'];
 				$qdate_till = $ret_dt['qdate_till'];
 				$qdate_till_max = $ret_dt['qdate_till_max'];

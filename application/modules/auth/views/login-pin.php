@@ -8,7 +8,7 @@
     <meta name="author" content="<?php echo $meta_author; ?>">
     <meta name="keywords" content="<?php echo $meta_keywords; ?>">
 
-    <link rel="shortcut icon" href="<?php echo BASE_URL; ?>assets/login/favicon.ico" />
+    <link rel="shortcut icon" href="<?php echo BASE_URL; ?>apps.min/helper/login/favicon.ico" />
 	
 	<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>assets/js/extjs.4.2/theme/css/ext-all<?php echo $theme; ?>.css" />
 	<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>assets/desktop/css/modules.css" />	
