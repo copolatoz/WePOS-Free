@@ -2137,6 +2137,9 @@ class BillingCashier extends MY_Controller {
 		$use_stok_kode_unik = $this->input->post('use_stok_kode_unik');
 		$data_stok_kode_unik = $this->input->post('data_stok_kode_unik');
 		
+		//EDIT ID
+		$id = $this->input->post('id', true);
+			
 		if($is_promo == 0 OR empty($promo_id)){
 			$promo_tipe = 0;
 			$promo_percentage = 0;
@@ -2170,6 +2173,19 @@ class BillingCashier extends MY_Controller {
 			}
 		}
 		
+		if($form_type_orderProduct == 'add'){
+			//Check OOO Menu
+			$this->db->select("*");
+			$this->db->from($this->prefix.'ooo_menu');
+			$this->db->where("product_id = ".$product_id." AND tanggal = '".date("Y-m-d")."' AND is_deleted = 0");
+			$get_ooo = $this->db->get();
+			if($get_ooo->num_rows() > 0){
+				$dt_ooo = $get_ooo->row();
+				$r = array('success' => false, 'info' => 'Product/Menu Habis (Out of Order)<br/>Ket: '.$dt_ooo->keterangan); 
+				die(json_encode($r));
+			}
+		}	
+		
 		if(empty($main_billing_id)){
 			
 			//NO HOLD BILLING
@@ -2191,19 +2207,6 @@ class BillingCashier extends MY_Controller {
 					die(json_encode($r));
 				}
 				
-			}
-		}
-		
-		if($form_type_orderProduct == 'add'){
-			//Check OOO Menu
-			$this->db->select("*");
-			$this->db->from($this->prefix.'ooo_menu');
-			$this->db->where("product_id = ".$product_id." AND tanggal = '".date("Y-m-d")."' AND is_deleted = 0");
-			$get_ooo = $this->db->get();
-			if($get_ooo->num_rows() > 0){
-				$dt_ooo = $get_ooo->row();
-				$r = array('success' => false, 'info' => 'Product/Menu Habis (Out of Order)<br/>Ket: '.$dt_ooo->keterangan); 
-				die(json_encode($r));
 			}
 		}	
 		
@@ -2450,6 +2453,7 @@ class BillingCashier extends MY_Controller {
 		cek_server_backup($get_opt);
 		
 		$r = '';
+		
 		if($form_type_orderProduct == 'add')
 		{
 			
@@ -2568,7 +2572,8 @@ class BillingCashier extends MY_Controller {
 							//$buyget_item = $product_id;
 						//}
 						
-						if(!empty($buyget_item) AND $buyget_item != $product_id){
+						//if(!empty($buyget_item) AND $buyget_item != $product_id){
+						if(!empty($buyget_item)){
 							//get product detail
 							$this->db->select("*");
 							$this->db->from($this->prefix.'product');
@@ -2639,6 +2644,7 @@ class BillingCashier extends MY_Controller {
 					}
 				}
 				
+				
 				$r = array('success' => true, 'id' => $insert_id, 'billingData' => $billingData); 
 				
 			}  
@@ -2660,20 +2666,20 @@ class BillingCashier extends MY_Controller {
 			if($get_ooo->num_rows() > 0){
 				$dt_ooo = $get_ooo->row();
 				
-				$id = $this->input->post('id', true);
-			
 				//get old detail
-				$this->db->from($this->table2);
-				$this->db->where("id = ".$id);
-				$get_old_detail = $this->db->get();
-				if($get_old_detail->num_rows() > 0){
-					$dt_old_detail = $get_old_detail->row();
-					
-					if($dt_old_detail->order_qty < $order_qty){
-						$r = array('success' => false, 'info' => 'Tidak Bisa Menambah Qty, Product/Menu Habis (Out of Order)<br/>Ket: '.$dt_ooo->keterangan); 
-						die(json_encode($r));
+				if(!empty($id)){
+					$this->db->from($this->table2);
+					$this->db->where("id = ".$id);
+					$get_old_detail = $this->db->get();
+					if($get_old_detail->num_rows() > 0){
+						$dt_old_detail = $get_old_detail->row();
+						
+						if($dt_old_detail->order_qty < $order_qty){
+							$r = array('success' => false, 'info' => 'Tidak Bisa Menambah Qty, Product/Menu Habis (Out of Order)<br/>Ket: '.$dt_ooo->keterangan); 
+							die(json_encode($r));
+						}
+						
 					}
-					
 				}
 				
 			}
@@ -2760,12 +2766,7 @@ class BillingCashier extends MY_Controller {
 				}
 			}
 			
-			//echo $is_compliment.'<pre>';
-			//print_r($var['fields']);
-			//die($wepos_tipe);
 			
-			//UPDATE
-			$id = $this->input->post('id', true);
 			$this->lib_trans->begin();
 				$q = $this->m2->save($var, $id);
 			$this->lib_trans->commit();
@@ -2798,6 +2799,81 @@ class BillingCashier extends MY_Controller {
 							);
 							
 							$this->db->update($this->table2,$update_ref_free_item,"ref_order_id = ".$id);
+						}else{
+							//create buyget
+							if($is_buyget == 1 OR !empty($buyget_id)){
+								if($buyget_tipe == 'item'){
+									
+									//if(!empty($buyget_item) AND $buyget_item != $product_id){
+									if(!empty($buyget_item)){
+										//get product detail
+										$this->db->select("*");
+										$this->db->from($this->prefix.'product');
+										$this->db->where("id",$buyget_item);
+										$get_prod = $this->db->get();
+										if($get_prod->num_rows() > 0){
+											$data_prod = $get_prod->row();
+											$product_type = $data_prod->product_type;
+											$category_id = $data_prod->category_id;
+											$product_varian_id = 0;
+											$varian_id = 0;
+											$has_varian = $data_prod->has_varian;
+											$product_price_hpp = $data_prod->product_hpp;
+											$product_price = $data_prod->product_price;
+											$product_price_real = $data_prod->product_price;
+											$product_normal_price = $data_prod->normal_price;
+										}
+									}
+									
+									$data_free_item = array(
+										'billing_id'  	=> 	$main_billing_id,
+										'product_id'	=>	$buyget_item,
+										'product_type'	=>	$product_type,
+										'category_id'	=>	$category_id,
+										'product_varian_id'	=>	$product_varian_id,
+										'varian_id'		=>	$varian_id,
+										'has_varian'	=>	$has_varian,
+										'include_tax'	=>	$include_tax,
+										'tax_percentage'	=>	$tax_percentage,
+										'tax_total'			=>	0,
+										'include_service'	=>	$include_service,
+										'service_percentage'	=>	$service_percentage,
+										'service_total'	=>	0,
+										'is_takeaway'	=>	$is_takeaway,
+										'takeaway_no_tax'	=>	$takeaway_no_tax,
+										'takeaway_no_service'	=>	$takeaway_no_service,
+										'is_compliment'	=>	$is_compliment,
+										'product_price_real'	=>	$product_price_real,
+										'product_price'	=>	$product_price,
+										'product_price_hpp'		=>	$product_price_hpp,
+										'product_normal_price'	=>	$product_normal_price,
+										'order_qty'		=>	$buyget_qty,
+										'order_notes'	=>	$order_notes,
+										'order_status'	=>	'order',
+										'order_counter'	=>	$order_counter,
+										'order_day_counter'	=>	$order_day_counter,
+										'created'		=>	$date_now,
+										'createdby'		=>	$session_user,
+										'updated'		=>	$date_now,
+										'updatedby'		=>	$session_user,
+										//'is_buyget'			=>	$is_buyget,
+										'discount_id'		=>	$buyget_id,
+										'discount_percentage'	=>	100,
+										//'discount_price'		=>	$product_price_real,
+										//'discount_total'		=>	($product_price_real*$buyget_qty),
+										'discount_price'		=>	$product_price,
+										'discount_total'		=>	($product_price*$buyget_qty),
+										'discount_notes'		=>	$buyget_desc,
+										'free_item'			=>	1,
+										'ref_order_id'		=>	$id
+									);
+									
+									if(!empty($data_free_item)){
+										$this->db->insert($this->table2,$data_free_item);
+									}
+								
+								}
+							}
 						}
 						
 						
