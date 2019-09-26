@@ -4448,7 +4448,8 @@ class BillingCashier extends MY_Controller {
 		
 		$printer_tipe = $this->input->get_post('printer_tipe', true);	
 		$do_print = $this->input->get_post('do_print', true);	
-		$new_no = $this->input->get_post('new_no', true);	
+		$new_no = $this->input->get_post('new_no', true);
+		$order_apps = $this->input->get_post('order_apps', true);	
 		
 		if(!empty($initialize_printing)){
 			die();
@@ -5776,6 +5777,11 @@ class BillingCashier extends MY_Controller {
 							if(!empty($billingData->qc_notes)){
 								$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 							}
+									
+							$total_guest = '';
+							if(!empty($billingData->total_guest)){
+								$total_guest = printer_command_align_right('Guest: '.$billingData->total_guest, 15);
+							}
 							
 							$is_print_error = false;
 							$print_attr = array(
@@ -5786,7 +5792,7 @@ class BillingCashier extends MY_Controller {
 								"{order_data_kitchen}"	=> $order_data_kitchen_qc,
 								"{order_data_bar}"	=> $order_data_bar_qc,
 								"{order_data_other}"	=> $order_data_other_qc,
-								"{guest}"		=> $billingData->total_guest,
+								"{guest}"		=> $total_guest,
 								"{qc_notes}"	=> $order_qc_notes
 							);
 							
@@ -5830,6 +5836,11 @@ class BillingCashier extends MY_Controller {
 								);
 								$this->db->insert($this->table_print_monitoring, $data_printMonitoring);
 								
+								if(!empty($order_apps)){
+									echo json_encode($r);
+									die();
+								}
+								
 							}else{
 								
 								if($data_printer[$printer_id_qcReceipt]['print_method'] == 'ESC/POS'){
@@ -5871,7 +5882,7 @@ class BillingCashier extends MY_Controller {
 									$data_printer[$printer_id_qcReceipt]['escpos_pass'] = 1;
 									
 									if($is_print_error){					
-										$r['info'] .= 'Komunikasi dengan Printer Kasir Gagal!<br/>';
+										$r['info'] .= 'Komunikasi dengan Printer QC Gagal!<br/>';
 										
 										if($is_void_order == 0){
 											echo $r['info'];
@@ -5890,7 +5901,7 @@ class BillingCashier extends MY_Controller {
 							}
 							
 							if($is_print_error){					
-								$r['info'] .= 'Komunikasi dengan Printer Kasir Gagal!<br/>';
+								$r['info'] .= 'Komunikasi dengan Printer QC Gagal!<br/>';
 								if($is_void_order == 0){
 									echo $r['info'];
 									die();
@@ -5910,7 +5921,15 @@ class BillingCashier extends MY_Controller {
 						
 						if($is_void_order == 0){
 							$r['info'] .= 'Belum ada order';
-							echo $r['info'];
+							if(!empty($order_apps)){
+								$r['success'] = false;
+								echo json_encode($r); die();
+							}else{
+								printing_process_error('');
+							}
+							
+							$r['success'] = true;
+							echo json_encode($r);
 							die();
 						}
 					}
@@ -5969,6 +5988,11 @@ class BillingCashier extends MY_Controller {
 											if(!empty($billingData->qc_notes)){
 												$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 											}
+									
+											$total_guest = '';
+											if(!empty($billingData->total_guest)){
+												$total_guest = printer_command_align_right('Guest: '.$billingData->total_guest, 15);
+											}
 											
 											$print_attr = array(
 												"{date}"	=> date("d/m/Y"),
@@ -5976,7 +6000,7 @@ class BillingCashier extends MY_Controller {
 												"{user}"	=> $session_user,
 												"{table_no}"	=> $table_no_receipt,
 												"{order_data}"	=> $order_data_kitchen_peritem[$idO],
-												"{guest}"		=> $billingData->total_guest,
+												"{guest}"		=> $total_guest,
 												"{qc_notes}"	=> $order_qc_notes
 											);
 											
@@ -6045,6 +6069,11 @@ class BillingCashier extends MY_Controller {
 									if(!empty($billingData->qc_notes)){
 										$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 									}
+									
+									$total_guest = '';
+									if(!empty($billingData->total_guest)){
+										$total_guest = printer_command_align_right('Guest: '.$billingData->total_guest, 15);
+									}
 											
 									$print_attr = array(
 										"{date}"	=> date("d/m/Y"),
@@ -6052,7 +6081,7 @@ class BillingCashier extends MY_Controller {
 										"{user}"	=> $session_user,
 										"{table_no}"	=> $table_no_receipt,
 										"{order_data}"	=> $order_data_kitchen_Receipt,
-										"{guest}"		=> $billingData->total_guest,
+										"{guest}"		=> $total_guest,
 										"{qc_notes}"	=> $order_qc_notes
 									);
 									
@@ -6094,7 +6123,11 @@ class BillingCashier extends MY_Controller {
 							$r['success'] = true;
 							$this->db->insert_batch($this->table_print_monitoring, $data_printMonitoring);
 							
-
+							if(!empty($order_apps)){
+								echo json_encode($r);
+								die();
+							}
+							
 						}else{
 							
 							$data_print_kitchen_peritem_html = '';
@@ -6122,6 +6155,11 @@ class BillingCashier extends MY_Controller {
 											if(!empty($billingData->qc_notes)){
 												$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 											}
+									
+											$total_guest = '';
+											if(!empty($billingData->total_guest)){
+												$total_guest = printer_command_align_right('Guest: '.$billingData->total_guest, 15);
+											}
 											
 											$print_attr = array(
 												"{date}"	=> date("d/m/Y"),
@@ -6129,7 +6167,7 @@ class BillingCashier extends MY_Controller {
 												"{user}"	=> $session_user,
 												"{table_no}"	=> $table_no_receipt,
 												"{order_data}"	=> $order_data_kitchen_peritem[$idO],
-												"{guest}"		=> $billingData->total_guest,
+												"{guest}"		=> $total_guest,
 												"{qc_notes}"	=> $order_qc_notes
 											);
 											
@@ -6195,13 +6233,18 @@ class BillingCashier extends MY_Controller {
 										$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 									}
 									
+									$total_guest = '';
+									if(!empty($billingData->total_guest)){
+										$total_guest = printer_command_align_right('Guest: '.$billingData->total_guest, 15);
+									}
+									
 									$print_attr = array(
 										"{date}"	=> date("d/m/Y"),
 										"{date_time}"	=> date("d/m/Y H:i"),
 										"{user}"	=> $session_user,
 										"{table_no}"	=> $table_no_receipt,
 										"{order_data}"	=> $order_data_kitchen_Receipt,
-										"{guest}"		=> $billingData->total_guest,
+										"{guest}"		=> $total_guest,
 										"{qc_notes}"	=> $order_qc_notes
 									);
 									
@@ -6303,6 +6346,15 @@ class BillingCashier extends MY_Controller {
 							//printing_process_error($r['info']);
 							if($is_void_order == 0){
 								$r['info'] .= 'Belum ada order Kitchen';
+								if(!empty($order_apps)){
+									$r['success'] = false;
+									echo json_encode($r); die();
+								}else{
+									printing_process_error('');
+								}
+								
+								$r['success'] = true;
+								echo json_encode($r);
 								die();
 							}
 						}
@@ -6362,6 +6414,11 @@ class BillingCashier extends MY_Controller {
 											if(!empty($billingData->qc_notes)){
 												$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 											}
+									
+											$total_guest = '';
+											if(!empty($billingData->total_guest)){
+												$total_guest = printer_command_align_right('Guest: '.$billingData->total_guest, 15);
+											}
 											
 											$print_attr = array(
 												"{date}"	=> date("d/m/Y"),
@@ -6369,7 +6426,7 @@ class BillingCashier extends MY_Controller {
 												"{user}"	=> $session_user,
 												"{table_no}"	=> $table_no_receipt,
 												"{order_data}"	=> $order_data_bar_peritem[$idO],
-												"{guest}"		=> $billingData->total_guest,
+												"{guest}"		=> $total_guest,
 												"{qc_notes}"	=> $order_qc_notes
 											);
 											
@@ -6439,13 +6496,18 @@ class BillingCashier extends MY_Controller {
 										$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 									}
 									
+									$total_guest = '';
+									if(!empty($billingData->total_guest)){
+										$total_guest = printer_command_align_right('Guest: '.$billingData->total_guest, 15);
+									}
+									
 									$print_attr = array(
 										"{date}"	=> date("d/m/Y"),
 										"{date_time}"	=> date("d/m/Y H:i"),
 										"{user}"	=> $session_user,
 										"{table_no}"	=> $table_no_receipt,
 										"{order_data}"	=> $order_data_bar_Receipt,
-										"{guest}"		=> $billingData->total_guest,
+										"{guest}"		=> $total_guest,
 										"{qc_notes}"	=> $order_qc_notes
 									);
 									
@@ -6487,6 +6549,10 @@ class BillingCashier extends MY_Controller {
 							$r['success'] = true;
 							$this->db->insert_batch($this->table_print_monitoring, $data_printMonitoring);
 							
+							if(!empty($order_apps)){
+								echo json_encode($r); die();
+							}
+							
 						}else{
 							
 							$data_print_bar_peritem_escpos = array();
@@ -6514,6 +6580,11 @@ class BillingCashier extends MY_Controller {
 											if(!empty($billingData->qc_notes)){
 												$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 											}
+									
+											$total_guest = '';
+											if(!empty($billingData->total_guest)){
+												$total_guest = printer_command_align_right('Guest: '.$billingData->total_guest, 15);
+											}
 											
 											$print_attr = array(
 												"{date}"	=> date("d/m/Y"),
@@ -6521,7 +6592,7 @@ class BillingCashier extends MY_Controller {
 												"{user}"	=> $session_user,
 												"{table_no}"	=> $table_no_receipt,
 												"{order_data}"	=> $order_data_bar_peritem[$idO],
-												"{guest}"		=> $billingData->total_guest,
+												"{guest}"		=> $total_guest,
 												"{qc_notes}"	=> $order_qc_notes
 											);
 											
@@ -6585,13 +6656,18 @@ class BillingCashier extends MY_Controller {
 										$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 									}
 									
+									$total_guest = '';
+									if(!empty($billingData->total_guest)){
+										$total_guest = printer_command_align_right('Guest: '.$billingData->total_guest, 15);
+									}
+									
 									$print_attr = array(
 										"{date}"	=> date("d/m/Y"),
 										"{date_time}"	=> date("d/m/Y H:i"),
 										"{user}"	=> $session_user,
 										"{table_no}"	=> $table_no_receipt,
 										"{order_data}"	=> $order_data_bar_Receipt,
-										"{guest}"		=> $billingData->total_guest,
+										"{guest}"		=> $total_guest,
 										"{qc_notes}"	=> $order_qc_notes
 									);
 									
@@ -6692,6 +6768,15 @@ class BillingCashier extends MY_Controller {
 							//printing_process_error($r['info']);
 							if($is_void_order == 0){
 								$r['info'] .= 'Belum ada order Bar';
+								if(!empty($order_apps)){
+									$r['success'] = false;
+									echo json_encode($r); die();
+								}else{
+									printing_process_error('');
+								}
+								
+								$r['success'] = true;
+								echo json_encode($r);
 								die();
 							}
 						}
@@ -6748,6 +6833,11 @@ class BillingCashier extends MY_Controller {
 											if(!empty($billingData->qc_notes)){
 												$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 											}
+									
+											$total_guest = '';
+											if(!empty($billingData->total_guest)){
+												$total_guest = printer_command_align_right('Guest: '.$billingData->total_guest, 15);
+											}
 											
 											$print_attr = array(
 												"{date}"	=> date("d/m/Y"),
@@ -6755,7 +6845,7 @@ class BillingCashier extends MY_Controller {
 												"{user}"	=> $session_user,
 												"{table_no}"	=> $table_no_receipt,
 												"{order_data}"	=> $order_data_other_peritem[$idO],
-												"{guest}"		=> $billingData->total_guest,
+												"{guest}"		=> $total_guest,
 												"{qc_notes}"	=> $order_qc_notes
 											);
 											
@@ -6826,13 +6916,18 @@ class BillingCashier extends MY_Controller {
 										$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 									}
 									
+									$total_guest = '';
+									if(!empty($billingData->total_guest)){
+										$total_guest = printer_command_align_right('Guest: '.$billingData->total_guest, 15);
+									}
+									
 									$print_attr = array(
 										"{date}"	=> date("d/m/Y"),
 										"{date_time}"	=> date("d/m/Y H:i"),
 										"{user}"	=> $session_user,
 										"{table_no}"	=> $table_no_receipt,
 										"{order_data}"	=> $order_data_other_Receipt,
-										"{guest}"		=> $billingData->total_guest,
+										"{guest}"		=> $total_guest,
 										"{qc_notes}"	=> $order_qc_notes
 									);
 									
@@ -6876,6 +6971,10 @@ class BillingCashier extends MY_Controller {
 							$r['success'] = true;
 							$this->db->insert_batch($this->table_print_monitoring, $data_printMonitoring);
 							
+							if(!empty($order_apps)){
+								echo json_encode($r);die();
+							}
+						
 						}else{
 								
 							$data_print_other_peritem_escpos = array();
@@ -6903,6 +7002,11 @@ class BillingCashier extends MY_Controller {
 											if(!empty($billingData->qc_notes)){
 												$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 											}
+									
+											$total_guest = '';
+											if(!empty($billingData->total_guest)){
+												$total_guest = printer_command_align_right('Guest: '.$billingData->total_guest, 15);
+											}
 											
 											$print_attr = array(
 												"{date}"	=> date("d/m/Y"),
@@ -6910,7 +7014,7 @@ class BillingCashier extends MY_Controller {
 												"{user}"	=> $session_user,
 												"{table_no}"	=> $table_no_receipt,
 												"{order_data}"	=> $order_data_other_peritem[$idO],
-												"{guest}"		=> $billingData->total_guest,
+												"{guest}"		=> $total_guest,
 												"{qc_notes}"	=> $order_qc_notes
 											);
 											
@@ -6973,13 +7077,18 @@ class BillingCashier extends MY_Controller {
 										$order_qc_notes = 'Notes: '.$billingData->qc_notes;
 									}
 									
+									$total_guest = '';
+									if(!empty($billingData->total_guest)){
+										$total_guest = printer_command_align_right('Guest: '.$billingData->total_guest, 15);
+									}
+									
 									$print_attr = array(
 										"{date}"	=> date("d/m/Y"),
 										"{date_time}"	=> date("d/m/Y H:i"),
 										"{user}"	=> $session_user,
 										"{table_no}"	=> $table_no_receipt,
 										"{order_data}"	=> $order_data_other_Receipt,
-										"{guest}"		=> $billingData->total_guest,
+										"{guest}"		=> $total_guest,
 										"{qc_notes}"	=> $order_qc_notes
 									);
 									
@@ -7085,6 +7194,15 @@ class BillingCashier extends MY_Controller {
 							//printing_process_error($r['info']);
 							if($is_void_order == 0){
 								$r['info'] .= 'Belum ada order Other';
+								if(!empty($order_apps)){
+									$r['success'] = false;
+									echo json_encode($r); die();
+								}else{
+									printing_process_error('');
+								}
+								
+								$r['success'] = true;
+								echo json_encode($r);
 								die();
 							}
 						}

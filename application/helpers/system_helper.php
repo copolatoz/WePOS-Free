@@ -408,12 +408,12 @@ if( ! function_exists('replace_to_printer_command')){
 			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x21";
 		}
 		
-		if($tipe_printer == 'BIRCH'){
-			$string_to_hexa['[set_tab1]'] .= ",\x00";
-			$string_to_hexa['[set_tab2]'] .= ",\x00";
-			$string_to_hexa['[set_tab3]'] .= ",\x00";
-			$string_to_hexa['[set_tab1a]'] .= ",\x00";
-			$string_to_hexa['[set_tab1b]'] .= ",\x00";
+		if($tipe_printer == 'SEWOO'){
+			$string_to_hexa['[set_tab1]'] .= ",x04";
+			$string_to_hexa['[set_tab2]'] .= ",x03";
+			$string_to_hexa['[set_tab3]'] .= ",x03";
+			$string_to_hexa['[set_tab1a]'] .= ",x03";
+			$string_to_hexa['[set_tab1b]'] .= ",x02";
 		}
 		
 		if($tipe_printer == 'STAR'){
@@ -426,42 +426,23 @@ if( ! function_exists('replace_to_printer_command')){
 			$string_to_hexa['[size=1]']	= "\x1b\x1d\x21\x11";
 			$string_to_hexa['[size=2]']	= "\x1b\x1d\x21\x00";
 			$string_to_hexa['[size=3]']	= "\x1b\x1d\x21\x00";
-			
-			$string_to_hexa['[set_tab1]'] .= ",\x00";
-			$string_to_hexa['[set_tab2]'] .= ",\x00";
-			$string_to_hexa['[set_tab3]'] .= ",\x00";
-			$string_to_hexa['[set_tab1a]'] .= ",\x00";
-			$string_to_hexa['[set_tab1b]'] .= ",\x00";
-			
-			
 		}
 		
-		if($tipe_printer == 'SEWOO'){
-			$string_to_hexa['[set_tab1]'] .= ",x04";
-			$string_to_hexa['[set_tab2]'] .= ",x03";
-			$string_to_hexa['[set_tab3]'] .= ",x03";
-			$string_to_hexa['[set_tab1a]'] .= ",x03";
-			$string_to_hexa['[set_tab1b]'] .= ",x02";
-		}
-		
+		$printerX = array('SEWOO','EPSON','STAR', 'BIRCH');
 		//58mm printer china
-		$printerChina58 = array('ENIBIT','QPOS','Zjiyang');
-		if(in_array($tipe_printer, $printerChina58)){
-			
+		if(!in_array($tipe_printer, $printerX)){
 			$string_to_hexa['[size=2]']	= "\x1d\x21\x10";
 			$string_to_hexa['[size=3]']	= "\x1d\x21\x20";
-			
+		}
+		
+		
+		if(!in_array($tipe_printer, array('EPSON','SEWOO'))){
 			$string_to_hexa['[set_tab1]'] .= ",\x00";
 			$string_to_hexa['[set_tab2]'] .= ",\x00";
 			$string_to_hexa['[set_tab3]'] .= ",\x00";
 			$string_to_hexa['[set_tab1a]'] .= ",\x00";
 			$string_to_hexa['[set_tab1b]'] .= ",\x00";
-			
 		}
-		
-		//echo "<pre>";
-		//print_r($string_to_hexa);
-		//die();
 		
 		$newText = strtr($text, $string_to_hexa);
 		
@@ -1071,6 +1052,12 @@ if(!function_exists('printing_process')){
 		
 		$objCI =& get_instance();
 		
+		$order_apps = $objCI->input->get_post('order_apps', true);	
+		if(!empty($order_apps)){
+			$r = array('success' => true);
+			echo json_encode($r); die();
+		}
+		
 		if(empty($data_printer)){
 			echo 'Data Printer Tidak Diketahui!';
 			die();
@@ -1678,6 +1665,15 @@ if(!function_exists('printing_process')){
 if(!function_exists('printing_process_error')){
 
 	function printing_process_error($error = ''){
+		
+		$objCI =& get_instance();
+		
+		$order_apps = $objCI->input->get_post('order_apps', true);	
+		if(!empty($order_apps)){
+			$r = array('success' => false, 'info' => $error, 'print' => array());
+			echo json_encode($r); die();
+		}
+		
 		$error = str_replace("<br/>","'\n+'",$error);
 		$error = str_replace("<br>","'\n+'",$error);
 		if(empty($error)){
