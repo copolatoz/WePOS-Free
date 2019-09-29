@@ -44,7 +44,8 @@ class ProductCategory extends MY_Controller {
 		}
 		
 		if(!empty($is_dropdown)){
-			$params['order'] = array('product_category_desc' => 'ASC');
+			//$params['order'] = array('product_category_desc' => 'ASC');
+			$params['order'] = array('list_no' => 'ASC');
 			//$params['where'] = array('parent_id != 0');
 		}
 		if(!empty($searching)){
@@ -97,10 +98,15 @@ class ProductCategory extends MY_Controller {
 		$product_category_name = $this->input->post('product_category_name');
 		$product_category_code = $this->input->post('product_category_code');
 		$product_category_desc = $this->input->post('product_category_desc');
+		$list_no = $this->input->post('list_no');
 		
 		if(empty($product_category_name)){
 			$r = array('success' => false);
 			die(json_encode($r));
+		}	
+		
+		if(empty($list_no)){
+			$list_no = 0;
 		}		
 		
 		$is_active = $this->input->post('is_active');
@@ -134,7 +140,8 @@ class ProductCategory extends MY_Controller {
 				'fields'	=>	array(
 				    'product_category_name'  	=> 	$product_category_name,
 				    'product_category_code'  	=> 	$product_category_code,
-					'product_category_desc'	=>	$product_category_desc,
+					'product_category_desc'		=>	$product_category_desc,
+					'list_no'		=>	$list_no,
 					'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
@@ -164,7 +171,8 @@ class ProductCategory extends MY_Controller {
 			$var = array('fields'	=>	array(
 				    'product_category_name'  	=> 	$product_category_name,
 				    'product_category_code'  	=> 	$product_category_code,
-					'product_category_desc'	=>	$product_category_desc,
+					'product_category_desc'		=>	$product_category_desc,
+					'list_no'		=>	$list_no,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,
 					'is_active'		=>	$is_active

@@ -30,6 +30,7 @@ class WeposNotify extends MY_Controller {
 			die(json_encode($r));
 		}
 		
+		//NO DATA
 		$this->db->query("UPDATE ".$this->prefix_pos."product SET product_no = id WHERE product_no = 0");
 		$this->db->query("UPDATE ".$this->prefix_pos."items SET item_no = id WHERE item_no = 0");
 		$this->db->query("UPDATE ".$this->prefix_pos."supplier SET supplier_no = id WHERE supplier_no = 0");
@@ -39,8 +40,15 @@ class WeposNotify extends MY_Controller {
 		$day_min15_mk = $today_mk-(15*ONE_DAY_UNIX);
 		$day_min15 = date("Y-m-d", $day_min15_mk);
 		
+		//NON ACTIVE DISCOUNT
 		$this->db->query("UPDATE ".$this->prefix_pos."discount SET is_active = 0 WHERE date_end < '".$day_min15." 00:00:00' AND is_active = 1 AND is_deleted = 0 AND discount_date_type = 'limited_date'");
 		
+		//LIST NO
+		if(!$this->db->field_exists('list_no', $this->prefix_pos.'product_category'))
+		{
+			@$this->db->query("ALTER TABLE `".$this->prefix_pos.'product_category'."` ADD `list_no` int(11) DEFAULT 0;");
+		}
+			
 		$r = array('success' => true, 'info' => 'Master Data Selesai');
 		die(json_encode($r));
 		
