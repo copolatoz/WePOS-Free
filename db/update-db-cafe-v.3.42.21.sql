@@ -502,4 +502,7 @@ UPDATE apps_options SET option_value = '3.42.21', updated = '2019-09-30 00:00:01
 #
 ALTER TABLE `pos_product_category` 
 ADD `list_no` int(11) DEFAULT 0;
-
+#
+INSERT INTO `apps_roles_module` (`role_id`, `module_id`, `start_menu_path`, `module_order`, `createdby`, `created`, `updatedby`, `updated`, `is_active`, `is_deleted`) VALUES
+(1, 172, NULL, 0, 'admin', '2018-09-04 10:14:10', 'admin', '2018-09-04 10:14:10', 1, 0),
+(2, 172, NULL, 0, 'admin', '2018-09-04 10:14:10', 'admin', '2018-09-04 10:14:10', 1, 0);
