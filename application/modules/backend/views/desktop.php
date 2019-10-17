@@ -47,16 +47,18 @@
 	
 	<?php
 	if(empty($get_opt['hide_tanya_wepos'])){
+		if(empty($from_apps)){
 		?>
-		<!--Start of Zendesk Chat Script-->
-		<script type="text/javascript">
-		window.$zopim||(function(d,s){var z=$zopim=function(c){z._.push(c)},$=z.s=
-		d.createElement(s),e=d.getElementsByTagName(s)[0];z.set=function(o){z.set.
-		_.push(o)};z._=[];z.set._=[];$.async=!0;$.setAttribute("charset","utf-8");
-		$.src="https://v2.zopim.com/?3rmcPc13QzDajPqfCVOSZBlvA97Hixyj";z.t=+new Date;$.
-		type="text/javascript";e.parentNode.insertBefore($,e)})(document,"script");
-		</script>
-		<!--End of Zendesk Chat Script-->
+		<!--Add the following script at the bottom of the web page (before </body></html>)-->
+		<script type="text/javascript">function add_chatinline(){var hccid=44742255;var nt=document.createElement("script");nt.async=true;nt.src="https://www.mylivechat.com/chatinline.aspx?hccid="+hccid;var ct=document.getElementsByTagName("script")[0];ct.parentNode.insertBefore(nt,ct);}
+		add_chatinline();</script>
+		<?php
+		}
+	}
+	
+	if(!empty($error_assets)){
+		?>
+		<script type="text/javascript">alert('Error Load Data Aplikasi!');</script>
 		<?php
 	}
 	?>

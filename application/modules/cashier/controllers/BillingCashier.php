@@ -4996,16 +4996,16 @@ class BillingCashier extends MY_Controller {
 						if(!empty($bil_det->discount_id) AND $bil_det->discount_perbilling == 0){
 							if(!empty($bil_det->discount_percentage)){
 								//DISCOUNT %
-								$diskon_name = ' Disc '.priceFormat($bil_det->discount_percentage, 2, ".", "").'%';
+								$diskon_name = 'Disc '.priceFormat($bil_det->discount_percentage, 2, ".", "").'%';
 								
 								if($bil_det->free_item == 1){
-									$diskon_name = ' Disc/Free';
+									$diskon_name = 'Disc/Free';
 								}
 								
 							}else{
 								if(!empty($bil_det->discount_price)){
 									//DISCOUNT PRICE
-									$diskon_name = ' Disc '.priceFormat($bil_det->discount_price);
+									$diskon_name = 'Disc '.priceFormat($bil_det->discount_price);
 								}
 							}
 						}
@@ -5014,12 +5014,13 @@ class BillingCashier extends MY_Controller {
 						if(!empty($bil_det->promo_id) AND $bil_det->discount_perbilling == 0){
 							if(!empty($bil_det->promo_percentage)){
 								//promo %
-								$diskon_name = ' Promo '.priceFormat($bil_det->promo_percentage, 2, ".", "").'%';
-								$diskon_name .= ', @'.priceFormat($bil_det->promo_price);
+								$diskon_name = 'Promo '.priceFormat($bil_det->promo_percentage, 2, ".", "").'%';
+								//$diskon_name .= ', @'.priceFormat($bil_det->promo_price);
 							}else{
 								if(!empty($bil_det->promo_price)){
 									//promo PRICE
-									$diskon_name = ' Promo '.priceFormat($bil_det->promo_price*$bil_det->order_qty);
+									//$diskon_name = 'Promo '.priceFormat($bil_det->promo_price*$bil_det->order_qty);
+									$diskon_name = 'Promo '.priceFormat($bil_det->promo_price);
 								}
 							}
 						}
@@ -5037,7 +5038,7 @@ class BillingCashier extends MY_Controller {
 						//PROMO
 						$promo_name = '';
 						if($bil_det->is_promo == 1 AND !empty($bil_det->promo_id)){
-							$promo_name = ' Promo';
+							//$promo_name = ' Promo';
 							$bil_det->product_price = $bil_det->product_price;
 							$bil_det->discount_price = $bil_det->promo_price;
 							$bil_det->discount_total = $bil_det->promo_price*$bil_det->order_qty;
@@ -5308,13 +5309,13 @@ class BillingCashier extends MY_Controller {
 
 							if($bil_det->is_promo == 1 AND !empty($bil_det->promo_id)){
 								
-								$order_data .= "\n"."[align=0] [tab] # ".$diskon_name."[tab] [tab]".$discount_total_print;
-								$order_data2 .= "\n"."[align=0] [tab] # ".$diskon_name."[tab] [tab]".$discount_total_print;
+								$order_data .= "\n"."[align=0] [tab]".$diskon_name."[tab]".($bil_det->discount_price*-1)."[tab]".$discount_total_print;
+								$order_data2 .= "\n"."[align=0] [tab]".$diskon_name."[tab]".($bil_det->discount_price*-1)."[tab]".$discount_total_print;
 
 							}else{
 								
-								$order_data .= "\n"."[align=0] [tab]".$diskon_name."[tab] [tab]".$discount_total_print;
-								$order_data2 .= "\n"."[align=0] [tab]".$diskon_name."[tab] [tab]".$discount_total_print;
+								$order_data .= "\n"."[align=0] [tab]".$diskon_name."[tab]".($bil_det->discount_price*-1)."[tab]".$discount_total_print;
+								$order_data2 .= "\n"."[align=0] [tab]".$diskon_name."[tab]".($bil_det->discount_price*-1)."[tab]".$discount_total_print;
 								
 							}
 						}

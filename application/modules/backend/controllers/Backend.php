@@ -13,92 +13,18 @@ class Backend extends MY_Controller {
 	{
 		if($this->session->userdata('id_user') == '' && $this->session->userdata('client_id') == ''){ redirect('login'); }
 		
-		$use_gzip = USE_GZIP_MODE;
+		$from_apps = false;
+		if(!empty($this->session->userdata('from_apps'))){
+			$from_apps = true;
+		}
+		
 		$gzip_suffix_file = '';
-		if($use_gzip == true){
-			$gzip_suffix_file = '.php';
-		}
 		
-		$comp_assets = true;
-		if(ONE_COMP_SYS || ENVIRONMENT == 'production'){		
-			$comp_assets = false;
-			$apps_css = 'assets/desktop/css/alldesktop.min.css'.$gzip_suffix_file;
-			$apps_js = 'apps.min/core/application.min.js'.$gzip_suffix_file;
-			if(!file_exists(BASE_PATH.'assets/desktop/css/alldesktop.min.css'.$gzip_suffix_file) OR !file_exists(BASE_PATH.'apps.min/core/application.min.js'.$gzip_suffix_file)){
-				$comp_assets = true;
-			}
-		}
-		
-		if($comp_assets){
-			
-			
-			$this->load->library('Minifier');
-			
-			//MERGE STYLE - DESKTOP	
-			//if(ENVIRONMENT != 'production'){
-				@unlink(BASE_PATH.'assets/desktop/css/alldesktop.css');
-				@unlink(BASE_PATH.'assets/desktop/css/alldesktop.min.css'.$gzip_suffix_file);
-				@unlink(BASE_PATH.'apps.min/core/application.js');
-				@unlink(BASE_PATH.'apps.min/core/application.min.js'.$gzip_suffix_file);
-			//}
-			
-			$included_styles = array(        
-				BASE_URL.'assets/desktop/css/desktop.css', 
-				BASE_URL.'assets/desktop/css/icons.css', 
-				BASE_URL.'assets/desktop/icons/awesome/font-awesome.css', 
-				//BASE_URL.'assets/desktop/css/extapp.css' , 
-				BASE_URL.'assets/desktop/css/modules.css'    
-			);	
-			
-			
-			//JS-APPS MERGE
-			$included_js = array(        
-				BASE_URL.'assets/js/extjs.4.2/ext-all.js', 
-				BASE_URL.'apps/core/Constants.js', 
-				BASE_URL.'apps/core/Module.js',
-				BASE_URL.'apps/core/Widget.js',
-				BASE_URL.'apps/core/LoadingBox.js',
-				BASE_URL.'apps/core/MessageBox.js',
-				BASE_URL.'apps/core/Application.js',
-				BASE_URL.'apps/desktop/Desktop.js',
-				BASE_URL.'apps/desktop/TaskBar.js',
-				BASE_URL.'apps/desktop/TrayClock.js',
-				BASE_URL.'apps/desktop/Wallpaper.js',
-				BASE_URL.'apps/desktop/WallpaperModal.js',
-				BASE_URL.'apps/desktop/StartMenu.js',
-				BASE_URL.'apps/desktop/AboutModal.js',
-				BASE_URL.'apps/desktop/model/ShortcutModel.js' ,
-				BASE_URL.'apps/desktop/model/WallpaperModel.js',
-				BASE_URL.'apps/Application.js',
-				BASE_URL.'apps/startup/boot.js' 
-			);		
-			
-			$vars = array( 
-				'echo' => false,
-				'encode' => false, 
-				'gzip' => false, 
-				'timer'	=> true
-			);
-			
-			$this->minifier->initialize($vars);
-			
-			$merge_app_css = $this->minifier->merge( 'assets/desktop/css/alldesktop.css', 'assets/desktop/css', $included_styles );
-			$merge_apps_js = $this->minifier->merge( 'apps.min/core/application.js', 'apps.min/core', $included_js );
-			
-			$vars2 = array( 
-				'echo' => false,
-				'encode' => false, 
-				'gzip' => $gzip_suffix_file, 
-				'timer'	=> true
-			);
-			$this->minifier->initialize($vars);
-			
-			//MINIFY STYLE - DESKTOP		
-			$apps_css = $this->minifier->minify( $merge_app_css, 'assets/desktop/css/alldesktop.min.css', config_item('program_version') );
-			
-			
-			//MINIFY-APPS
-			$apps_js = $this->minifier->minify( $merge_apps_js, 'apps.min/core/application.min.js', config_item('program_version') );
+		$error_assets = false;
+		$apps_css = 'assets/desktop/css/alldesktop.min.css'.$gzip_suffix_file;
+		$apps_js = 'apps.min/core/application.min.js'.$gzip_suffix_file;
+		if(!file_exists(BASE_PATH.'assets/desktop/css/alldesktop.min.css'.$gzip_suffix_file) OR !file_exists(BASE_PATH.'apps.min/core/application.min.js'.$gzip_suffix_file)){
+			$error_assets = true;
 		}
 		
 		$opt_var = array('hide_tanya_wepos');
@@ -107,7 +33,9 @@ class Backend extends MY_Controller {
 		$data_post = array(
 			'get_opt'	=> $get_opt,
 			'apps_css'	=> $apps_css,
-			'apps_js'	=> $apps_js
+			'apps_js'	=> $apps_js,
+			'error_assets'	=> $error_assets,
+			'from_apps'	=> $from_apps
 		);
 		
 		$this->load->view('desktop', $data_post);
@@ -168,11 +96,6 @@ class Backend extends MY_Controller {
 		$update_var = array();
 		if(!empty($get_opt)){
 			
-			//delete soon - update for v.3.42.17 to v.3.42.20
-			if(empty($get_opt['merchant_tipe'])){
-				$get_opt['merchant_tipe'] = 'cafe';
-				$update_var['merchant_tipe'] = 'cafe';
-			}
 			if(empty($get_opt['produk_nama'])){
 				$get_opt['produk_nama'] = '';
 				$update_var['produk_nama'] = '';
@@ -191,7 +114,7 @@ class Backend extends MY_Controller {
 			}
 			if(empty($get_opt['wepos_version'])){
 				$get_opt['wepos_version'] = '';
-				$update_var['wepos_version'] = '3.42.19';
+				$update_var['wepos_version'] = '3.42.21';
 			}
 			
 			foreach($get_opt as $key => $dt){
@@ -252,13 +175,43 @@ class Backend extends MY_Controller {
 		';
 		
 		//MODULES-MENU INIT
-		$dataModules		= $this->mdl_config->getMenuModules($this->session->userdata('role_id'));
-        $shortcutModules	= $this->mdl_config->getShortcutModules($this->session->userdata('id_user'));
-        $quickModules		= $this->mdl_config->getQuickModules($this->session->userdata('id_user'));
-        $getBackgroundModules		= $this->mdl_config->getBackgroundModules($this->session->userdata('role_id'));
-        $widgetModules		= $this->mdl_config->getWidgetModules($this->session->userdata('id_user'));
-        $desktopConfig		= $this->mdl_config->desktopConfig($this->session->userdata('id_user'));
-        $userData			= $this->mdl_config->userData($this->session->userdata('id_user'));
+        $getBackgroundModules	= $this->mdl_config->getBackgroundModules($this->session->userdata('role_id'));
+        $desktopConfig			= $this->mdl_config->desktopConfig($this->session->userdata('id_user'));
+        $userData				= $this->mdl_config->userData($this->session->userdata('id_user'));
+		
+		//FROM APP
+		$fromApps = false;
+		$modules_apps = array();
+		if(!empty($this->session->userdata('from_apps'))){
+			$fromApps = true;
+			$desktopConfig->window_mode = 'lite';
+			$dataModules = $this->mdl_config->getMenuModules($this->session->userdata('role_id'),1); 
+			
+			//auto logout - alert
+			if($asCashier == 0){
+				$modules_apps = array('refreshModule','logoutModule','systemNotify','UserProfile');
+				echo '
+					alert(\'Aplikasi ini hanya untuk Kasir\');
+				';
+			}else{
+				$modules_apps = array('refreshModule','logoutModule','systemNotify','billingCashierApp','UserProfile');
+				if($this->session->userdata('role_id') == 1){
+					$modules_apps = array('refreshModule','logoutModule','systemNotify','billingCashierApp','UserProfile','weposUpdate','clientInfo');
+				}
+			}
+			
+			
+			$quickModules = array();
+			$widgetModules = array();
+			$shortcutModules = array();
+			$shortcutModulesApp = array();
+			
+		}else{
+			$dataModules		= $this->mdl_config->getMenuModules($this->session->userdata('role_id')); 
+			$shortcutModules	= $this->mdl_config->getShortcutModules($this->session->userdata('id_user'));
+			$quickModules		= $this->mdl_config->getQuickModules($this->session->userdata('id_user'));
+			$widgetModules		= $this->mdl_config->getWidgetModules($this->session->userdata('id_user'));
+		}
 		
 		//WIDGET
 		$dataWidget = array();
@@ -293,7 +246,7 @@ class Backend extends MY_Controller {
 		);
 		
       	$user_config = (object)$data;
-      	
+			
       	$all_menu = array();
       	$all_menu_parent = array();
 		$all_menu_dt = array();
@@ -307,215 +260,228 @@ class Backend extends MY_Controller {
 		$no_generate = 1;
 		if(!empty($user_config->modules)){
 			foreach($user_config->modules as $dt_module){
+				
+				//FROM APP
+				$allow_loadModule = false;
+				if(!empty($modules_apps)){
+					if(in_array($dt_module->module_controller, $modules_apps)){
+						$allow_loadModule = true;
+						$shortcutModulesApp[] = $dt_module;
+					}
+				}else{
+					$allow_loadModule = true;
+				}
 			
-				//RIGHT START MENU
-				if($dt_module->show_on_right_start_menu == 1){
-					$right_start_menu_icon = 'icon-grid';
-					if(!empty($dt_module->module_icon)){
-						$right_start_menu_icon = $dt_module->module_icon;
-					}			
-						
-					if(!empty($dt_module->show_on_shorcut_desktop)){
-						if(!empty($dt_module->start_menu_icon)){
-							$right_start_menu_icon = $dt_module->start_menu_icon;
+				if($allow_loadModule){
+					
+					//RIGHT START MENU
+					if($dt_module->show_on_right_start_menu == 1){
+						$right_start_menu_icon = 'icon-grid';
+						if(!empty($dt_module->module_icon)){
+							$right_start_menu_icon = $dt_module->module_icon;
+						}			
+							
+						if(!empty($dt_module->show_on_shorcut_desktop)){
+							if(!empty($dt_module->start_menu_icon)){
+								$right_start_menu_icon = $dt_module->start_menu_icon;
+							}
 						}
+						
+						$data_right_start_menu =  array(
+							'module'	=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
+							'iconCls'	=> $right_start_menu_icon,
+							'text'		=> $dt_module->module_name,
+							'name'		=> $dt_module->module_name
+						);
+						
+						$right_start_menu_app[] = $data_right_start_menu;
+						
 					}
 					
-					$data_right_start_menu =  array(
-						'module'	=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
-						'iconCls'	=> $right_start_menu_icon,
-						'text'		=> $dt_module->module_name,
-						'name'		=> $dt_module->module_name
-					);
-					
-					$right_start_menu_app[] = $data_right_start_menu;
-					
-				}
-				
-				//CONTEXT MENU
-				if($dt_module->show_on_context_menu == 1){
-					$context_menu_icon = 'icon-grid';
-					if(!empty($dt_module->module_icon)){
-						$context_menu_icon = $dt_module->module_icon;
-					}			
-						
-					if(!empty($dt_module->show_on_shorcut_desktop)){
-						if(!empty($dt_module->context_menu_icon)){
-							$context_menu_icon = $dt_module->context_menu_icon;
+					//CONTEXT MENU
+					if($dt_module->show_on_context_menu == 1){
+						$context_menu_icon = 'icon-grid';
+						if(!empty($dt_module->module_icon)){
+							$context_menu_icon = $dt_module->module_icon;
+						}			
+							
+						if(!empty($dt_module->show_on_shorcut_desktop)){
+							if(!empty($dt_module->context_menu_icon)){
+								$context_menu_icon = $dt_module->context_menu_icon;
+							}
 						}
+						
+						$data_context_menu =  array(
+							'module'	=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
+							'iconCls'	=> $context_menu_icon,
+							'text'		=> $dt_module->module_name,
+							'name'		=> $dt_module->module_name
+						);
+						
+						$context_menu_app[] = $data_context_menu;
+						
 					}
+									
+					$menu_names	= explode('>',$dt_module->start_menu_path);
+					$count	= count($menu_names);
+					for($i=0; $i < $count; $i++){
 					
-					$data_context_menu =  array(
-						'module'	=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
-						'iconCls'	=> $context_menu_icon,
-						'text'		=> $dt_module->module_name,
-						'name'		=> $dt_module->module_name
-					);
-					
-					$context_menu_app[] = $data_context_menu;
-					
-				}
+						$menu_var = strtolower(url_title($menu_names[$i], '_'));
+						$menu_parent = 'root';
+						if($i > 0){
+							$menu_parent = strtolower(url_title($menu_names[($i-1)], '_'));
+						}
+						
+						//default
+						if(empty($dt_module->module_icon)){
+							$dt_module->module_icon = 'icon-grid';
+						}
+						
+						$module_show = false;
+						if(!empty($dt_module->show_on_start_menu)){
+							if(!empty($dt_module->start_menu_icon)){
+								$dt_module->module_icon = $dt_module->start_menu_icon;
+							}
+						}else{
+							$module_show = true;
+						}
+											
+						if(($count-1) == $i){
+							
+							
+							//set last/child menu (last or first)
+							if(empty($all_menu[$menu_parent])){
 								
-				$menu_names	= explode('>',$dt_module->start_menu_path);
-				$count	= count($menu_names);
-				for($i=0; $i < $count; $i++){
-				
-					$menu_var = strtolower(url_title($menu_names[$i], '_'));
-					$menu_parent = 'root';
-					if($i > 0){
-						$menu_parent = strtolower(url_title($menu_names[($i-1)], '_'));
-					}
-					
-					//default
-					if(empty($dt_module->module_icon)){
-						$dt_module->module_icon = 'icon-grid';
-					}
-					
-					$module_show = false;
-					if(!empty($dt_module->show_on_start_menu)){
-						if(!empty($dt_module->start_menu_icon)){
-							$dt_module->module_icon = $dt_module->start_menu_icon;
-						}
-					}else{
-						$module_show = true;
-					}
+								if(!in_array($menu_parent, $all_menu_parent)){
+									$all_menu[$menu_parent] = array();
+									//echo 'create parent2: '.$menu_parent.'<br/>';
+									$all_menu_parent[] = strtolower($menu_parent);
+															
+									//echo 'add '.$menu_var.' to parent: '.$menu_parent.'<br/>';						
+									$all_menu[$menu_parent][] = array(
+										'appClass'		=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
+										'iconCls'		=> $dt_module->module_icon,
+										'text'			=> $dt_module->module_name,
+										'name'			=> $dt_module->module_name,
+										'description'	=> $dt_module->module_name,
+										'moduleMenu'	=> $dt_module->start_menu_path,
+										'moduleID'		=> $dt_module->id_module,
+										'module'		=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
+										'leaf'			=> true,
+										'active'		=> 1,
+										'menu'			=> '',
+										'level'			=> $i,
+										'parent'		=> $menu_parent,
+										'menuVar'		=> $menu_var,
+										'hidden'		=> $module_show
+									);
+									$all_menu_dt[] = strtolower($menu_var);
+								}
+								
+							}else{
+								
+								if(!in_array($menu_var, $all_menu_dt)){
+									//echo 'add '.$menu_var.' to parent2: '.$menu_parent.'<br/>';
+									
+									$all_menu[$menu_parent][] = array(
+										'appClass'		=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
+										'iconCls'		=> $dt_module->module_icon,
+										'text'			=> $dt_module->module_name,
+										'name'			=> $dt_module->module_name,
+										'description'	=> $dt_module->module_name,
+										'moduleMenu'	=> $dt_module->start_menu_path,
+										'moduleID'		=> $dt_module->id_module,
+										'module'		=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
+										'leaf'			=> true,
+										'active'		=> 1,
+										'menu'			=> '',
+										'level'			=> $i,
+										'parent'		=> $menu_parent,
+										'menuVar'		=> $menu_var,
+										'hidden'		=> $module_show
+									);
+									$all_menu_dt[] = strtolower($menu_var);
+								}
+								
+							}
+							
+							
+							
+						}else{
+							
+							//set parent menu
+							if(empty($all_menu[$menu_parent])){
+								
+								if(!in_array($menu_parent, $all_menu_parent)){
+									//echo 'create parent: '.$menu_parent.'<br/>';
+									$all_menu_parent[] = strtolower($menu_parent);
+									
+									$icon = 'icon-grid';
+									if(!empty($dt_module->module_icon)){
+										$icon = $dt_module->module_icon;
+									}
+									
+									//echo 'add '.$menu_var.' to parent: '.$menu_parent.'<br/>';
+									$all_menu[$menu_parent] = array();							
+									$all_menu[$menu_parent][] = array(
+										'appClass'		=> '',
+										'iconCls'		=> $icon,
+										'text'			=> $menu_names[$i],
+										'name'			=> $menu_names[$i],
+										'description'	=> $menu_names[$i],
+										'moduleMenu'	=> $menu_names[$i],
+										'moduleID'		=> 'main-'.$no_generate,
+										'module'		=> '',
+										'leaf'			=> false,
+										'active'		=> 1,
+										'menu'			=> '',
+										'level'			=> $i,
+										'parent'		=> $menu_parent,
+										'menuVar'		=> $menu_var,
+										'hidden'		=> $module_show
 										
-					if(($count-1) == $i){
-						
-						
-						//set last/child menu (last or first)
-						if(empty($all_menu[$menu_parent])){
+									);							
+									$all_menu_dt[] = strtolower($menu_var);
+								}
 							
-							if(!in_array($menu_parent, $all_menu_parent)){
-								$all_menu[$menu_parent] = array();
-								//echo 'create parent2: '.$menu_parent.'<br/>';
-								$all_menu_parent[] = strtolower($menu_parent);
-														
-								//echo 'add '.$menu_var.' to parent: '.$menu_parent.'<br/>';						
-								$all_menu[$menu_parent][] = array(
-									'appClass'		=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
-									'iconCls'		=> $dt_module->module_icon,
-									'text'			=> $dt_module->module_name,
-									'name'			=> $dt_module->module_name,
-									'description'	=> $dt_module->module_name,
-									'moduleMenu'	=> $dt_module->start_menu_path,
-									'moduleID'		=> $dt_module->id_module,
-									'module'		=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
-									'leaf'			=> true,
-									'active'		=> 1,
-									'menu'			=> '',
-									'level'			=> $i,
-									'parent'		=> $menu_parent,
-									'menuVar'		=> $menu_var,
-									'hidden'		=> $module_show
-								);
-								$all_menu_dt[] = strtolower($menu_var);
-							}
-							
-						}else{
-							
-							if(!in_array($menu_var, $all_menu_dt)){
-								//echo 'add '.$menu_var.' to parent2: '.$menu_parent.'<br/>';
+							}else{
 								
-								$all_menu[$menu_parent][] = array(
-									'appClass'		=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
-									'iconCls'		=> $dt_module->module_icon,
-									'text'			=> $dt_module->module_name,
-									'name'			=> $dt_module->module_name,
-									'description'	=> $dt_module->module_name,
-									'moduleMenu'	=> $dt_module->start_menu_path,
-									'moduleID'		=> $dt_module->id_module,
-									'module'		=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
-									'leaf'			=> true,
-									'active'		=> 1,
-									'menu'			=> '',
-									'level'			=> $i,
-									'parent'		=> $menu_parent,
-									'menuVar'		=> $menu_var,
-									'hidden'		=> $module_show
-								);
-								$all_menu_dt[] = strtolower($menu_var);
+								if(!in_array($menu_var, $all_menu_dt)){
+									//echo 'add '.$menu_var.' to parent: '.$menu_parent.'<br/>';
+									
+									$icon = 'icon-grid';
+									if(!empty($dt_module->module_icon)){
+										$icon = $dt_module->module_icon;
+									}
+									
+									$all_menu[$menu_parent][] = array(
+										'appClass'		=> '',
+										'iconCls'		=> $icon,
+										'text'			=> $menu_names[$i],
+										'name'			=> $menu_names[$i],
+										'description'	=> $menu_names[$i],
+										'moduleMenu'	=> $menu_names[$i],
+										'moduleID'		=> 'main-'.$no_generate,
+										'module'		=> '',
+										'leaf'			=> false,
+										'active'		=> 1,
+										'menu'			=> '',
+										'level'			=> $i,
+										'parent'		=> $menu_parent,
+										'menuVar'		=> $menu_var,
+										'hidden'		=> $module_show
+										
+									);
+									$all_menu_dt[] = strtolower($menu_var);
+								}
 							}
 							
 						}
 						
-						
-						
-					}else{
-						
-						//set parent menu
-						if(empty($all_menu[$menu_parent])){
-							
-							if(!in_array($menu_parent, $all_menu_parent)){
-								//echo 'create parent: '.$menu_parent.'<br/>';
-								$all_menu_parent[] = strtolower($menu_parent);
-								
-								$icon = 'icon-grid';
-								if(!empty($dt_module->module_icon)){
-									$icon = $dt_module->module_icon;
-								}
-								
-								//echo 'add '.$menu_var.' to parent: '.$menu_parent.'<br/>';
-								$all_menu[$menu_parent] = array();							
-								$all_menu[$menu_parent][] = array(
-									'appClass'		=> '',
-									'iconCls'		=> $icon,
-									'text'			=> $menu_names[$i],
-									'name'			=> $menu_names[$i],
-									'description'	=> $menu_names[$i],
-									'moduleMenu'	=> $menu_names[$i],
-									'moduleID'		=> 'main-'.$no_generate,
-									'module'		=> '',
-									'leaf'			=> false,
-									'active'		=> 1,
-									'menu'			=> '',
-									'level'			=> $i,
-									'parent'		=> $menu_parent,
-									'menuVar'		=> $menu_var,
-									'hidden'		=> $module_show
-									
-								);							
-								$all_menu_dt[] = strtolower($menu_var);
-							}
-						
-						}else{
-							
-							if(!in_array($menu_var, $all_menu_dt)){
-								//echo 'add '.$menu_var.' to parent: '.$menu_parent.'<br/>';
-								
-								$icon = 'icon-grid';
-								if(!empty($dt_module->module_icon)){
-									$icon = $dt_module->module_icon;
-								}
-								
-								$all_menu[$menu_parent][] = array(
-									'appClass'		=> '',
-									'iconCls'		=> $icon,
-									'text'			=> $menu_names[$i],
-									'name'			=> $menu_names[$i],
-									'description'	=> $menu_names[$i],
-									'moduleMenu'	=> $menu_names[$i],
-									'moduleID'		=> 'main-'.$no_generate,
-									'module'		=> '',
-									'leaf'			=> false,
-									'active'		=> 1,
-									'menu'			=> '',
-									'level'			=> $i,
-									'parent'		=> $menu_parent,
-									'menuVar'		=> $menu_var,
-									'hidden'		=> $module_show
-									
-								);
-								$all_menu_dt[] = strtolower($menu_var);
-							}
-						}
-						
+						$no_generate++;
 					}
-					
-					$no_generate++;
+				
 				}
-				
-				
 				
 			}
 		}
@@ -565,6 +531,47 @@ class Backend extends MY_Controller {
 		//check user desktop_config
 		$desktop_config = $user_config->desktop;
 		
+		//check bgprocess application per-user
+		$bgprocess_app = array();
+		if(!empty($user_config->bgprocess)){
+			foreach($user_config->bgprocess as $dt_module){
+				
+				if(empty($dt_module->module_icon)){
+					$dt_module->module_icon = 'icon-grid';
+				}			
+					
+				if(!empty($dt_module->show_on_start_menu)){
+					if(!empty($dt_module->start_menu_icon)){
+						$dt_module->module_icon = $dt_module->start_menu_icon;
+					}
+				}
+				
+				$bgprocess_app[] = array(
+					'module'	=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
+					'iconCls'	=> $dt_module->module_icon,
+					'text'		=> $dt_module->module_name,
+					'name'		=> $dt_module->module_name
+				);
+			}
+		}
+		
+		//FROM-APP
+		if(!empty($shortcutModulesApp)){
+			
+			$getKey = array_search('systemNotify', $modules_apps);
+			unset($modules_apps[$getKey]);
+						
+			$shortcutModules = array();
+			foreach($shortcutModulesApp as $dt_module){
+				if(in_array($dt_module->module_controller, $modules_apps)){
+					$getKey = array_search($dt_module->module_controller, $modules_apps);
+					$shortcutModules[$getKey] = $dt_module;
+				}
+			}
+			ksort($shortcutModules);
+			$user_config->shortcut = $shortcutModules;
+		}
+		
 		//check shortcut application per-user
 		$shortcuts_percolumn = 5;
 		$no_shortcut = 0;
@@ -611,6 +618,7 @@ class Backend extends MY_Controller {
 				
 			}
 		}
+		
 		//check quick application per-user
 		$quick_app = array();
 		if(!empty($user_config->quick)){
@@ -627,29 +635,6 @@ class Backend extends MY_Controller {
 				}
 				
 				$quick_app[] = array(
-					'module'	=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
-					'iconCls'	=> $dt_module->module_icon,
-					'text'		=> $dt_module->module_name,
-					'name'		=> $dt_module->module_name
-				);
-			}
-		}
-		//check bgprocess application per-user
-		$bgprocess_app = array();
-		if(!empty($user_config->bgprocess)){
-			foreach($user_config->bgprocess as $dt_module){
-			
-				if(empty($dt_module->module_icon)){
-					$dt_module->module_icon = 'icon-grid';
-				}			
-					
-				if(!empty($dt_module->show_on_start_menu)){
-					if(!empty($dt_module->start_menu_icon)){
-						$dt_module->module_icon = $dt_module->start_menu_icon;
-					}
-				}
-				
-				$bgprocess_app[] = array(
 					'module'	=> 'ExtApp.modules.'.$dt_module->module_folder.'.controller.'.$dt_module->module_controller,
 					'iconCls'	=> $dt_module->module_icon,
 					'text'		=> $dt_module->module_name,

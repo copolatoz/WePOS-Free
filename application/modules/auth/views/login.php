@@ -28,9 +28,13 @@
 	<div style="width:400px; margin:90px auto 0px;"><img src="<?php echo BASE_URL; ?>apps.min/helper/login/logo.png"></div>
 	<script src="<?php echo BASE_URL; ?>assets/js/extjs.4.2/ext-all.js" type="text/javascript" charset="utf-8"></script>	
 	<?php 
-	$login_title = 'LOGIN';
+	$from_apps_text = '';
+	if(!empty($from_apps)){
+		$from_apps_text = ' APPS / CASHIER ';
+	}
+	$login_title = 'LOGIN'.$from_apps_text;
 	if(!empty($cloud_data)){
-		$login_title = 'LOGIN &mdash; MERCHANT';
+		$login_title = 'LOGIN '.$from_apps_text.'&mdash; MERCHANT';
 	}
 
 	if(!empty($view_multiple_store) AND !empty($data_multiple_store)){
@@ -42,7 +46,7 @@
 	
 	var win = new Ext.Window ({
 		title: '<?php echo $login_title; ?>',
-		width:400,
+		width:300,
 		height:230,
 		iconCls: 'btn-lock',
 		animCollapse:false,
@@ -70,6 +74,12 @@
 						id : 'a',
 						name: 'a',
 						value: 'send'
+					},
+					{
+						xtype: 'hidden', 
+						id : 'from_apps',
+						name: 'from_apps',
+						value: <?php echo $from_apps; ?>
 					},
 					{
 						xtype: 'hidden', 
@@ -141,7 +151,7 @@
 								id : 'login-message',
 								value: '',
 								margin: '0 10 0 0',
-								width: 250
+								width: 160
 							},
 							{
 								xtype: 'button',
@@ -168,7 +178,7 @@
 			items: [
 				{
 					xtype: 'displayfield',
-					width: 390,
+					width: 270,
 					value: copyright,
 					fieldStyle: 'text-align:center;',
 				}
@@ -184,7 +194,7 @@
 		var form = Ext.getCmp('form_loginAplikasi').getForm();
 		if (form.isValid()) {
 			
-			Ext.getCmp('login-message').setValue('Harap Menunggu...');
+			Ext.getCmp('login-message').setValue('<font color=green><b>Harap Menunggu...</b></font>');
 			Ext.getCmp('btnSave_Login').setDisabled(true);
 			
 			var redirect 	= appUrl+'backend';

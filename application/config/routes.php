@@ -58,6 +58,8 @@ $route['logout'] = 'auth/login/logout';
 $route['login.html'] = 'auth/login/index';
 $route['login'] = 'auth/login/index';
 $route['login/(:any)'] = 'auth/login/index/$1';
+$route['login-apps'] = 'auth/login/apps';
+$route['login-apps/(:any)'] = 'auth/login/apps/$1';
 $route['backend'] = 'backend';
 
 //FIXBUGS

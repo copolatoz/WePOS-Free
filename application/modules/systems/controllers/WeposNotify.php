@@ -601,7 +601,7 @@ class WeposNotify extends MY_Controller {
 		
 		//clean yesterday billing
 		$opt_value = array(
-			'reset_billing_yesterday'
+			'reset_billing_yesterday', 'current_date', 'produk_expired'
 		);
 		
 		$get_opt = get_option_value($opt_value);
@@ -616,6 +616,34 @@ class WeposNotify extends MY_Controller {
 			$this->db->query("DELETE FROM ".$this->prefix_pos."billing_log WHERE created <= '".$date_yesterday."'");
 
 		}
+		
+		//autodelete_print_monitoring
+		$current_date = 0;
+		if(!empty($get_opt['current_date'])){
+			$current_date = $get_opt['current_date'];
+		}
+		
+		$today_mktime = strtotime(date("d-m-Y H:i:s"));
+		$yesterday_mktime = $today_mktime - ONE_DAY_UNIX;
+		if($current_date < $today_mktime){
+			$update_opt = array('current_date' => $today_mktime);
+			update_option($update_opt);
+			$this->db->query("DELETE FROM ".$this->prefix_pos."print_monitoring WHERE print_date <= '".$yesterday_mktime."'");
+		}
+		
+		//check perpanjang berlangganan
+		if(!empty($get_opt['produk_expired'])){
+			if($get_opt['produk_expired'] != 'unlimited'){
+				$produk_expired = strtotime($get_opt['produk_expired']);
+				$produk_expired_alert = $produk_expired - (7*ONE_DAY_UNIX);
+				if($today_mktime >= $produk_expired_alert){
+					$sisa_hari = ceil(($produk_expired - $today_mktime)/ONE_DAY_UNIX);
+					$r = array('success' => false, 'info' => 'Masa berlaku aplikasi WePOS.id anda akan berakhir<br/>pada tanggal: <b>'.$get_opt['produk_expired'].', <font color="red">'.$sisa_hari.' Hari lagi</font></b><br/><br/>Silakan lakukan perpanjangan aplikasi</br>via website: <b>https://wepos.id</b><br/><br/>untuk pertanyaan seputar masa aktif hubungi<br/>CS: <b>0877-2229-4411</b> atau <b>0812-2254-9676</b></br>');
+					die(json_encode($r));
+				}
+			}
+		}
+		
 		
 		$r = array('success' => true, 'info' => 'Bersihkan Data - Selesai');
 		die(json_encode($r));

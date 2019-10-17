@@ -8,16 +8,23 @@ class Mdl_config extends DB_Model {
 		
 	}
 		
-	function getMenuModules($role_id = '')
+	function getMenuModules($role_id = '', $skip = 0)
 	{
 		$prefix = $this->prefix;
 				
 		$this->db->select("r.*, r.id as id_module");
 		$this->db->from($prefix."modules as r");
-		$this->db->join($prefix."roles_module as g", "g.module_id = r.id");
-		$this->db->where("r.is_active","1");
-		//$this->db->where("r.show_on_start_menu","1");
-		$this->db->where("g.role_id", $role_id);
+		if(empty($skip)){
+			$this->db->join($prefix."roles_module as g", "g.module_id = r.id");
+			$this->db->where("r.is_active","1");
+			//$this->db->where("r.show_on_start_menu","1");
+			$this->db->where("g.role_id", $role_id);
+		}else{
+			$this->db->join($prefix."roles_module as g", "g.module_id = r.id","LEFT");
+			//$this->db->where("r.is_active","1");
+			//$this->db->where("r.show_on_start_menu","1");
+			$this->db->where("g.role_id", $role_id);
+		}
 		$this->db->order_by("r.start_menu_order", "ASC");
 		$query = $this->db->get();
 		

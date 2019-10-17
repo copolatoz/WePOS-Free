@@ -6,8 +6,8 @@ class Login extends MX_Controller {
 		parent::__construct();
 		$this->load->model('mdl_login', 'm');
 	}
-
-	public function index($mkey = '')
+	
+	public function index($mkey = '', $from_apps = 0)
 	{
 		if(!empty($_POST)){
 			$this->submit();
@@ -38,11 +38,12 @@ class Login extends MX_Controller {
 			$theme = '-neptune';
 			$button_color = '#fff';
 		}
+		$data['from_apps'] = $from_apps;
 		$data['theme'] = $theme;
 		$data['button_color'] = $button_color;
 		
 		$opt_val = array(
-			'use_login_pin', 'view_multiple_store','current_date','is_cloud'
+			'use_login_pin', 'view_multiple_store','is_cloud'
 		);
 		
 		$get_opt = get_option_value($opt_val);
@@ -66,19 +67,6 @@ class Login extends MX_Controller {
 			$data_multiple_store = array();
 		}
 		$data['is_cloud'] = $get_opt['is_cloud'];
-		
-		//autodelete_print_monitoring
-		$current_date = 0;
-		if(!empty($get_opt['current_date'])){
-			$current_date = $get_opt['current_date'];
-		}
-		
-		$today_mktime = strtotime(date("d-m-Y"));
-		if($current_date < $today_mktime){
-			$update_opt = array('current_date' => $today_mktime);
-			update_option($update_opt);
-			$this->m->autodelete_print_monitoring();
-		}
 		
 		if(!empty($get_opt['is_cloud'])){
 			
@@ -153,6 +141,11 @@ class Login extends MX_Controller {
 		//$this->output->enable_profiler(TRUE);
 	}
 		
+	public function apps($mkey = '')
+	{
+		$this->index($mkey, 1);
+	}
+		
 	public function submit()
 	{		
 		$user_pin = $this->input->post('loginUsernamePin', true);
@@ -162,6 +155,7 @@ class Login extends MX_Controller {
 		$view_multiple_store = $this->input->post('view_multiple_store', true);
 		$store_data = $this->input->post('store_data', true);
 		$mkey = $this->input->post('mkey', true);
+		$from_apps = $this->input->post('from_apps', true);
 		
 		$conn_data = false;
 		if(!empty($view_multiple_store) AND !empty($store_data) AND empty($mkey)){
@@ -288,9 +282,9 @@ class Login extends MX_Controller {
 		}
 		
 		if($type_login == 'pin'){
-			$r = $this->m->submit_pin($user_pin,$store_data, $mkey);
+			$r = $this->m->submit_pin($user_pin,$store_data, $mkey, $from_apps);
 		}else{
-			$r = $this->m->submit($username, $password, $store_data, $mkey);
+			$r = $this->m->submit($username, $password, $store_data, $mkey, $from_apps);
 		}
 		
 		if($r['count']==1)
@@ -301,8 +295,13 @@ class Login extends MX_Controller {
         else
         {
             $r['success'] = false;
-            $r['info'] = 'Login Failed. Try Again!';
-			$r['errors'] = array('reason'=>'Login Failed. Try Again.');
+            $r['info'] = '<font color=red>Login Failed.. Try Again..</font>';
+			if(empty($r['errors']['reason'])){
+				$r['errors'] = array('reason'=>'<font color=red>Login Failed.. Try Again.</font>');
+			}else{
+				 $r['info'] = $r['errors']['reason'];
+			}
+			
         }
 		
 		die(json_encode($r));
@@ -313,12 +312,18 @@ class Login extends MX_Controller {
 		
 		$this->db->close();
 		$is_cloud = $this->session->userdata('is_cloud');
+		$from_apps = $this->session->userdata('from_apps');
 		$this->unreg_session();
 		
 		if(!empty($is_cloud)){
 			redirect('m/'.$is_cloud);
 		}else{
-			redirect('login');
+			if(!empty($from_apps)){
+				redirect('login-apps');
+			}else{
+				redirect('login');
+			}
+			
 		}
 		
 	}
@@ -365,6 +370,7 @@ class Login extends MX_Controller {
 			'mysql_database'	=>	$d->mysql_database,
 			'view_multiple_store'	=>	$d->view_multiple_store,
 			'is_cloud'				=>	$d->is_cloud,
+			'from_apps'				=>	$d->from_apps,
 			'timezone_default'	=>	$timezone_default,
 		);
 		$this->session->set_userdata($data);
@@ -401,6 +407,7 @@ class Login extends MX_Controller {
 			'mysql_database',
 			'view_multiple_store',
 			'is_cloud',
+			'from_apps',
 			'timezone_default'
 		);
 		$this->session->unset_userdata($data);

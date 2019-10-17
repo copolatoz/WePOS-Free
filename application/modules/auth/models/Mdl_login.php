@@ -7,14 +7,30 @@ class Mdl_login extends CI_Model {
 		parent::__construct();	
 	}
 
-	function submit($username, $password, $store_data = '', $mkey = '')
+	function submit($username, $password, $store_data = '', $mkey = '', $from_apps = 0)
 	{
+		$errors = '';
+		$role_id_kasir = 0;
+		if(!empty($from_apps)){
+			$opt_value = array(
+				'role_id_kasir'
+			);
+			
+			$get_opt = get_option_value($opt_value);
+			if(!empty($get_opt['role_id_kasir'])){
+				$role_id_kasir = $get_opt['role_id_kasir'];
+			}
+		}
+		
 		$prefix	= config_item('db_prefix');
 		$this->db->select('id as id_user, client_id');
 		$this->db->from($prefix.'users');
 		$this->db->where('user_username',$username);
 		$this->db->where('user_password',md5($password));
 		$this->db->where('is_active', "1");
+		if(!empty($role_id_kasir)){
+			$this->db->where("role_id IN (".$role_id_kasir.")");
+		}
 		
 		$query 	= 	$this->db->get();
 		//log_message('INFO', 'QUERY: '.$this->db->last_query());
@@ -32,6 +48,7 @@ class Mdl_login extends CI_Model {
 			$d->mysql_port = '';
 			$d->mysql_database = '';
 			$d->view_multiple_store = 0;
+			$d->from_apps = $from_apps;
 
 			if(!empty($store_data)){
 				$d->client_ip = $store_data[0];
@@ -41,28 +58,50 @@ class Mdl_login extends CI_Model {
 				$d->mysql_database = $store_data[4];
 				$d->view_multiple_store = $store_data[5];
 			}
-		} 
+		}else{
+			$errors = array('reason'=>'<font color=red><b>Login Failed..<br/>Try Again..</b></font>');
+			if(!empty($role_id_kasir)){
+				$errors = array('reason'=>'<font color=red><b>Login Cashier Failed..<br/>Try Again..</b></font>');
+			}
+		}
 		
 		return array(
-			'count' => $c,
-			'data'	=> $d,
-			'store_data'	=> $store_data
+			'count' 	=> $c,
+			'data'		=> $d,
+			'store_data'=> $store_data,
+			'errors'	=> $errors
 		);
 	}
 	
 
-	function submit_pin($user_pin = '-1', $store_data = '', $mkey = '')
+	function submit_pin($user_pin = '-1', $store_data = '', $mkey = '', $from_apps = 0)
 	{
+		$errors = '';
+		$role_id_kasir = 0;
+		if(!empty($from_apps)){
+			$opt_value = array(
+				'role_id_kasir'
+			);
+			
+			$get_opt = get_option_value($opt_value);
+			if(!empty($get_opt['role_id_kasir'])){
+				$role_id_kasir = $get_opt['role_id_kasir'];
+			}
+		}
 		
 		$prefix	= config_item('db_prefix');
-		$this->db->select('id as id_user, client_id');
+		$this->db->select('id as id_user, client_id, role_id');
 		$this->db->from($prefix.'users');
 		$this->db->where('user_pin',$user_pin);
 		$this->db->where('is_active', "1");
+		if(!empty($role_id_kasir)){
+			$this->db->where("role_id IN (".$role_id_kasir.")");
+		}
 		
 		$query 	= 	$this->db->get();
-		//log_message('INFO', 'QUERY: '.$this->db->last_query());
 		$c = $query->num_rows();
+		//log_message('INFO', 'QUERY: '.$this->db->last_query());
+		//log_message('INFO', 'TOTAL: '.$query->num_rows());
 		
 		$d = array();
 		if($c > 0)
@@ -76,6 +115,7 @@ class Mdl_login extends CI_Model {
 			$d->mysql_port = '';
 			$d->mysql_database = '';
 			$d->view_multiple_store = 0;
+			$d->from_apps = $from_apps;
 			
 			if(!empty($store_data)){
 				
@@ -94,12 +134,18 @@ class Mdl_login extends CI_Model {
 				}
 				
 			}
-		} 
+		}else{
+			$errors = array('reason'=>'<font color=red><b>Login Failed..<br/>Try Again..</b></font>');
+			if(!empty($role_id_kasir)){
+				$errors = array('reason'=>'<font color=red><b>Login Cashier Failed..<br/>Try Again..</b></font>');
+			}
+		}
 		
 		return array(
-			'count' => $c,
-			'data'	=> $d,
-			'store_data'	=> $store_data
+			'count' 	=> $c,
+			'data'		=> $d,
+			'store_data'=> $store_data,
+			'errors'	=> $errors
 		);
 	}
 	
@@ -187,12 +233,4 @@ class Mdl_login extends CI_Model {
 		
 		return $d;
 	}
-	
-	function autodelete_print_monitoring()
-	{
-		$prefix	= config_item('db_prefix2');
-		$this->db->delete($prefix.'print_monitoring', "print_date < '".date("Y-m-d")."'");
-		
-	}
-	
 }
