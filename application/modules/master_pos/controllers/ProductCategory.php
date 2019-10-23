@@ -61,7 +61,7 @@ class ProductCategory extends MY_Controller {
   		$newData = array();
 		
 		if(!empty($show_all_text)){
-			$dt = array('id' => '-1', 'product_category_name' => 'Pilih Semua', 'product_category_code_name' => 'Pilih Semua');
+			$dt = array('id' => '-1', 'product_category_name' => 'Semua Kategori', 'product_category_code_name' => 'Semua Kategori');
 			array_push($newData, $dt);
 		}else{
 			if(!empty($show_choose_text)){

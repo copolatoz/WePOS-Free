@@ -246,5 +246,9 @@
 	Ext.onReady(function() {
 		win.show();
 	});
-	</script>	
+	</script>		
+	<!-- Start of wepos Zendesk Widget script -->
+	<script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key=070b419f-4ff0-414d-9bee-29eb623a28b5"> </script>
+	<!-- End of wepos Zendesk Widget script -->
+</body>
 </html>

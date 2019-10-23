@@ -48,11 +48,21 @@
 	<?php
 	if(empty($get_opt['hide_tanya_wepos'])){
 		if(empty($from_apps)){
-		?>
-		<!--Add the following script at the bottom of the web page (before </body></html>)-->
-		<script type="text/javascript">function add_chatinline(){var hccid=44742255;var nt=document.createElement("script");nt.async=true;nt.src="https://www.mylivechat.com/chatinline.aspx?hccid="+hccid;var ct=document.getElementsByTagName("script")[0];ct.parentNode.insertBefore(nt,ct);}
-		add_chatinline();</script>
-		<?php
+			?>
+			<!-- Start of wepos Zendesk Widget script -->
+			<script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key=070b419f-4ff0-414d-9bee-29eb623a28b5"> </script>
+			<!-- End of wepos Zendesk Widget script -->
+			
+			<style>
+			iframe#launcher.zEWidget-launcher.zEWidget-launcher--active{right:64px !important;bottom:-8px !important;height: 50px !important; min-height: 50px !important;margin:0px 0px 0px !important;}
+			iframe#launcher html button.wrapper-AtBcr{padding:5px 10px !important;}
+			</style>
+			<?php
+		}else{
+			?>
+			<script type="text/javascript">function add_chatapi(){var hccid=44742255;var nt=document.createElement("script");nt.async=true;nt.src="https://www.mylivechat.com/chatapi.aspx?hccid="+hccid;var ct=document.getElementsByTagName("script")[0];ct.parentNode.insertBefore(nt,ct);}
+			add_chatapi();</script>
+			<?php
 		}
 	}
 	

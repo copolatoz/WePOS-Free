@@ -105,6 +105,18 @@ class Merchant extends MX_Controller {
 				$if_error = 0;
 				if(!empty($ret_data['success'] === true)){
 					$data['cloud_data'] = $ret_data['data'];
+					
+					if(!empty($data['cloud_data']['merchant_tipe'])){
+						if($data['cloud_data']['merchant_tipe'] == 'retail'){
+							if(!empty($from_apps)){
+								redirect('https://retail.wepos.id/m-apps/'.$mkey, 'refresh');
+							}else{
+								redirect('https://retail.wepos.id/m/'.$mkey, 'refresh');
+							}
+							die();
+						}
+					}
+					
 					if(!empty($get_opt['use_login_pin'])){
 						$this->load->view('login-pin', $data);
 					}else{
