@@ -46,38 +46,8 @@ class Backend extends MY_Controller {
 		
 		header('Content-Type: application/javascript');
 		
-		//ENVIRONTMENT JS
-		echo '
-		var ExtApp = {
-			version		: "'.config_item('program_version').'"	
-		};
-		ExtApp.BASE_PATH = "'.BASE_URL.'";	
-		var serviceUrl      = "'.BASE_URL.'backend/services";
-		var reportServiceUrl      = "'.BASE_URL.'backend/reportServices?";
-		var appUrl      = "'.BASE_URL.'";
-        var id_client	= '.$this->session->userdata('client_id').';
-        var client_structure_id	= '.$this->session->userdata('client_structure_id').';
-        var id_client_unit	= '.$this->session->userdata('client_unit_id').';
-		var role_id		= '.$this->session->userdata('role_id').';
-		var id_user		= '.$this->session->userdata('id_user').';
-		var client_name	= "'.$this->session->userdata('client_name').'";
-		var client_address	= "'.$this->session->userdata('client_address').'";
-		var client_phone	= "'.$this->session->userdata('client_phone').'";
-		var client_fax	= "'.$this->session->userdata('client_fax').'";
-		var client_email	= "'.$this->session->userdata('client_email').'";
-		var client_unit_name	= "'.$this->session->userdata('client_unit_name').'";
-		var user_fullname	=  "'.$this->session->userdata('user_fullname').'";
-        var programName = "'.config_item('program_name_short').'";
-        var programVersion = "v'.config_item('program_version').'";
-        var programRelease = "'.config_item('program_release').'";
-        var client_name_app = "'.config_item('client_name').'";
-        var copyright   = "'.config_item('copyright').'";
-        var website_url   = "'.config_item('website').'";
-        var one_day_unix= '.ONE_DAY_UNIX.';
-        var date_today  = "'.date('d/m/Y').'";	
-		';
-		
-		$opt_var = array('merchant_tipe','merchant_key','produk_nama','produk_key','produk_expired','wepos_version',
+		$opt_var = array('merchant_tipe','merchant_key','produk_nama','produk_key','produk_expired',
+		'wepos_version','app_name','app_name_short','app_release',
 		'include_tax','include_service',
 		'default_tax_percentage','default_service_percentage',
 		'takeaway_no_tax','takeaway_no_service','role_id_kasir',
@@ -113,8 +83,20 @@ class Backend extends MY_Controller {
 				$update_var['produk_expired'] = '';
 			}
 			if(empty($get_opt['wepos_version'])){
-				$get_opt['wepos_version'] = '';
+				$get_opt['wepos_version'] = '3.42.21';
 				$update_var['wepos_version'] = '3.42.21';
+			}
+			if(empty($get_opt['app_name'])){
+				$get_opt['app_name'] = 'WePOS.Cafe';
+				$update_var['app_name'] = 'WePOS.Cafe';
+			}
+			if(empty($get_opt['app_name_short'])){
+				$get_opt['app_name_short'] = 'WePOS.Cafe';
+				$update_var['app_name_short'] = 'WePOS.Cafe';
+			}
+			if(empty($get_opt['app_release'])){
+				$get_opt['app_release'] = '2019';
+				$update_var['app_release'] = '2019';
 			}
 			
 			foreach($get_opt as $key => $dt){
@@ -146,6 +128,39 @@ class Backend extends MY_Controller {
 		if(!empty($update_var)){
 			update_option($update_var);
 		}
+		
+		
+		//ENVIRONTMENT JS
+		echo '
+		var ExtApp = {
+			version		: "'.$get_opt['wepos_version'].'"	
+		};
+		ExtApp.BASE_PATH = "'.BASE_URL.'";	
+		var serviceUrl      = "'.BASE_URL.'backend/services";
+		var reportServiceUrl      = "'.BASE_URL.'backend/reportServices?";
+		var appUrl      = "'.BASE_URL.'";
+        var id_client	= '.$this->session->userdata('client_id').';
+        var client_structure_id	= '.$this->session->userdata('client_structure_id').';
+        var id_client_unit	= '.$this->session->userdata('client_unit_id').';
+		var role_id		= '.$this->session->userdata('role_id').';
+		var id_user		= '.$this->session->userdata('id_user').';
+		var client_name	= "'.$this->session->userdata('client_name').'";
+		var client_address	= "'.$this->session->userdata('client_address').'";
+		var client_phone	= "'.$this->session->userdata('client_phone').'";
+		var client_fax	= "'.$this->session->userdata('client_fax').'";
+		var client_email	= "'.$this->session->userdata('client_email').'";
+		var client_unit_name	= "'.$this->session->userdata('client_unit_name').'";
+		var user_fullname	=  "'.$this->session->userdata('user_fullname').'";
+        var programName = "'.$get_opt['app_name_short'].'";
+        var programVersion = "v'.$get_opt['wepos_version'].'";
+        var programRelease = "'.$get_opt['app_release'].'";
+        var client_name_app = "'.$this->session->userdata('client_name').'";
+        var copyright   = "'.config_item('copyright').'";
+        var website_url   = "'.config_item('website').'";
+        var one_day_unix= '.ONE_DAY_UNIX.';
+        var date_today  = "'.date('d/m/Y').'";	
+		';
+		
 		
 		//AS CASHIER
 		$asCashier = 0;
@@ -196,7 +211,7 @@ class Backend extends MY_Controller {
 			}else{
 				$modules_apps = array('refreshModule','logoutModule','systemNotify','billingCashierApp','UserProfile');
 				if($this->session->userdata('role_id') == 1){
-					$modules_apps = array('refreshModule','logoutModule','systemNotify','billingCashierApp','UserProfile','weposUpdate','clientInfo');
+					$modules_apps = array('refreshModule','logoutModule','systemNotify','billingCashierApp','UserProfile','weposUpdate','clientInfo','setupAplikasi','setupAplikasiFree');
 				}
 			}
 			

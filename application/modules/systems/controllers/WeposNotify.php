@@ -493,6 +493,7 @@ class WeposNotify extends MY_Controller {
 		
 		$this->po = $this->prefix_pos.'po';
 		$this->ap = $this->prefix_acc.'account_payable';
+		$this->notify_log = $this->prefix_pos.'notify_log';
 		
 		$session_client_id = $this->session->userdata('client_id');	
 		$session_user = $this->session->userdata('user_username');

@@ -63,6 +63,7 @@ class DataBilling extends MY_Controller {
 								a.discount_perbilling, a.total_return, a.compliment_total_tax_service, a.is_half_payment,
 								a.sales_id, a.sales_percentage, a.sales_price, a.sales_type, a.customer_id, a.block_table,
 								a.id as billing_id, b.table_name, b.table_no, b.table_desc, b.floorplan_id, c.floorplan_name, a.is_reservation,
+								a.txmark, a.txmark_no,
 								d.payment_type_name, e.user_firstname, e.user_lastname, f.bank_name, 
 								g.billing_no as merge_billing_no, h.sales_name, h.sales_company, i.customer_name',
 			'primary_key'	=> 'id',
@@ -105,6 +106,7 @@ class DataBilling extends MY_Controller {
 		$keywords = $this->input->post('keywords');
 		$use_range_date = $this->input->post('use_range_date');
 		$by_product_order = $this->input->post('by_product_order');
+		$txmark_only = $this->input->post('txmark_only');
 		if(!empty($keywords)){
 			$searching = $keywords;
 		}
@@ -117,6 +119,9 @@ class DataBilling extends MY_Controller {
 		if(!empty($user_cashier)){
 			//$this->db->where('a.updatedby', $user_cashier);
 			$params['where'][] = "(a.updatedby = '".$user_cashier."')";
+		}
+		if(!empty($txmark_only)){
+			$params['where'][] = "(a.txmark = 1)";
 		}
 		
 		if(!empty($shift_billing)){
@@ -421,7 +426,13 @@ class DataBilling extends MY_Controller {
 				$s['item_no'] = $no;
 				$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 				$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));
-				$s['group_date'] = date("d-m-Y",strtotime($s['created']));
+				
+				if(empty($s['group_date'])){
+					$s['group_date'] = date("d-m-Y",strtotime($s['created']));
+				}else{
+					$s['group_date'] = date("d-m-Y",strtotime($s['group_date']));
+				}
+				
 				$s['created_datetime'] = date("d.m.Y H:i",strtotime($s['created']));
 				
 				$s['created_date'] = date("d-m-Y H:i",strtotime($s['created']));
@@ -582,6 +593,11 @@ class DataBilling extends MY_Controller {
 				$s['billing_no_show'] = $s['billing_no'];
 				if(!empty($s['is_reservation'])){
 					$s['billing_no_show'] = 'R'.$s['billing_no'];
+				}
+				
+				$s['txmark_no_show'] = '-';
+				if(!empty($s['txmark_no'])){
+					$s['txmark_no_show'] = '<span style="color:green;font-weight:bold;">'.$s['txmark_no'].'</span>';
 				}
 				
 				$newData[$s['id']] = $s;
@@ -2337,6 +2353,14 @@ class DataBilling extends MY_Controller {
 			$post_data['curr_grand_total'] = $dt_billing->grand_total;
 			$post_data['curr_compliment_total'] = $dt_billing->compliment_total;
 			$post_data['curr_pembulatan'] = $dt_billing->total_pembulatan;
+			
+			if(!empty($show_txmark)){
+				if($dt_billing->txmark == 1 AND !empty($dt_billing->txmark_no)){
+					$dt_billing->billing_no = $dt_billing->txmark_no;
+					$post_data['curr_billing_no'] = $dt_billing->billing_no;
+				}
+			}
+			
 		}
 		
 		$post_data['billing_data'] = (array) $dt_billing;

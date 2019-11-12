@@ -11143,6 +11143,10 @@ class BillingCashier extends MY_Controller {
 			die();
 		}
 		
+		$get_date = $this->input->post('date');
+		$reprint = $this->input->post('reprint');
+		$show_txmark = $this->input->post('show_txmark');
+		
 		$r = array('success' => false);
 		
 		$opt_value = array(
@@ -11279,6 +11283,12 @@ class BillingCashier extends MY_Controller {
 		$mktime_dari = strtotime($date_from);
 		$mktime_sampai = strtotime($date_till);
 			
+		//TXMARK
+		if(!empty($get_date) AND !empty($show_txmark)){
+			$mktime_dari = strtotime($get_date);
+			$mktime_sampai = strtotime($get_date);
+		}
+				
 		$ret_dt = check_report_jam_operasional($get_opt, $mktime_dari, $mktime_sampai);
 						
 		//$qdate_from = date("Y-m-d",strtotime($date_from));
@@ -11299,7 +11309,13 @@ class BillingCashier extends MY_Controller {
 		$this->db->where("a.billing_status", 'paid');
 		$this->db->where("a.is_deleted", 0);
 		$this->db->where($add_where);
-		$this->db->order_by("payment_date","ASC");
+		
+		//TXMARK
+		if(!empty($show_txmark)){
+			$this->db->where("a.txmark", 1);
+		}
+		
+		$this->db->order_by("a.payment_date","ASC");
 		
 		$get_dt = $this->db->get();
 		if($get_dt->num_rows() > 0){
@@ -12287,6 +12303,14 @@ class BillingCashier extends MY_Controller {
 			"{payment_data}"			=> $all_payment_data
 		);
 		
+		//TXMARK
+		if(!empty($get_date)){
+			$print_attr["{user}"] = 'kasir';
+			$print_attr["{tanggal_settlement}"] = date("d/m/Y", strtotime($get_date));
+			$print_attr["{tanggal_shift}"] = '';
+			$print_attr["{jam_shift}"] = '';
+		}
+		
 		$print_content_cashierReceipt = strtr($cashierReceipt_settlement_layout, $print_attr);
 		
 		
@@ -12332,7 +12356,12 @@ class BillingCashier extends MY_Controller {
 			}
 		}
 		
-				
+		//TXMARK
+		if(!empty($reprint)){
+			echo json_encode($r);
+			die();
+		}
+			
 		printing_process($data_printer, $print_content_cashierReceipt, 'print');
 		
 

@@ -90,8 +90,12 @@ class ReportSales extends MY_Controller {
 			$this->db->where("a.is_deleted", 0);
 			$this->db->where($add_where);
 			
+			if(!empty($only_txmark)){
+				$this->db->where("a.txmark",1);
+			}
+			
 			if(empty($sorting)){
-				$this->db->order_by("payment_date","ASC");
+				$this->db->order_by("a.payment_date","ASC");
 			}else{
 				$this->db->order_by($sorting,"ASC");
 			}
@@ -466,8 +470,12 @@ class ReportSales extends MY_Controller {
 			$this->db->where("a.is_deleted", 0);
 			$this->db->where($add_where);
 			
+			if(!empty($only_txmark)){
+				$this->db->where("a.txmark",1);
+			}
+			
 			if(empty($sorting)){
-				$this->db->order_by("payment_date","ASC");
+				$this->db->order_by("a.payment_date","ASC");
 			}else{
 				$this->db->order_by($sorting,"ASC");
 			}

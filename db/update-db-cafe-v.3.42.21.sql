@@ -496,7 +496,11 @@ INSERT INTO `apps_options`(`option_var`,`option_value`,`option_description`,`cre
 ('hide_detail_takeaway',1,NULL,'2019-09-16 00:00:00','administrator',NULL,NULL,'1','0'),
 ('hide_detail_compliment',1,NULL,'2019-09-16 00:00:00','administrator',NULL,NULL,'1','0'),
 ('hold_table_timer',0,NULL,'2019-09-16 00:00:00','administrator',NULL,NULL,'1','0'),
-('use_block_table',0,NULL,'2019-09-16 00:00:00','administrator',NULL,NULL,'1','0');
+('use_block_table',0,NULL,'2019-09-16 00:00:00','administrator',NULL,NULL,'1','0'),
+('billing_no_simple',0,NULL,'2019-11-11 00:00:00','administrator',NULL,NULL,'1','0'),
+('mode_bazaar_foodcourt',0,NULL,'2019-11-11 00:00:00','administrator',NULL,NULL,'1','0'),
+('tandai_pajak_billing',0,NULL,'2019-11-11 00:00:00','administrator',NULL,NULL,'1','0'),
+('override_pajak_billing',0,NULL,'2019-11-11 00:00:00','administrator',NULL,NULL,'1','0');
 #
 UPDATE apps_options SET option_value = '3.42.21', updated = '2019-09-30 00:00:01' WHERE option_var IN ('wepos_version');
 #
@@ -506,3 +510,36 @@ ADD `list_no` int(11) DEFAULT 0;
 INSERT INTO `apps_roles_module` (`role_id`, `module_id`, `start_menu_path`, `module_order`, `createdby`, `created`, `updatedby`, `updated`, `is_active`, `is_deleted`) VALUES
 (1, 172, NULL, 0, 'admin', '2018-09-04 10:14:10', 'admin', '2018-09-04 10:14:10', 1, 0),
 (2, 172, NULL, 0, 'admin', '2018-09-04 10:14:10', 'admin', '2018-09-04 10:14:10', 1, 0);
+#
+UPDATE apps_options 
+SET option_value = REPLACE(option_value, 'Notes: {qc_notes}', '{qc_notes}'), 
+option_value = REPLACE(option_value, 'notes: {qc_notes}', '{qc_notes}'), 
+option_value = REPLACE(option_value, '01-03-2019', '01-11-2019'), 
+option_value = REPLACE(option_value, '01-04-2019', '01-11-2019'),
+option_value = REPLACE(option_value, '01-05-2019', '01-11-2019'),
+option_value = REPLACE(option_value, '01-06-2019', '01-11-2019'),
+option_value = REPLACE(option_value, '01-07-2019', '01-11-2019'),
+option_value = REPLACE(option_value, '01-08-2019', '01-11-2019'),
+option_value = REPLACE(option_value, '01-09-2019', '01-11-2019'),
+option_value = REPLACE(option_value, '01-10-2019', '01-11-2019');
+#
+UPDATE apps_options SET option_value = '3.42.21' WHERE option_var = 'wepos_version';
+#
+UPDATE apps_options SET option_value = 'WePOS.Cafe' WHERE option_var = 'app_name';
+#
+UPDATE apps_options SET option_value = 'WePOS.Cafe' WHERE option_var = 'app_name_short';
+#
+UPDATE apps_options SET option_value = '2019' WHERE option_var = 'app_release';
+#
+UPDATE apps_modules 
+SET module_name = REPLACE(module_name, 'Re-Print Billing Tax', 'Set Tax Billing Trx'), 
+module_description = REPLACE(module_description, 'Re-Print Billing Tax', 'Set Tax Billing Trx'), 
+module_breadcrumb = REPLACE(module_breadcrumb, 'Re-Print Billing Tax', 'Set Tax Billing Trx'), 
+start_menu_path = REPLACE(start_menu_path, 'Re-Print Billing Tax', 'Set Tax Billing Trx');
+#
+ALTER TABLE `pos_billing` 
+ADD `billing_no_simple` VARCHAR(10) DEFAULT NULL,
+ADD `txmark` TINYINT(1) DEFAULT 0,
+ADD `txmark_no` VARCHAR(20) DEFAULT NULL,
+ADD `txmark_no_simple` VARCHAR(10) DEFAULT NULL,
+ADD `group_date` DATE DEFAULT NULL;
