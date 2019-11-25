@@ -522,13 +522,16 @@ class DataBilling extends MY_Controller {
 				
 				//NOTES
 				$s['payment_note'] = '';
+				$s['payment_note2'] = '';
 				if(!empty($s['is_compliment'])){
 					$s['payment_note'] = 'COMPLIMENT';
+					$s['payment_note2'] = 'COMPLIMENT';
 				}
 				
 				if($s['billing_status'] == 'paid'){
 					if(!empty($s['is_half_payment'])){
 						$s['payment_note'] = 'HALF PAYMENT';
+						$s['payment_note2'] = 'HALF';
 						
 						$s['total_paid'] = $s['total_cash'];
 						$s['total_paid_show'] = priceFormat($s['total_paid']);
@@ -553,6 +556,17 @@ class DataBilling extends MY_Controller {
 				//if(strtolower($s['payment_type_name']) != 'cash'){
 				if($s['payment_id'] != $payment_id_cash){
 					$s['payment_note'] = strtoupper($s['bank_name']).' '.$s['card_no'];
+					
+					if(empty($s['payment_note2'])){
+						$s['payment_note2'] = $s['payment_type_name'].' / '.strtoupper($s['bank_name']);
+					}else{
+						$s['payment_note2'] .= '-'.$s['payment_type_name'].' / '.strtoupper($s['bank_name']);
+					}
+					
+				}else{
+					if(empty($s['payment_note2'])){
+						$s['payment_note2'] = 'CASH';
+					}
 				}
 				
 				if(empty($s['payment_id'])){

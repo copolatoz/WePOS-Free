@@ -98,6 +98,35 @@ class Backend extends MY_Controller {
 				$get_opt['app_release'] = '2019';
 				$update_var['app_release'] = '2019';
 			}
+			if(!empty($get_opt['merchant_tipe'])){
+				if(strtoupper(md5($get_opt['merchant_tipe'])) != 'D2626F412DA748E711CA4F4AE9'){
+					$exp_pr = explode(".",config_item('program_name'));
+					
+					$get_opt['merchant_tipe'] = strtoupper($exp_pr[0]);
+					if(!empty($exp_pr[1])){
+						$get_opt['merchant_tipe'] = strtoupper($exp_pr[1]);
+					}
+					
+				}
+			}
+			if(!empty($get_opt['produk_key'])){
+				$exp_p = explode("-", $get_opt['produk_key']);
+				$exp_md = array('8EC34A65CD8CA2AA82E9DF913DF5AC6E','9E3360AC711FCD82CEEA74C8EB69BDA9','EC62361C65CCA37F956530084500F65C');
+				$exp_mdx = array('e','f','r');
+				if(strlen($get_opt['produk_key']) < 14){
+					$get_opt['produk_nama'] = strtoupper($exp_mdx[1].$exp_mdx[2].$exp_mdx[0].$exp_mdx[0]);
+				}else{
+					if(strlen($exp_p[0]) < 3){
+						$get_opt['produk_nama'] = strtoupper($exp_mdx[1].$exp_mdx[2].$exp_mdx[0].$exp_mdx[0]);
+					}else{
+						if(!in_array(strtoupper(md5($exp_p[0])), $exp_md)){
+							$get_opt['produk_nama'] = strtoupper($exp_mdx[1].$exp_mdx[2].$exp_mdx[0].$exp_mdx[0]);
+						}
+					}
+				}
+				
+				
+			}
 			
 			foreach($get_opt as $key => $dt){
 				

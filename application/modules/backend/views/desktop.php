@@ -4,16 +4,20 @@
 	<?php
 		$opt_var = array(
 			'produk_nama',
-			'hide_tanya_wepos'
+			'hide_tanya_wepos',
+			'merchant_key'
 		);
 		$get_opt = get_option_value($opt_var);
 		
 		if(empty($get_opt['produk_nama'])){
 			$get_opt['produk_nama'] = config_item('program_name');
 		}
+		if(empty($get_opt['merchant_key'])){
+			$get_opt['merchant_key'] = '';
+		}
 		
 	?>
-	<title><?php echo 'WePOS '.$get_opt['produk_nama']; ?> &mdash; <?php echo $this->session->userdata('client_name').' / '.$this->session->userdata('client_phone').' / '.$this->session->userdata('client_address'); ?></title> 
+	<title><?php echo $this->session->userdata('client_name').' / '.$get_opt['merchant_key'].' / Cafe.'.$get_opt['produk_nama']; ?></title> 
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="chrome=1">
 
@@ -23,7 +27,7 @@
 	
 </head>
 <body>
-	<?php $update_v = strtotime("26-08-2018 22:33:00"); ?>
+	<?php $update_v = strtotime("24-11-2019 15:00:00"); ?>
 	<div id="loading-mask"></div>
 	<div id="loading">
 		<img src="<?php echo BASE_URL; ?>apps.min/helper/login/loader.gif" width="160" height="20" alt="Loading..." style="margin-bottom:25px;"/>
@@ -57,11 +61,6 @@
 			iframe#launcher.zEWidget-launcher.zEWidget-launcher--active{right:64px !important;bottom:-8px !important;height: 50px !important; min-height: 50px !important;margin:0px 0px 0px !important;}
 			iframe#launcher html button.wrapper-AtBcr{padding:5px 10px !important;}
 			</style>
-			<?php
-		}else{
-			?>
-			<script type="text/javascript">function add_chatapi(){var hccid=44742255;var nt=document.createElement("script");nt.async=true;nt.src="https://www.mylivechat.com/chatapi.aspx?hccid="+hccid;var ct=document.getElementsByTagName("script")[0];ct.parentNode.insertBefore(nt,ct);}
-			add_chatapi();</script>
 			<?php
 		}
 	}

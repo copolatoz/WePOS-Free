@@ -329,7 +329,7 @@ if( ! function_exists('update_option')){
 }
 
 if( ! function_exists('replace_to_printer_command')){
-	function replace_to_printer_command($text = '', $tipe_printer = 'EPSON', $tipe_pin = 42){
+	function replace_to_printer_command($text = '', $tipe_printer = 'EPSON', $tipe_pin = 32){
 		
 		/*
 			0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F => 16
@@ -358,7 +358,9 @@ if( ! function_exists('replace_to_printer_command')){
 			"[newline]"	=> "\x0A",
 			"[fullcut]"	=> "\x1b\x69",
 			"[cut]"	=> "\x1b\x6d",
-			"[clear_set_tab]"	=> "\x1b\x44\x00"
+			"[clear_set_tab]"	=> "\x1b\x44\x00",
+			"[set_tab1_APS]"	=> "\x1b\x44\x05\x13",
+			"[set_tab2_APS]"	=> "\x1b\x44\x04\x13",
 		);
 		
 		//EPSON-DEFAULT
@@ -370,15 +372,19 @@ if( ! function_exists('replace_to_printer_command')){
 			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x13";
 			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x13";
 			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x11";
+			$string_to_hexa['[set_tab1_APS]'] = "\x1b\x44\x05\x13";
+			$string_to_hexa['[set_tab2_APS]'] = "\x1b\x44\x04\x13";
 		}
 		
 		//40
 		if($tipe_pin == 40){
 			$string_to_hexa['[set_tab1]'] = "\x1b\x44\x04\x14\x1d";
-			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x0F\x19";
-			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x19";
-			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x19";
+			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x0F\x1b";
+			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x1b";
+			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x1b";
 			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x19";
+			$string_to_hexa['[set_tab1_APS]'] = "\x1b\x44\x05\x1b";
+			$string_to_hexa['[set_tab2_APS]'] = "\x1b\x44\x04\x1b";
 		}
 		
 		//42
@@ -388,24 +394,30 @@ if( ! function_exists('replace_to_printer_command')){
 			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x1d";
 			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x1d";
 			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x1b";
+			$string_to_hexa['[set_tab1_APS]'] = "\x1b\x44\x05\x1d";
+			$string_to_hexa['[set_tab2_APS]'] = "\x1b\x44\x04\x1d";
 		}
 		
 		//46
 		if($tipe_pin == 46){
 			$string_to_hexa['[set_tab1]'] = "\x1b\x44\x04\x18\x22";
-			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x15\x21";
-			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x21";
-			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x21";
-			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x1f";
+			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x15\x20";
+			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x20";
+			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x20";
+			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x1e";
+			$string_to_hexa['[set_tab1_APS]'] = "\x1b\x44\x05\x20";
+			$string_to_hexa['[set_tab2_APS]'] = "\x1b\x44\x04\x20";
 		}
 		
 		//48
 		if($tipe_pin == 48){
 			$string_to_hexa['[set_tab1]'] = "\x1b\x44\x04\x1a\x24";
-			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x15\x23"; 
-			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x23";
-			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x23";
+			$string_to_hexa['[set_tab2]'] = "\x1b\x44\x17\x22"; 
+			$string_to_hexa['[set_tab3]'] = "\x1b\x44\x01\x22";
+			$string_to_hexa['[set_tab1a]'] = "\x1b\x44\x04\x22";
 			$string_to_hexa['[set_tab1b]'] = "\x1b\x44\x21";
+			$string_to_hexa['[set_tab1_APS]'] = "\x1b\x44\x05\x22";
+			$string_to_hexa['[set_tab2_APS]'] = "\x1b\x44\x04\x22";
 		}
 		
 		if($tipe_printer == 'SEWOO'){
@@ -414,6 +426,8 @@ if( ! function_exists('replace_to_printer_command')){
 			$string_to_hexa['[set_tab3]'] .= ",x03";
 			$string_to_hexa['[set_tab1a]'] .= ",x03";
 			$string_to_hexa['[set_tab1b]'] .= ",x02";
+			$string_to_hexa['[set_tab1_APS]'] .= ",x03";
+			$string_to_hexa['[set_tab2_APS]'] .= ",x03";
 		}
 		
 		if($tipe_printer == 'STAR'){
@@ -442,6 +456,8 @@ if( ! function_exists('replace_to_printer_command')){
 			$string_to_hexa['[set_tab3]'] .= ",\x00";
 			$string_to_hexa['[set_tab1a]'] .= ",\x00";
 			$string_to_hexa['[set_tab1b]'] .= ",\x00";
+			$string_to_hexa['[set_tab1_APS]'] .= ",\x00";
+			$string_to_hexa['[set_tab2_APS]'] .= ",\x00";
 		}
 		
 		$newText = strtr($text, $string_to_hexa);
@@ -557,22 +573,7 @@ if(!function_exists('doresetapp')){
 		
 		$scope->db->delete($prefix.'options',"option_var LIKE 'mlog_%'");
 	
-		$resetapp = array(
-			'ipserver_management_systems'=> 'https://wepos.id',
-			'management_systems'=> 0,
-			'use_wms'			=> 0,
-			'opsi_no_print_when_payment'=> 0,
-			'use_login_pin'	=> 0,
-			'supervisor_pin_mode'	=> 0,
-			'view_multiple_store'	=> 0,
-			'autobackup_on_settlement'	=> 0,
-			'must_choose_customer'	=> 0,
-			'no_hold_billing'	=> 0,
-			'hide_tanya_wepos'	=> 0,
-			'using_item_average_as_hpp'	=> 0,
-			'show_multiple_print_billing'	=> 0,
-			'show_multiple_print_qc'	=> 0,
-		);
+		$resetapp = array('ipserver_management_systems'=> 'https://wepos.id','management_systems'=> 0,'use_wms' => 0,'opsi_no_print_when_payment'=> 0,'use_login_pin' => 0,'supervisor_pin_mode' => 0,'view_multiple_store'	=> 0,'autobackup_on_settlement'	=> 0,'must_choose_customer'	=> 0,'no_hold_billing' => 0,'hide_tanya_wepos' => 0,'using_item_average_as_hpp' => 0,'show_multiple_print_billing' => 0,'show_multiple_print_qc' => 0);
 		update_option($resetapp);
 		
 		$opt_var = array(
@@ -1045,659 +1046,27 @@ if(!function_exists('empty_value_printer_text')){
 }
 
 
-//printing_process
 if(!function_exists('printing_process')){
 
-	function printing_process($data_printer = array(), $print_content = '', $do = 'print', $print_logo = 0){
+	function printing_process($data_printer = array(), $print_content = '', $do = 'print', $custom_print = ''){
 		
-		$objCI =& get_instance();
-		
-		$order_apps = $objCI->input->get_post('order_apps', true);	
-		if(!empty($order_apps)){
-			$r = array('success' => true);
-			echo json_encode($r); die();
-		}
-		
-		if(empty($data_printer)){
-			echo 'Data Printer Tidak Diketahui!';
+		if(!empty($custom_print)){
+			include 'custom_print_'.$custom_print.'.php';
 			die();
 		}
-		if(empty($print_content)){
-			echo 'Konten Print Kosong!';
-			die();
-		}
-				
-		$print_content = str_replace("[tab]","|tab|", $print_content);
-		//explode
-		$exp_text = explode("\n", $print_content);
-
-
-		$printer_pin = $data_printer['printer_pin'];
-		$printer_pin = trim(str_replace("CHAR", "", $printer_pin));
 		
-		$align_text = array('[align=0','[align=1','[align=2');
-		$size_text = array('[size=0','[size=1','[size=2','[size=2');
-		$settab_text = array('[set_tab1','[set_tab2','[set_tab3','[set_tab1a','[set_tab1b','[tab');
-		$set_tab = array();
-		$set_tab_pixel = array();
-
-		/*
-			0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F => 16
-			10,11,12,13,14,15,16,17,18,19,1A,1B,1C,1D,1E,1F
-			20,21,22,23,24,25,26,27,28,29,2A,2B,2C,2D,2E,2F
-			30,31,32,33,34,35,36,37,38,39,3A,3B,3C,3D,3E,3F
-		*/	
-
-		$set_width = array(
-			'32' => 220,
-			'40' => 250,
-			'42' => 265,
-			'46' => 305,
-			'48' => 305,
-		);	
+		include 'default_print.php';
 		
-		//CHAR PIN
-		$set_tab[32] = array(
-			'1' => array(
-						1, 5, 18, 26
-					),
-			'2' => array(
-						1, 4, 18
-					),
-			'3' => array(
-						1, 2, 18
-					),	
-			'4' => array(
-						1, 5, 18
-					),	
-			'5' => array(
-						1, 17
-					)	
-		);
-
-		$set_tab[40] = array(
-			'1' => array(
-						1, 5, 21, 29
-					),
-			'2' => array(
-						1, 14, 26
-					),
-			'3' => array(
-						1, 2, 26
-					),	
-			'4' => array(
-						1, 5, 26
-					),	
-			'5' => array(
-						1, 24
-					)
-		);
-
-		$set_tab[42] = array(
-			'1' => array(
-						1, 5, 20, 29
-					),
-			'2' => array(
-						1, 16, 28
-					),
-			'3' => array(
-						1, 2, 28	
-					),
-			'4' => array(
-						1, 5, 28	
-					),	
-			'5' => array(
-						1, 26
-					)
-		);
-
-		$set_tab[46] = array(
-			'1' => array(
-						1, 5, 24, 33
-					),
-			'2' => array(
-						1, 20, 32
-					),
-			'3' => array(
-						1, 2, 32
-					),
-			'4' => array(
-						1, 5, 32
-					),	
-			'5' => array(
-						1, 30
-					)
-		);
-
-		$set_tab[48] = array(
-			'1' => array(
-						1, 5, 26, 35
-					),
-			'2' => array(
-						1, 22, 34
-					),
-			'3' => array(
-						1, 2, 34
-					),
-			'4' => array(
-						1, 5, 34
-					),	
-			'5' => array(
-						1, 32
-					)	
-		);
-
-		$set_tab_pixel[32] = array(
-			'1' => array(
-						20, 90, 50, 60
-					),
-			'2' => array(
-						55, 90, 75
-					),
-			'3' => array(
-						1, 144, 75
-					),
-			'4' => array(
-						20, 125, 75
-					),
-			'5' => array(
-						110, 110
-					)
-		);
-		$set_tab_pixel[40] = array(
-			'1' => array(
-						25, 115, 50, 60
-					),
-			'2' => array(
-						85, 90, 75
-					),
-			'3' => array(
-						1, 174, 75
-					),
-			'4' => array(
-						25, 150, 75
-					),
-			'5' => array(
-						125, 125
-					)	
-		);
-		$set_tab_pixel[42] = array(
-			'1' => array(
-						25, 110, 60, 70
-					),
-			'2' => array(
-						100, 90, 75
-					),
-			'3' => array(
-						1, 189, 75
-					),
-			'4' => array(
-						25, 165, 75
-					),
-			'5' => array(
-						135, 130
-					)		
-		);
-
-		$set_tab_pixel[46] = array(
-			'1' => array(
-						25, 140, 65, 75
-					),
-			'2' => array(
-						140, 90, 75
-					),
-			'3' => array(
-						1, 229, 75
-					),
-			'4' => array(
-						25, 205, 75
-					),
-			'5' => array(
-						155, 150
-					)	
-		);
-
-		$set_tab_pixel[48] = array(
-			'1' => array(
-						25, 140, 65, 75
-					),
-			'2' => array(
-						140, 90, 75
-					),
-			'3' => array(
-						1, 229, 75
-					),
-			'4' => array(
-						25, 205, 75
-					),
-			'5' => array(
-						155, 150
-					)	
-		);
-		
-		$curr_settab = '';
-		$curr_settab_pixel = '';
-		if(!empty($set_tab[$printer_pin])){
-			$curr_settab = $set_tab[$printer_pin];
-			$curr_settab_pixel = $set_tab_pixel[$printer_pin];
-		}else{
-			$curr_settab = $set_tab[42];
-			$curr_settab_pixel = $set_tab_pixel[42];
-		}
-		
-?>
-<!DOCTYPE html>
-<html>
-<head>
-	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-	<meta charset="utf-8">
-	<link rel="stylesheet" type="text/css" href="<?php echo base_url().'assets/desktop/css/report.css'; ?>"/>	
-	<link rel="stylesheet" type="text/css" href="<?php echo base_url().'assets/desktop/css/report.css'; ?>" media="print"/>	
-	</head>
-<body>
-<div class="report_area" style="padding:0px; margin:0px auto; text-align:left; border:0px solid #ccc; width:<?php echo $set_width[$printer_pin].'px'; ?>;">
-		<?php
-		if($data_printer['print_logo'] == 1 OR $print_logo == 1){
-			$print_logo_image = $objCI->session->userdata('client_logo');
-			if(empty($print_logo_image)){
-				$print_logo_image = 'logo-default.png';
-			}
-			?>
-			<center>
-				<img height="100" src="<?php echo base_url(); ?>assets/resources/client_logo/<?php echo $print_logo_image; ?>">
-			</center>
-			<?php
-		}
-
-		$curr_settab_text = 0;
-		$no_line = 0;
-		foreach($exp_text as $kline => $data_line){
-			
-			if(!empty($data_line)){
-				
-				if(strstr($data_line, '|tab|')){
-					//$data_line = str_replace("[","|*", $data_line);
-					//$data_line = str_replace("]","*|", $data_line);
-				}
-				//check per-line
-				$xplode_perline = explode("]", $data_line);
-
-				$font_start_html = '';
-				$separator_start_html = '';
-				$create_new_line = true;
-				
-				$no_line++;
-				//echo $no_line.'. -> '.$data_line.'<br/>';
-
-				foreach($xplode_perline as $key => $dt_exp){
-					
-					//echo 'no_line = '.$no_line.', dt_exp = '.$dt_exp.'<br/>';
-					$dt_exp = trim($dt_exp);
-					
-					//--FONT STYLE---------------
-					//align
-					if(in_array($dt_exp, $align_text)){
-						if(empty($font_start_html)){
-							$font_start_html .= '<div style="';
-						}
-						
-						if($dt_exp == '[align=0'){
-							$font_start_html .= 'text-align:left; ';
-						}
-						if($dt_exp == '[align=1'){
-							$font_start_html .= 'text-align:center; ';
-						}
-						if($dt_exp == '[align=2'){
-							$font_start_html .= 'text-align:right; ';
-						}
-						
-						$dt_exp = '';
-						$xplode_perline[$key] = '';
-					}
-
-					//size
-					if(in_array($dt_exp, $size_text)){
-						if(empty($font_start_html)){
-							$font_start_html .= '<div style="';
-						}
-						
-						if($dt_exp == '[size=0'){
-							$font_start_html .= 'font-size:12px; ';
-						}
-						if($dt_exp == '[size=1'){
-							$font_start_html .= 'font-size:14px; font-weight:bold; ';
-						}
-						if($dt_exp == '[size=2'){
-							$font_start_html .= 'font-size:16px; font-weight:bold; ';
-						}
-						if($dt_exp == '[size=3'){
-							$font_start_html .= 'font-size:18px; font-weight:bold; ';
-						}
-						
-						$dt_exp = '';
-						$xplode_perline[$key] = '';
-						
-					}
-					//--FONT STYLE---------------
-					
-					//--SETTAB---------------
-					if(in_array($dt_exp, $settab_text)){
-						//echo $dt_exp.'<br/>';
-						if($dt_exp == '[set_tab1'){
-							$curr_settab_text = 1;
-						}
-						if($dt_exp == '[set_tab2'){
-							$curr_settab_text = 2;
-						}
-						if($dt_exp == '[set_tab3'){
-							$curr_settab_text = 3;
-						}
-						if($dt_exp == '[set_tab1a'){
-							$curr_settab_text = 4;
-						}
-						if($dt_exp == '[set_tab1b'){
-							$curr_settab_text = 5;
-						}
-						
-						$dt_exp = '';
-						$xplode_perline[$key] = '';
-						$create_new_line = false;
-						
-					}
-					
-					//SEPARATOR
-					if(!empty($dt_exp)){
-						$jml_dt_exp = strlen($dt_exp);
-						if(str_repeat("-", $jml_dt_exp) == $dt_exp){
-							
-							if(empty($separator_start_html)){
-								$separator_start_html .= '<div style="border-top:1px solid #444; clear:both;"></div>';
-							}
-							
-							$dt_exp = '';
-							$xplode_perline[$key] = '';
-						}
-						
-						if(str_repeat("_", $jml_dt_exp) == $dt_exp){
-							
-							if(empty($separator_start_html)){
-								$separator_start_html .= '<div style="border-bottom:1px solid #444; clear:both;"></div>';
-							}
-							
-							$dt_exp = '';
-							$xplode_perline[$key] = '';
-						}
-					}
-					
-					
-					//TAB
-					//echo 'text = '.$dt_exp.'<br/>';
-					if(strstr($dt_exp, '|tab|')){
-						
-						$exp_dt_tab = explode("|tab|", $dt_exp);
-						
-						//echo 'curr settab: '.$curr_settab_text.' -> exp text: '.count($exp_dt_tab).'<br/>';
-						//print_r($curr_settab[$curr_settab_text]);
-						//echo '<br/>';
-						$curr_tab = 0;
-						
-						if(!empty($exp_dt_tab)){
-							foreach($exp_dt_tab as $key_tab => $dt_tab){
-								
-								$font_align_style = '';
-								
-								$dt_tab = trim($dt_tab);
-								$jumlah_text_tab = strlen($dt_tab);
-								
-								//get tab positions
-								if(!empty($curr_settab)){
-									
-									//pixel
-									$get_settab_pixel = $curr_settab_pixel[$curr_settab_text];
-									$width_tab = $get_settab_pixel[$curr_tab];
-									
-									$get_settab = $curr_settab[$curr_settab_text];
-									$jml_text_awal = $get_settab[$curr_tab];
-									
-									if(empty($get_settab[$curr_tab+1])){
-										$jml_text_akhir = $printer_pin;
-										//$curr_tab = 0;
-									}else{
-										$jml_text_akhir = $get_settab[$curr_tab+1];
-									}
-									
-									$total_text = $jml_text_akhir-$jml_text_awal;
-									
-									if($curr_tab == 0){
-										if($jml_text_akhir == $jml_text_awal){
-											$total_text = 1;
-										}
-									}
-									
-									$curr_tab_2 = $curr_tab;
-									
-									$count_text_tab = true;
-									if($curr_settab_text == 1){
-										//$count_text_tab = false;
-									}
-									
-									//RECURSIVE
-									/*if($jumlah_text_tab > $total_text AND $count_text_tab == true){
-										$curr_tab++;
-										
-										//$jml_text_awal = $get_settab[$curr_tab];
-									
-										if(empty($get_settab[$curr_tab+1])){
-											$jml_text_akhir = $printer_pin;
-											$curr_tab -= 1;
-										}else{
-											$jml_text_akhir = $get_settab[$curr_tab+1];
-										}
-										
-										$total_text = $jml_text_akhir-$jml_text_awal;
-										if($curr_tab == 0){
-											if($jml_text_akhir == $jml_text_awal){
-												$total_text = 1;
-											}
-										}
-										
-										//pixel
-										if(!empty($get_settab_pixel[$curr_tab+1])){
-											$width_tab += $get_settab_pixel[$curr_tab+1];
-										}
-										
-									}*/
-									
-									$gap_text = $total_text - $jumlah_text_tab;
-									
-									if(empty($dt_tab)){
-										$dt_tab = '&nbsp;';
-									}
-									
-									
-									if($curr_tab == (count($get_settab)-1)){
-										$font_align_style = 'text-align:right;';
-									}
-									if($curr_settab_text == 1){
-										if($curr_tab == (count($get_settab)-2)){
-											$font_align_style = 'text-align:right;';
-										}
-									}
-									
-									//settab1b
-									if($curr_settab_text == 5){
-										if($curr_tab > 1){
-											$font_align_style = 'text-align:right;';
-										}
-									}
-									
-									//persentase
-									//$persentase_width = ceil(($total_text/$printer_pin)*$set_width);
-									$exp_dt_tab[$key_tab] = '<div curr_tab="'.$curr_tab.'" style="width:'.$width_tab.'px; float:left; '.$font_align_style.'">'.$dt_tab.'</div>';
-									
-									$curr_tab++;
-									
-									if($curr_tab >= count($get_settab)){
-										$curr_tab = 0;
-										$exp_dt_tab[$key_tab] .= '<div style="clear:both;"></div>';
-									}
-								
-								}
-								
-								
-							}
-							
-							$dt_exp = implode("", $exp_dt_tab);
-							$xplode_perline[$key] = implode("", $exp_dt_tab);
-						}
-						
-						//echo $dt_exp.'</br>';
-						//die();
-						
-					}
-					
-					
-				}
-
-				if(!empty($curr_tab)){
-					//if($curr_tab > 0 AND $curr_tab < count($get_settab)){
-						$curr_tab = 0;
-						$xplode_perline[] = '<div style="clear:both;"></div>';
-					//}
-				}
-				
-				
-				$exp_text[$kline] = implode("", $xplode_perline);
-
-				//--SEPARATOR---------------
-				if(!empty($separator_start_html)){
-					$exp_text[$kline] = $separator_start_html;
-				}
-				
-				//--FONT STYLE---------------
-				if(!empty($font_start_html)){
-					$font_start_html .= '">';
-					
-					$exp_text[$kline] = $font_start_html.$exp_text[$kline].'</div>';
-					
-				}
-				
-				if(empty($exp_text[$kline])){
-					if($create_new_line == true){
-						$exp_text[$kline] = '<br/>';
-					}
-					
-				}
-			}else{
-				$exp_text[$kline] = "<div>&nbsp;</div>";
-			}
-			
-			echo $exp_text[$kline];
-		}
-
-		?>
-		&nbsp;<br/>
-		&nbsp;
-		</div>
-		<?php
-		if($do == 'print' AND $data_printer['print_method'] == 'JSPRINT'){
-		?>
-		<script type="text/javascript">
-
-			if(!jsPrintSetup){
-				alert('jsPrintSetup Belum Ada, Silahkan Tambahkan Addon Pada Firefox!');
-				void(0);
-			}
-			
-			var getPrinter =  jsPrintSetup.getPrintersList();
-			var all_printer = getPrinter.split(",");
-			var sel_printer_name = '<?php echo $data_printer['printer_name']; ?>';
-			
-			var is_available_printer = 0;
-			for(x in all_printer){
-				if(all_printer[x] == sel_printer_name){
-					is_available_printer = 1;
-				}
-			}
-			
-			if(is_available_printer == 0){
-				alert('Printer: '+sel_printer_name+' Tidak ditemukan! Silahkan Cek Print Manager');
-				void(0);
-			}
-			
-			jsPrintSetup.setPrinter(sel_printer_name);
-			//jsPrintSetup.setOption('orientation', jsPrintSetup.kPortraitOrientation);
-			jsPrintSetup.setOption('marginTop', 0);
-			jsPrintSetup.setOption('marginBottom', 0);
-			jsPrintSetup.setOption('marginLeft', 0);
-			jsPrintSetup.setOption('marginRight', 0);
-			jsPrintSetup.setOption('headerStrLeft', '');
-			jsPrintSetup.setOption('headerStrCenter', '');
-			jsPrintSetup.setOption('headerStrRight', '');
-			jsPrintSetup.setOption('footerStrLeft', '');
-			jsPrintSetup.setOption('footerStrCenter', '');
-			jsPrintSetup.setOption('footerStrRight', '');
-			
-			//jsPrintSetup.setSilentPrint(1);
-			jsPrintSetup.setShowPrintProgress(false);
-			jsPrintSetup.printWindow(window);
-			jsPrintSetup.setSilentPrint(1);
-			
-		</script> 
-		<?php
-		}else
-		if($do == 'print' AND $data_printer['print_method'] == 'BROWSER'){
-		?>
-		<script type="text/javascript">
-			window.print();
-		</script>
-		<?php
-		}
-		?>
-</body>
-</html>
-<?php
 	}
 }
 
 
-//printing_process_error
 if(!function_exists('printing_process_error')){
 
 	function printing_process_error($error = ''){
 		
-		$objCI =& get_instance();
+		include 'default_error_print.php';
 		
-		$order_apps = $objCI->input->get_post('order_apps', true);	
-		if(!empty($order_apps)){
-			$r = array('success' => false, 'info' => $error, 'print' => array());
-			echo json_encode($r); die();
-		}
-		
-		$error = str_replace("<br/>","'\n+'",$error);
-		$error = str_replace("<br>","'\n+'",$error);
-		if(empty($error)){
-			die();
-		}
-?>
-<!DOCTYPE html>
-<html>
-<head>
-	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-	<meta charset="utf-8">
-	<link rel="stylesheet" type="text/css" href="<?php echo base_url().'assets/desktop/css/report.css'; ?>"/>	
-	<link rel="stylesheet" type="text/css" href="<?php echo base_url().'assets/desktop/css/report.css'; ?>" media="print"/>	
-	</head>
-<body>
-<div class="report_area" style="padding:0px; margin:0px auto; text-align:left; border:0px solid #ccc;">
-<?php echo $error; ?>
-</div>
-<script type="text/javascript">
-	alert('<?php echo $error;?>');
-</script>
-</body>
-</html>
-<?php
 	}
 }
 
@@ -1825,5 +1194,17 @@ if( ! function_exists('check_maxview_cashierReport')){
 		//echo $role_id.' = '.$is_kasir.'<pre>'; print_r($role_id_kasir);die();
 		
     } 
+}
+
+
+if( ! function_exists('no2alphabet')){
+	function no2alphabet($no = 1) {
+		if($no == 0){
+			$no = 1;
+		}
+		
+		$huruf = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+		return $huruf[$no];
+	}
 }
 ?>

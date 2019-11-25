@@ -109,6 +109,10 @@ if(!empty($payment_data)){
 				$grand_total_compliment = 0;
 				$grand_total_payment = array();
 				foreach($report_data as $det){
+						
+						if(!empty($only_txmark)){
+							$det['billing_no'] = $det['txmark_no'];
+						}
 					?>
 					<tr>
 						<td class="tbl_data_td_first_xcenter"><?php echo $no; ?></td>

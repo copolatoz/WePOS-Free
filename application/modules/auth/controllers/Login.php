@@ -14,9 +14,23 @@ class Login extends MX_Controller {
 			die();
 		}
 		
+		$opt_val = array(
+			'use_login_pin', 'view_multiple_store','is_cloud','merchant_key'
+		);
+		
+		$get_opt = get_option_value($opt_val);
+		
+		if(!empty($mkey)){
+			$get_opt['merchant_key'] = $mkey;
+		}
+		$from_apps_txt = '';
+		if(!empty($from_apps)){
+			$from_apps_txt = '-Apps';
+		}
+		
 		if($this->session->userdata('id_user') != '' && $this->session->userdata('client_id')!=''){ redirect('backend'); }
 		
-		$data['title']				=	'Login | '.config_item('program_name');
+		$data['title']				=	'Login'.$from_apps_txt.' | '.config_item('program_name').' &mdash; '.$get_opt['merchant_key'];
 		$data['meta_description'] 	=	config_item('program_name');
 		$data['meta_keywords']		=	config_item('program_name');
 		$data['meta_author']		=	config_item('program_author');
@@ -42,12 +56,6 @@ class Login extends MX_Controller {
 		$data['theme'] = $theme;
 		$data['button_color'] = $button_color;
 		
-		$opt_val = array(
-			'use_login_pin', 'view_multiple_store','is_cloud'
-		);
-		
-		$get_opt = get_option_value($opt_val);
-		
 		$view_multiple_store = 0;
 		$data_multiple_store = array();
 		if(!empty($get_opt['view_multiple_store'])){
@@ -71,7 +79,7 @@ class Login extends MX_Controller {
 		if(!empty($get_opt['is_cloud'])){
 			
 			if($mkey == ''){
-				$data['title']				=	'Merchant | '.config_item('program_name');
+				$data['title']				=	'Merchant'.$from_apps_txt.' | '.config_item('program_name').' &mdash; '.$get_opt['merchant_key'];
 				$data['meta_description'] 	=	config_item('program_name');
 				$data['meta_keywords']		=	config_item('program_name');
 				$data['meta_author']		=	config_item('program_author');
@@ -117,7 +125,7 @@ class Login extends MX_Controller {
 				
 				if($if_error == 1){
 					
-					$data['title']				=	'Merchant | '.config_item('program_name');
+					$data['title']				=	'Merchant'.$from_apps_txt.' | '.config_item('program_name').' &mdash; '.$mkey;
 					$data['meta_description'] 	=	config_item('program_name');
 					$data['meta_keywords']		=	config_item('program_name');
 					$data['meta_author']		=	config_item('program_author');
@@ -316,7 +324,11 @@ class Login extends MX_Controller {
 		$this->unreg_session();
 		
 		if(!empty($is_cloud)){
-			redirect('m/'.$is_cloud);
+			if(!empty($from_apps)){
+				redirect('m-apps/'.$is_cloud);
+			}else{
+				redirect('m/'.$is_cloud);
+			}
 		}else{
 			if(!empty($from_apps)){
 				redirect('login-apps');

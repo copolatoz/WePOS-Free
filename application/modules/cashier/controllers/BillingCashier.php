@@ -4519,12 +4519,16 @@ class BillingCashier extends MY_Controller {
 			
 			'order_timer',
 			'produk_nama',
-			'produk_expired'
+			'produk_expired',
+			'custom_print_APS'
 			
 		);
 		$get_opt = get_option_value($opt_value);
 		
-		//DATA PRINTER & SETUP -- update 2018-01-24
+		//custom_print_APS
+		$custom_print_APS = $get_opt['custom_print_APS'];
+		
+		//DATA PRINTER & SETUP -- update 2019-11-24
 		$cashierReceipt_layout = $get_opt['cashierReceipt_layout'];
 		if(!empty($print_type)){
 			$cashierReceipt_layout = $get_opt['cashierReceipt_invoice_layout'];
@@ -4831,6 +4835,7 @@ class BillingCashier extends MY_Controller {
 		
 				$order_data = "";	
 				$order_data2 = "";	
+				$order_data_APS = "";	
 				$order_data_kitchen = array();	
 				$order_data_bar = array();
 				$order_data_other = array();
@@ -4922,6 +4927,10 @@ class BillingCashier extends MY_Controller {
 								if($bil_det->package_item == 0){
 									$order_data .= "\n";
 									$order_data2 .= "\n";
+									//custom_print_APS
+									if(!empty($custom_print_APS)){
+										$order_data_APS .= "\n";
+									}
 								}
 							}
 						}
@@ -5049,6 +5058,75 @@ class BillingCashier extends MY_Controller {
 						//$product_name = $bil_det->product_name.$promo_name.$product_chinese_name.$varian_name.$diskon_name.$takeaway_name.$compliment_name;
 						$product_name = $bil_det->product_name.$promo_name.$product_chinese_name.$varian_name.$takeaway_name.$compliment_name;
 						
+						//custom_print_APS
+						if(!empty($custom_print_APS)){
+							$product_name = $bil_det->product_name;
+							
+							if($printer_pin_cashierReceipt == 32){
+								$max_text = 14;
+								$max_text_APS = 11;
+								$max_number_1 = 0;
+								$max_number_2 = 13;
+								$max_number_3 = 13;
+								
+							}
+							if($printer_pin_cashierReceipt == 40){
+								$max_text = 22;
+								$max_text_APS = 22;
+								$max_number_1 = 0;
+								$max_number_2 = 13;
+								$max_number_3 = 13;
+							}
+							if($printer_pin_cashierReceipt == 42){
+								$max_text = 24;
+								$max_text_APS = 24;
+								$max_number_1 = 0;
+								$max_number_2 = 13;
+								$max_number_3 = 13;
+							}
+							if($printer_pin_cashierReceipt == 46){
+								$max_text = 28;
+								$max_text_APS = 28;
+								$max_number_1 = 0;
+								$max_number_2 = 13;
+								$max_number_3 = 13;
+							}
+							if($printer_pin_cashierReceipt == 48){
+								$max_text = 30;
+								$max_text_APS = 30;
+								$max_number_1 = 0;
+								$max_number_2 = 13;
+								$max_number_3 = 13;
+							}
+							
+							$last_text = 7;
+							if(strlen($product_name) > $max_text_APS){
+								$product_name = substr($product_name,0,($max_text_APS-$last_text)).'..'.substr($product_name,($last_text*-1));
+							}
+							
+							 $user_id = $this->session->userdata('id_user');
+							 if(strlen($user_id) == 1){
+								 $user_id = '0'.$user_id;
+							 }
+							 if(strlen($user_id) > 2){
+								 $user_id = substr($user_id,0,2);
+							 }
+							 
+							 $billno_APS = $billingData->billing_no;
+							 
+							 //LX1911.1205.000003
+							 $billno_thn_bln = substr($billno_APS,0,4);
+							 $billno_tgl = substr($billno_APS,4,2);
+							 
+							 $billno_az1 = substr($billno_APS,0,3);
+							 $billno_az2 = substr($billno_APS,3,3);
+							 
+							 $billno_az1_div = $billno_az1%26;
+							 $billno_az2_div = $billno_az2%26;
+							 $billno_alp =  no2alphabet($billno_az1_div).no2alphabet($billno_az2_div);
+							 
+							 $billno_APS =  $billno_alp.$billno_thn_bln.'.'. $billno_tgl.$user_id.'.00'.substr($billno_APS,-4);
+						}
 						
 						////update 2018-02-14 PACKAGE Item
 						if($bil_det->package_item == 1 AND ($print_type == 1 OR $print_type == 0)){
@@ -5114,6 +5192,7 @@ class BillingCashier extends MY_Controller {
 						//$product_price_show = printer_command_align_right('@'.priceFormat($bil_det->product_price), $max_number_1);
 						//$order_total_show = printer_command_align_right(priceFormat($order_total), 10);
 						$order_total_show = printer_command_align_right(priceFormat($order_total), $max_number_2);
+						$order_total_show_APS = printer_command_align_right(priceFormat($order_total), $max_number_2);
 						
 						if(in_array($printer_pin_cashierReceipt, array(32,40)) AND $no_limit_text == false){
 							//'@'.$bil_det->product_price
@@ -5125,6 +5204,16 @@ class BillingCashier extends MY_Controller {
 						if($bil_det->package_item == 0){
 							$order_data .= "[align=0]".$bil_det->order_qty."[tab]".$product_name."[tab]".$product_price_show."[tab]".$order_total_show;
 							$order_data2 .= "[align=0]".$bil_det->order_qty."[tab]".$product_name."[tab] [tab]".$order_total_show;
+							
+							//custom_print_APS
+							if(!empty($custom_print_APS)){
+								if(strlen($bil_det->order_qty) == 1){
+									$order_data_APS .= "[align=0]".$bil_det->order_qty." x[tab]".$product_name."[tab]".$order_total_show_APS;
+								}else{
+									$order_data_APS .= "[align=0]".$bil_det->order_qty."x[tab]".$product_name."[tab]".$order_total_show_APS;
+								}
+							}
+							
 						}
 						
 						$product_name_package = '';
@@ -5285,6 +5374,12 @@ class BillingCashier extends MY_Controller {
 								$order_data2 .= "\n"; 
 								$order_data2 .= "[align=0][tab]".$product_name_extend."[tab] [tab]";
 								
+								//custom_print_APS
+								if(!empty($custom_print_APS)){
+									$order_data_APS .= "\n"; 
+									$order_data_APS .= "[align=0][tab]".$product_name_extend."[tab]";
+								}
+								
 								if($bil_det->product_group == 'beverage'){
 									//$order_data_bar .= "[tab]".$product_name_extend."\n";
 								}else{
@@ -5311,11 +5406,21 @@ class BillingCashier extends MY_Controller {
 								
 								$order_data .= "\n"."[align=0] [tab]".$diskon_name."[tab]".($bil_det->discount_price*-1)."[tab]".$discount_total_print;
 								$order_data2 .= "\n"."[align=0] [tab]".$diskon_name."[tab]".($bil_det->discount_price*-1)."[tab]".$discount_total_print;
+								
+								//custom_print_APS
+								if(!empty($custom_print_APS)){
+									$order_data_APS .= "\n"."[align=0] [tab]".$diskon_name."[tab]".$discount_total_print;
+								}
 
 							}else{
 								
 								$order_data .= "\n"."[align=0] [tab]".$diskon_name."[tab]".($bil_det->discount_price*-1)."[tab]".$discount_total_print;
 								$order_data2 .= "\n"."[align=0] [tab]".$diskon_name."[tab]".($bil_det->discount_price*-1)."[tab]".$discount_total_print;
+								
+								//custom_print_APS
+								if(!empty($custom_print_APS)){
+									$order_data_APS .= "\n"."[align=0] [tab]".$diskon_name."[tab]".$discount_total_print;
+								}
 								
 							}
 						}
@@ -5536,6 +5641,12 @@ class BillingCashier extends MY_Controller {
 				}
 				$billing_no_receipt = $billing_no_title.$billingData->billing_no;
 				
+				$billing_no_APS = str_replace("NO:","",$billing_no_receipt);
+				//custom_print_APS
+				if(!empty($custom_print_APS)){
+					$billing_no_APS = $billno_APS;
+				}
+				
 				if(empty($grand_total)){
 					$grand_total_show = '.0';
 				}
@@ -5563,11 +5674,15 @@ class BillingCashier extends MY_Controller {
 				$print_attr = array(
 					"{date}"	=> date("d/m/Y"),
 					"{date_time}"	=> date("d/m/Y H:i"),
+					"{date_time_APS}"	=> date("H:i, d/m/y"),
+					"{date_time_full}"	=> date("Y-m-d H:i:s"),
 					"{user}"	=> $session_user,
 					"{table_no}"	=> $table_no_receipt,
 					"{billing_no}"	=> $billing_no_receipt,
+					"{billing_no_APS}"	=> $billing_no_APS,
 					"{order_data}"	=> $order_data,
 					"{order_data2}"	=> $order_data2,
+					"{order_data_APS}"	=> $order_data_APS,
 					"{subtotal}"	=> $subtotal_show,
 					//"{additional_total}" => $additional_total,
 					"{tax_total}" => $tax_total_show,
@@ -5721,13 +5836,17 @@ class BillingCashier extends MY_Controller {
 						}
 					}
 					
-					if(!empty($bill_preview)){
-						printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt,'noprint');
-					}else{
-						//printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt, 'print', 1);
-						printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt, 'print');
+					$custom_print_data = '';
+					if(!empty($custom_print_APS)){
+						$custom_print_data = 'APS';
 					}
 					
+					if(!empty($bill_preview)){
+						printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt,'noprint', $custom_print_data);
+					}else{
+						//printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt, 'print', 1);
+						printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt, 'print', $custom_print_data);
+					}
 					
 					die();
 				}

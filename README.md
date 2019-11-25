@@ -1,5 +1,6 @@
 
-WePOS - Cafe v.3.42.20 (Free Version)
+WePOS - Cafe v.3.42.21 (Free Version)
+Updated: 22-11-2019 20:00:00
 
 Cocok untuk:
 Cafe/Resto/Rumah Makan (semua penjualan berbasis Cafe)
@@ -33,9 +34,13 @@ untuk versi Retail/Toko: https://github.com/copolatoz/wepos-retail
 
 	#Mengganti URL menjadi http://localhost/nama-cafe-anda
 	1. ganti nama folder download 'wepos-free' menjadi 'nama-cafe-anda'
-	2. ubah text pada file .htaccess 'wepos-free' menjadi 'nama-cafe-anda'
+	2. ubah isi/text pada file .htaccess 'wepos-free' menjadi 'nama-cafe-anda'
 		*jika .htaccess tidak ditemukan, ubah settingan folder anda agar dapat melihat hidden file dan ekstensi file
 		*gunakan editor semisal notepad++ untuk save-as atau membuat/edit file .htaccess
+	
+	#integrasi dengan WePOS.Cashier - Android:
+	1. rename folder utama (default: 'wepos-free') menjadi 'wepos'
+	2. ubah isi/text pada file .htaccess (default: 'wepos-free') menjadi 'wepos'
 
 
 4. untuk setup printer Thermal -> silahkan download extension PHP di website (login wepos.id)
