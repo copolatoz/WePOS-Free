@@ -1,8 +1,8 @@
 /*
 
 MIGRASI DATABASE
-
 WePOS - Cafe: v3.42.19 ke v3.42.20
+Updated: 21-12-2019 18:00
 
 *********************************************************************
 
@@ -523,14 +523,6 @@ option_value = REPLACE(option_value, '01-08-2019', '01-11-2019'),
 option_value = REPLACE(option_value, '01-09-2019', '01-11-2019'),
 option_value = REPLACE(option_value, '01-10-2019', '01-11-2019');
 #
-UPDATE apps_options SET option_value = '3.42.21' WHERE option_var = 'wepos_version';
-#
-UPDATE apps_options SET option_value = 'WePOS.Cafe' WHERE option_var = 'app_name';
-#
-UPDATE apps_options SET option_value = 'WePOS.Cafe' WHERE option_var = 'app_name_short';
-#
-UPDATE apps_options SET option_value = '2019' WHERE option_var = 'app_release';
-#
 UPDATE apps_modules 
 SET module_name = REPLACE(module_name, 'Re-Print Billing Tax', 'Set Tax Billing Trx'), 
 module_description = REPLACE(module_description, 'Re-Print Billing Tax', 'Set Tax Billing Trx'), 
@@ -543,3 +535,92 @@ ADD `txmark` TINYINT(1) DEFAULT 0,
 ADD `txmark_no` VARCHAR(20) DEFAULT NULL,
 ADD `txmark_no_simple` VARCHAR(10) DEFAULT NULL,
 ADD `group_date` DATE DEFAULT NULL;
+#
+UPDATE apps_options 
+SET option_value = REPLACE(option_value, 'Guest: {guest}', '{guest}'), 
+option_value = REPLACE(option_value, 'guest: {guest}', '{guest}');
+#
+UPDATE apps_options 
+SET option_value = REPLACE(option_value, "[set_tab1]\n[align=1][size=0]{tanggal_shift} {jam_shift} - by: {user}", "[align=0][size=0]Shift: {nama_shift}\n[align=0][size=0]Kasir: {user}\n[align=0][size=0]Jam: {tanggal_shift} {jam_shift}")
+WHERE option_var = "cashierReceipt_settlement_layout";
+#
+UPDATE apps_options 
+SET option_value = REPLACE(option_value, "[set_tab1b]\n[align=0][size=0]{tipe_openclose}: {shift_on}[tab]\n[align=0][size=0]{tanggal_shift} {jam_shift}[tab]", "[align=0][size=0]{tipe_openclose}: {shift_on}\n[align=0][size=0]Kasir: {shift_kasir}\n[align=0][size=0]Jam: {tanggal_shift} {jam_shift}")
+WHERE option_var = "cashierReceipt_openclose_layout";
+#
+INSERT INTO `apps_options`(`option_var`,`option_value`,`option_description`,`created`,`createdby`,`updated`,`updatedby`,`is_active`,`is_deleted`) VALUES 
+('add_customer_on_cashier',0,NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('add_sales_on_cashier',0,NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('all_status_order_printed',0,NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('display_kode_menu_dipencarian',0,NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('display_kode_menu_dibilling',0,NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('theme_print_billing',0,NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('print_sebaris_product_name',0,NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('hide_hold_bill_yesterday',0,NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('mode_table_layout_cashier',0,NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('jumlah_shift',1,NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('shift_active',0,NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('settlement_per_shift',0,NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('nama_shift_1','Non Shift',NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('jam_shift_1_start','07:00',NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('jam_shift_1_end','23:00',NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('nama_shift_2','-',NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('jam_shift_2_start','',NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('jam_shift_2_end','',NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('nama_shift_3','-',NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('jam_shift_3_start','',NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0'),
+('jam_shift_3_end','',NULL,'2019-12-08 00:00:00','administrator',NULL,NULL,'1','0');
+#
+UPDATE apps_options SET option_value = '3.42.21' WHERE option_var = 'wepos_version';
+#
+UPDATE apps_options SET option_value = 'WePOS.Cafe' WHERE option_var = 'app_name';
+#
+UPDATE apps_options SET option_value = 'WePOS.Cafe' WHERE option_var = 'app_name_short';
+#
+UPDATE apps_options SET option_value = '2019' WHERE option_var = 'app_release';
+#
+UPDATE pos_billing 
+SET total_credit = 0 
+WHERE total_cash = total_credit AND payment_id = 1 AND bank_id = 0 AND is_half_payment = 0;
+#
+ALTER TABLE `pos_open_close_shift` 
+ADD `tanggal_jam_shift` datetime DEFAULT NULL;
+#
+CREATE TABLE `pos_shift_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_shift` int(11) DEFAULT NULL,
+  `tanggal_shift` date DEFAULT NULL,
+  `jam_shift_start` varchar(5) DEFAULT NULL,
+  `jam_shift_end` varchar(5) DEFAULT NULL,
+  `tanggal_jam_start` datetime DEFAULT NULL,
+  `tanggal_jam_end` datetime DEFAULT NULL,
+  `tipe_shift` enum('open','close') DEFAULT NULL,
+  `status_active` tinyint(1) DEFAULT '0',
+  `createdby` varchar(50) DEFAULT NULL,
+  `created` timestamp NULL DEFAULT NULL,
+  `updatedby` varchar(50) DEFAULT NULL,
+  `updated` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB;
+#
+ALTER TABLE `pos_billing`
+ADD `diskon_sebelum_pajak_service` tinyint(1) DEFAULT '0',
+ADD `shift` tinyint(1) DEFAULT '0';
+#
+CREATE TABLE `pos_shift` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nama_shift` varchar(100) NOT NULL,
+  `jam_shift_start` varchar(5) NOT NULL DEFAULT '00:00',
+  `jam_shift_end` varchar(5) NOT NULL DEFAULT '00:00',
+  `createdby` varchar(50) DEFAULT NULL,
+  `created` timestamp NULL DEFAULT NULL,
+  `updatedby` varchar(50) DEFAULT NULL,
+  `updated` timestamp NULL DEFAULT NULL,
+  `is_deleted` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB;
+#
+insert  into `pos_shift`(`id`,`nama_shift`,`jam_shift_start`,`jam_shift_end`,`createdby`,`created`,`updatedby`,`updated`,`is_deleted`) values 
+(1,'Shift Pagi','07:00','23:00','administrator','2019-12-09 19:42:49','administrator','2019-12-09 19:44:33',0),
+(2,'','','','administrator','2019-12-09 19:42:49','administrator','2019-12-09 19:44:33',1),
+(3,'','','','administrator','2019-12-09 19:42:49','administrator','2019-12-09 19:44:33',1);

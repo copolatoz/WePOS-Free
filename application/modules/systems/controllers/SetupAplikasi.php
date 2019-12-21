@@ -7,6 +7,7 @@ class SetupAplikasi extends MY_Controller {
 	{
 		parent::__construct();
 		$this->prefix = config_item('db_prefix');
+		$this->prefix_pos = config_item('db_prefix2');
 		$this->load->model('model_setupaplikasi', 'm');
 	}
 	
@@ -29,7 +30,7 @@ class SetupAplikasi extends MY_Controller {
 			'billing_no_simple','role_id_kasir','include_tax','include_service','default_tax_percentage','default_service_percentage',
 			'set_ta_table_ta','takeaway_no_tax','takeaway_no_service','diskon_sebelum_pajak_service',
 			'use_pembulatan','pembulatan_dinamis','cashier_pembulatan_keatas','cashier_max_pembulatan','autohold_create_billing','billing_log',
-			'table_available_after_paid','hide_takeaway_order_apps','default_discount_payment','save_order_note','must_choose_customer','allow_add_customer',
+			'table_available_after_paid','hide_takeaway_order_apps','default_discount_payment','save_order_note','must_choose_customer',
 			'order_timer','hide_button_invoice','hide_button_halfpayment','hide_button_mergebill','hide_button_splitbill','hide_button_logoutaplikasi',
 			'cashier_credit_ar','min_noncash','no_hold_billing','print_preview_billing','default_tipe_billing',
 			'maxday_cashier_report','jam_operasional_from','jam_operasional_to','jam_operasional_extra',
@@ -40,6 +41,11 @@ class SetupAplikasi extends MY_Controller {
 			'printMonitoring_qc','printMonitoring_kitchen','printMonitoring_bar','printMonitoring_other','print_qc_then_order',
 			'print_qc_order_when_payment','opsi_no_print_when_payment','send_billing_to_email',
 			'tandai_pajak_billing','override_pajak_billing','reset_billing_yesterday','custom_print_APS',
+			'add_customer_on_cashier','add_sales_on_cashier','all_status_order_printed','display_kode_menu_dipencarian','display_kode_menu_dibilling',
+			'hide_hold_bill_yesterday','mode_table_layout_cashier',
+			
+			'jumlah_shift','settlement_per_shift','nama_shift_1','jam_shift_1_start','jam_shift_1_end',
+			'nama_shift_2','jam_shift_2_start','jam_shift_2_end','nama_shift_3','jam_shift_3_start','jam_shift_3_end',
 			
 			'use_approval_po','approval_change_payment_po_done','purchasing_request_order','auto_add_supplier_item_when_purchasing','auto_add_supplier_ap','receiving_select_warehouse',
 			'stock_rekap_start_date','persediaan_barang',
@@ -111,7 +117,7 @@ class SetupAplikasi extends MY_Controller {
 			'billing_no_simple','role_id_kasir','include_tax','include_service','default_tax_percentage','default_service_percentage',
 			'set_ta_table_ta','takeaway_no_tax','takeaway_no_service','diskon_sebelum_pajak_service',
 			'use_pembulatan','pembulatan_dinamis','cashier_pembulatan_keatas','cashier_max_pembulatan','autohold_create_billing','billing_log',
-			'table_available_after_paid','hide_takeaway_order_apps','default_discount_payment','save_order_note','must_choose_customer','allow_add_customer',
+			'table_available_after_paid','hide_takeaway_order_apps','default_discount_payment','save_order_note','must_choose_customer',
 			'order_timer','hide_button_invoice','hide_button_halfpayment','hide_button_mergebill','hide_button_splitbill','hide_button_logoutaplikasi',
 			'cashier_credit_ar','min_noncash','no_hold_billing','print_preview_billing','default_tipe_billing',
 			'maxday_cashier_report','jam_operasional_from','jam_operasional_to','jam_operasional_extra',
@@ -122,6 +128,11 @@ class SetupAplikasi extends MY_Controller {
 			'printMonitoring_qc','printMonitoring_kitchen','printMonitoring_bar','printMonitoring_other','print_qc_then_order',
 			'print_qc_order_when_payment','opsi_no_print_when_payment','send_billing_to_email',
 			'tandai_pajak_billing','override_pajak_billing','reset_billing_yesterday','custom_print_APS',
+			'add_customer_on_cashier','add_sales_on_cashier','all_status_order_printed','display_kode_menu_dipencarian','display_kode_menu_dibilling',
+			'hide_hold_bill_yesterday','mode_table_layout_cashier',
+			
+			'jumlah_shift','settlement_per_shift','nama_shift_1','jam_shift_1_start','jam_shift_1_end',
+			'nama_shift_2','jam_shift_2_start','jam_shift_2_end','nama_shift_3','jam_shift_3_start','jam_shift_3_end',
 			
 			'use_approval_po','approval_change_payment_po_done','purchasing_request_order','auto_add_supplier_item_when_purchasing','auto_add_supplier_ap','receiving_select_warehouse',
 			'stock_rekap_start_date','persediaan_barang',
@@ -183,7 +194,6 @@ class SetupAplikasi extends MY_Controller {
 			'default_discount_payment'		=> 0, 
 			'save_order_note'				=> 0,
 			'must_choose_customer'			=> 0,
-			'allow_add_customer'			=> 0,
 			'order_timer'					=> 0,
 			'hide_button_invoice'			=> 0,
 			'hide_button_halfpayment'		=> 0,
@@ -225,6 +235,26 @@ class SetupAplikasi extends MY_Controller {
 			'override_pajak_billing'		=> 0,
 			'reset_billing_yesterday'		=> 0,
 			'custom_print_APS'				=> 0,
+			
+			'add_customer_on_cashier'		=> 0,
+			'add_sales_on_cashier'			=> 0,
+			'all_status_order_printed'		=> 0,
+			'display_kode_menu_dipencarian'	=> 0,
+			'display_kode_menu_dibilling'	=> 0,
+			'hide_hold_bill_yesterday'		=> 0,
+			'mode_table_layout_cashier'		=> 0,
+			
+			'jumlah_shift'					=> 1,
+			'settlement_per_shift'			=> 0,
+			'nama_shift_1'					=> 'Shift Default',
+			'jam_shift_1_start'				=> '07:00',
+			'jam_shift_1_end'				=> '23:00',
+			'nama_shift_2'					=> '',
+			'jam_shift_2_start'				=> '',
+			'jam_shift_2_end'				=> '',
+			'nama_shift_3'					=> '',
+			'jam_shift_3_start'				=> '',
+			'jam_shift_3_end'				=> '',
 						
 			'use_approval_po'				=> 0,
 			'approval_change_payment_po_done' => 0,
@@ -307,6 +337,143 @@ class SetupAplikasi extends MY_Controller {
 			$data_option['item_code_separator'] = '.';
 			$data_option['item_code_format'] = '{Cat}.{SubCat}.{ItemNo}';
 			$data_option['item_no_length'] = 4;
+		}	
+		
+		if(empty($data_option['jumlah_shift'])){
+			$data_option['jumlah_shift'] = 1;
+		}	
+		
+		$shift_active = array(1 => 0, 2 => 0, 3 => 0);
+		if(!empty($data_option['jumlah_shift'])){
+			
+			if($data_option['jumlah_shift'] > 3){
+				$data_option['jumlah_shift'] = 3;
+			}
+			
+			if($data_option['jumlah_shift'] == 1){
+				$data_option['nama_shift_2'] = '';
+				$data_option['jam_shift_2_start'] = '';
+				$data_option['jam_shift_2_end'] = '';
+				$data_option['nama_shift_3'] = '';
+				$data_option['jam_shift_3_start'] = '';
+				$data_option['jam_shift_3_end'] = '';
+				
+				$shift_active[1] = 0;
+				$shift_active[2] = 1;
+				$shift_active[3] = 1;
+				
+				if(empty($data_option['nama_shift_1'])){
+					$data_option['nama_shift_1'] = 'Shift Pagi';
+				}
+				if(empty($data_option['jam_shift_1_start'])){
+					$data_option['jam_shift_1_start'] = '07:00';
+				}
+				if(empty($data_option['jam_shift_1_end'])){
+					$data_option['jam_shift_1_end'] = '23:00';
+				}
+			}
+			
+			if($data_option['jumlah_shift'] == 2){
+				
+				$data_option['nama_shift_3'] = '';
+				$data_option['jam_shift_3_start'] = '';
+				$data_option['jam_shift_3_end'] = '';
+				
+				$shift_active[1] = 0;
+				$shift_active[2] = 0;
+				$shift_active[3] = 1;
+				
+				if(empty($data_option['nama_shift_1'])){
+					$data_option['nama_shift_1'] = 'Shift Pagi';
+				}
+				if(empty($data_option['jam_shift_1_start'])){
+					$data_option['jam_shift_1_start'] = '07:00';
+				}
+				if(empty($data_option['jam_shift_1_end'])){
+					$data_option['jam_shift_1_end'] = '15:00';
+				}
+				
+				if(empty($data_option['nama_shift_2'])){
+					$data_option['nama_shift_2'] = 'Shift Siang';
+				}
+				if(empty($data_option['jam_shift_2_start'])){
+					$data_option['jam_shift_2_start'] = '15:00';
+				}
+				if(empty($data_option['jam_shift_2_end'])){
+					$data_option['jam_shift_2_end'] = '23:00';
+				}
+				
+			}
+			
+			if($data_option['jumlah_shift'] == 3){
+				$data_option['nama_shift_3'] = '';
+				$data_option['jam_shift_3_start'] = '';
+				$data_option['jam_shift_3_end'] = '';
+				
+				$shift_active[1] = 0;
+				$shift_active[2] = 0;
+				$shift_active[3] = 0;
+				
+				if(empty($data_option['nama_shift_1'])){
+					$data_option['nama_shift_1'] = 'Shift Pagi';
+				}
+				if(empty($data_option['jam_shift_1_start'])){
+					$data_option['jam_shift_1_start'] = '06:00';
+				}
+				if(empty($data_option['jam_shift_1_end'])){
+					$data_option['jam_shift_1_end'] = '14:00';
+				}
+				
+				if(empty($data_option['nama_shift_2'])){
+					$data_option['nama_shift_2'] = 'Shift Siang';
+				}
+				if(empty($data_option['jam_shift_2_start'])){
+					$data_option['jam_shift_2_start'] = '14:00';
+				}
+				if(empty($data_option['jam_shift_2_end'])){
+					$data_option['jam_shift_2_end'] = '22:00';
+				}
+				
+				if(empty($data_option['nama_shift_3'])){
+					$data_option['nama_shift_3'] = 'Shift Malam';
+				}
+				if(empty($data_option['jam_shift_3_start'])){
+					$data_option['jam_shift_3_start'] = '22:00';
+				}
+				if(empty($data_option['jam_shift_3_end'])){
+					$data_option['jam_shift_3_end'] = '06:00';
+				}
+				
+			}
+			
+			$setupAplikasi['jumlah_shift'] = $data_option['jumlah_shift'];
+			$setupAplikasi['nama_shift_1'] = $data_option['nama_shift_1'];
+			$setupAplikasi['jam_shift_1_start'] = $data_option['jam_shift_1_start'];
+			$setupAplikasi['jam_shift_1_end'] = $data_option['jam_shift_1_end'];
+			$setupAplikasi['nama_shift_2'] = $data_option['nama_shift_2'];
+			$setupAplikasi['jam_shift_2_start'] = $data_option['jam_shift_2_start'];
+			$setupAplikasi['jam_shift_2_end'] = $data_option['jam_shift_2_end'];
+			$setupAplikasi['nama_shift_3'] = $data_option['nama_shift_3'];
+			$setupAplikasi['jam_shift_3_start'] = $data_option['jam_shift_3_start'];
+			$setupAplikasi['jam_shift_3_end'] = $data_option['jam_shift_3_end'];
+			
+			$data_shift = array();
+			for($i=1; $i <= 3; $i++){
+				$data_shift[] = array(
+					'id'				=> $i,
+					'nama_shift'		=> $data_option['nama_shift_'.$i],
+					'jam_shift_start'	=> $data_option['jam_shift_'.$i.'_start'],
+					'jam_shift_end'		=> $data_option['jam_shift_'.$i.'_end'],
+					'updatedby'			=> $session_user,
+					'updated'			=> date("Y-m-d H:i:s"),
+					'is_deleted'		=> $shift_active[$i]
+				);
+			}
+			
+			if(!empty($data_shift)){
+				$this->db->update_batch($this->prefix_pos."shift", $data_shift, "id");
+			}
+			
 		}	
 		
 		//supervisorAccess_name

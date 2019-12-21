@@ -26,14 +26,14 @@ class DataBilling extends MY_Controller {
 			'payment_id_cash',
 			'payment_id_debit',
 			'payment_id_credit',
-			'wepos_tipe',
-			'jam_operasional_from','jam_operasional_to','jam_operasional_extra'
+			'jam_operasional_from','jam_operasional_to','jam_operasional_extra',
+			'hide_hold_bill_yesterday'
 		);
 		$get_opt = get_option_value($opt_value);
 		
-		$wepos_tipe = 'cafe';
-		if(!empty($get_opt['wepos_tipe'])){
-			$wepos_tipe = $get_opt['wepos_tipe'];
+		$hide_hold_bill_yesterday = 0;
+		if(!empty($get_opt['hide_hold_bill_yesterday'])){
+			$hide_hold_bill_yesterday = $get_opt['hide_hold_bill_yesterday'];
 		}
 		
 		$no_midnight = 0;
@@ -123,129 +123,6 @@ class DataBilling extends MY_Controller {
 		if(!empty($txmark_only)){
 			$params['where'][] = "(a.txmark = 1)";
 		}
-		
-		if(!empty($shift_billing)){
-			$skip_date = true;
-			
-			if(empty($date_from)){
-				$date_from = date('Y-m-d');
-			}
-			
-			if(!empty($date_from)){
-			
-				if(empty($date_from)){ $date_from = date('Y-m-d'); }
-				
-				$mktime_dari = strtotime($date_from);
-							
-				//$date_from = date("Y-m-d",strtotime($date_from));		
-			}
-			
-			$qdate_from_plus1 = date("Y-m-d",strtotime($date_from)+ONE_DAY_UNIX);
-			
-			//jam_operasional
-			$mktime_dari = strtotime($date_from);
-			$mktime_sampai = strtotime($date_from);
-			$ret_dt = check_report_jam_operasional($get_opt, $mktime_dari, $mktime_sampai);
-			$qdate_from = $ret_dt['qdate_from'];
-			$qdate_from_plus1_max = $ret_dt['qdate_till_max'];
-			
-			//get shift range
-			$this->db->from($this->prefix.'open_close_shift');
-			$this->db->where("user_shift",$shift_billing);
-			$this->db->where("(tanggal_shift = '".$date_from."' OR (tipe_shift = 'close' AND tanggal_shift = '".$qdate_from_plus1."' 
-				AND created <= '".$qdate_from_plus1_max."'))");
-			$get_shift = $this->db->get();
-			
-			if($get_shift->num_rows() > 0){
-				
-				$data_shift = array();
-				foreach($get_shift->result() as $dtS){
-					if(empty($data_shift[$dtS->user_shift])){
-						$data_shift[$dtS->user_shift] = array(
-							'jam_from' => '',
-							'jam_till' => ''
-						);
-					}
-					
-					if($dtS->tipe_shift == 'open'){
-						$data_shift[$dtS->user_shift]['jam_from'] = $dtS->jam_shift;
-					}
-					
-					if($dtS->tipe_shift == 'close'){
-						$data_shift[$dtS->user_shift]['jam_till'] = $dtS->jam_shift;
-					}
-					
-				}
-				
-				if(!empty($data_shift[$shift_billing])){
-					//FROM
-					if(empty($data_shift[$shift_billing]['jam_from'])){
-						if($shift_billing == 1){
-							$data_shift[$shift_billing]['jam_from'] = '07:00'; //default
-						}
-						
-						if($shift_billing == 2){
-							$data_shift[$shift_billing]['jam_from'] = '07:00:00'; //default
-							if(!empty($data_shift[1]['jam_till'])){
-								//take from shift 1
-								$data_shift[$shift_billing]['jam_from'] = $data_shift[1]['jam_till'].':59';
-							}
-						}
-					}else{
-						$data_shift[$shift_billing]['jam_from'] .= ':00';
-					}
-					
-					//TILL
-					if(empty($data_shift[$shift_billing]['jam_till'])){
-						if($shift_billing == 1){
-							$data_shift[$shift_billing]['jam_till'] = '06:00:00'; //default
-							if(!empty($data_shift[2]['jam_from'])){
-								//take from shift 2
-								$data_shift[$shift_billing]['jam_till'] = $data_shift[1]['jam_from'].':00';
-							}
-						}
-						
-						if($shift_billing == 2){
-							$data_shift[$shift_billing]['jam_till'] = '06:00:00'; //default
-						}
-						
-					}else{
-						$data_shift[$shift_billing]['jam_till'] .= ':00';
-					}
-						
-					//$qdate_till_max = date("Y-m-d", strtotime($date_from)+ONE_DAY_UNIX);
-					if($shift_billing == 1){
-						$qdate_till_max = date("Y-m-d",strtotime($date_from));
-					}else
-					if($shift_billing == 2){
-						$jam_shift = (int)substr($data_shift[$shift_billing]['jam_till'],0,2);
-						if(strlen($jam_shift) == 1){
-							//asumsi pagi
-							$qdate_till_max = date("Y-m-d",strtotime($date_from)+ONE_DAY_UNIX);
-						}else{
-							$qdate_till_max = date("Y-m-d",strtotime($date_from));
-						}
-					}else{
-						//all shift
-						
-					}
-					
-					$params['where'][] = "(a.payment_date >= '".$date_from." ".$data_shift[$shift_billing]['jam_from']."' AND a.payment_date <= '".$qdate_till_max." ".$data_shift[$shift_billing]['jam_till']."')";
-					
-				}
-			}else{
-			
-				//$qdate_till_max = date("Y-m-d",strtotime($date_from)+ONE_DAY_UNIX);
-				//$params['where'][] = "(a.payment_date >= '".$date_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
-				
-				$qdate_from = $ret_dt['qdate_from'];
-				$qdate_till_max = $ret_dt['qdate_till_max'];
-				$params['where'][] = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
-				
-			}
-		}
-		
-		//echo $where_shift_billing;
 		
 		if(!empty($report_paid_order)){
 			$params['order'] = array('a.id' => $report_paid_order);
@@ -352,7 +229,12 @@ class DataBilling extends MY_Controller {
 					
 					
 				}
-						
+					
+				if(!empty($hide_hold_bill_yesterday)){
+					$lastest_billing_no = date("ymd",strtotime($date_from)).'0000';
+					$params['where'][] = "(a.billing_no >= '".$lastest_billing_no."')";
+				}
+					
 			}
 		}
 		

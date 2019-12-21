@@ -23,11 +23,31 @@ class OpenCashierShift extends MY_Controller {
 			die();
 		}
 		
+		$get_opt = get_option_value(array('role_id_kasir'));
+		$role_id_kasir = 0;
+		
+		if(!empty($get_opt['role_id_kasir'])){
+			$role_id_kasir = $get_opt['role_id_kasir'];
+		}else{
+			$r = array('success' => false, 'info' => 'Harus Role: Cashier agar bisa menggunakan module ini!');
+			echo json_encode($r);
+			die();
+		}
+		
 		$get_id = $this->input->post('id', true);
 		$spv_user = $this->input->post('spv_user', true);
 		$tanggal_shift = $this->input->post('tanggal_shift', true);
 		$jam_shift = $this->input->post('jam_shift', true);
 		$user_shift = $this->input->post('user_shift', true);
+		$nama_shift = $this->input->post('nama_shift', true);
+		
+		if(empty($tanggal_shift)){
+			$r = array('success' => false, 'info' => 'Set Tanggal Shift!');
+			echo json_encode($r);
+			die();
+		}
+		
+		$tanggal_shift = date("Y-m-d",strtotime($tanggal_shift));
 		
 		$uang_kertas_100000 = $this->input->post('uang_kertas_100000', true);
 		$uang_kertas_50000 = $this->input->post('uang_kertas_50000', true);
@@ -56,22 +76,54 @@ class OpenCashierShift extends MY_Controller {
 		$jumlah_uang_koin += ($uang_koin_100 * 100);
 		
 		$date_now = date('Y-m-d H:i:s');
-		
 		$tipe_shift = 'open';
 			
 		//LOAD USER OPEN SHIFT
 		$get_data = $this->loadOpenShift(true); //array
-		if(empty($get_data['id'])){
-			//NEW INSERT
-			$kasir_user = $session_user;
-			$tanggal_shift = date("Y-m-d",strtotime($tanggal_shift));
-			
-			$insert_openShift = array(
-				'kasir_user'	=> $kasir_user,
-				'spv_user'	=> $spv_user,
+		if(!empty($get_data['id'])){
+			$update_openShift = array(
+				'kasir_user'	=> $session_user,
+				'spv_user'		=> $spv_user,
 				'tipe_shift'	=> $tipe_shift,
 				'tanggal_shift'	=> $tanggal_shift,
-				'jam_shift'	=> $jam_shift,
+				'jam_shift'		=> $jam_shift,
+				'user_shift'	=> $user_shift,
+				'uang_kertas_100000'=> $uang_kertas_100000,
+				'uang_kertas_50000'	=> $uang_kertas_50000,
+				'uang_kertas_20000'	=> $uang_kertas_20000,
+				'uang_kertas_10000'	=> $uang_kertas_10000,
+				'uang_kertas_5000'	=> $uang_kertas_5000,
+				'uang_kertas_2000'	=> $uang_kertas_2000,
+				'uang_kertas_1000'	=> $uang_kertas_1000,
+				'jumlah_uang_kertas'	=> $jumlah_uang_kertas,
+				'uang_koin_1000'	=> $uang_koin_1000,
+				'uang_koin_500'	=> $uang_koin_500,
+				'uang_koin_200'	=> $uang_koin_200,
+				'uang_koin_100'	=> $uang_koin_100,
+				'jumlah_uang_koin'	=> $jumlah_uang_koin,
+				'updated'		=>	$date_now,
+				'updatedby'		=>	$session_user
+			);
+			
+			$save_openShift = $this->db->update($this->table, $update_openShift, 'id = '.$get_data['id']);
+			
+			$this->cekShiftLog();
+			
+			$r = array('success' => true, 'openShiftData' => $get_data, 'nama_shift' => $nama_shift);
+			
+		}else
+		{
+			//Cek jika shift < belum di close = warning
+			if($user_shift > 1){
+				$this->cekCloseShift(true);
+			}
+			
+			$insert_openShift = array(
+				'kasir_user'	=> $session_user,
+				'spv_user'		=> $spv_user,
+				'tipe_shift'	=> $tipe_shift,
+				'tanggal_shift'	=> $tanggal_shift,
+				'jam_shift'		=> $jam_shift,
 				'user_shift'	=> $user_shift,
 				'uang_kertas_100000'=> $uang_kertas_100000,
 				'uang_kertas_50000'	=> $uang_kertas_50000,
@@ -95,54 +147,168 @@ class OpenCashierShift extends MY_Controller {
 			$save_openShift = $this->db->insert($this->table, $insert_openShift);
 			$get_data['id'] = $this->db->insert_id();
 			
+			$this->cekShiftLog();
+			
 			if($save_openShift){
-				$r = array('success' => true, 'openShiftData' => $get_data, 'id = '.$get_data['id']);
+				$r = array('success' => true, 'openShiftData' => $get_data, 'id = '.$get_data['id'], 'nama_shift' => $nama_shift);
 			}else{
-				$r = array('success' => false, 'Save Open Cashier (Shift) Failed!');
+				$r = array('success' => false, 'Save Open Cashier: '.$nama_shift.' Gagal!', 'nama_shift' => $nama_shift);
 			}
-			
-		}else{
-			
-			$insert_openShift = array(
-				'kasir_user'	=> $session_user,
-				'spv_user'	=> $spv_user,
-				'tipe_shift'	=> $tipe_shift,
-				'tanggal_shift'	=> $tanggal_shift,
-				'jam_shift'	=> $jam_shift,
-				'user_shift'	=> $user_shift,
-				'uang_kertas_100000'=> $uang_kertas_100000,
-				'uang_kertas_50000'	=> $uang_kertas_50000,
-				'uang_kertas_20000'	=> $uang_kertas_20000,
-				'uang_kertas_10000'	=> $uang_kertas_10000,
-				'uang_kertas_5000'	=> $uang_kertas_5000,
-				'uang_kertas_2000'	=> $uang_kertas_2000,
-				'uang_kertas_1000'	=> $uang_kertas_1000,
-				'jumlah_uang_kertas'	=> $jumlah_uang_kertas,
-				'uang_koin_1000'	=> $uang_koin_1000,
-				'uang_koin_500'	=> $uang_koin_500,
-				'uang_koin_200'	=> $uang_koin_200,
-				'uang_koin_100'	=> $uang_koin_100,
-				'jumlah_uang_koin'	=> $jumlah_uang_koin,
-				'updated'		=>	$date_now,
-				'updatedby'		=>	$session_user
-			);
-			
-			$save_openShift = $this->db->update($this->table, $insert_openShift, 'id = '.$get_data['id']);
-			$r = array('success' => true, 'openShiftData' => $get_data);
 		}
 		
 		die(json_encode($r));
 	}
 		
-	public function loadOpenShift($is_return = false, $id_open = ''){
-				
+	public function cekShiftLog(){
 		$this->table = $this->prefix.'open_close_shift';
-		$this->prefix2 = config_item('db_prefix'); //pos_
+		$this->prefix2 = config_item('db_prefix2'); //pos_
+		
+		$session_user = $this->session->userdata('user_username');
+		$date_now = date('Y-m-d H:i:s');
+		
+		$tanggal_shift = $this->input->post('tanggal_shift', true);
+		$jam_shift = $this->input->post('jam_shift', true);
+		$user_shift = $this->input->post('user_shift', true);
+		$nama_shift = $this->input->post('nama_shift', true);
+		$tipe_shift = $this->input->post('tipe_shift', true);
+		
+		$tanggal_shift_post = $tanggal_shift;
+		$mk_shift_post = strtotime($tanggal_shift_post." ".$jam_shift);
+		$tanggal_shift = date("Y-m-d",strtotime($tanggal_shift));
+		
+		//CEK JAM OPEN SHIFT PALING KECIL
+		$this->db->select('a.*');
+		$this->db->from($this->table.' as a');
+		$this->db->where("a.tanggal_shift", $tanggal_shift);
+		$this->db->where("a.tipe_shift", $tipe_shift);
+		$this->db->where("a.user_shift = ".$user_shift);
+		$this->db->order_by("a.id", 'DESC');
+		$get_openCloseShift = $this->db->get();
+		if($get_openCloseShift->num_rows() > 0){
+			foreach($get_openCloseShift->result_array() as $dt){
+				
+				$mk_shift_cek = strtotime($tanggal_shift_post." ".$dt['jam_shift']);
+				
+				if($mk_shift_cek <= $mk_shift_post){
+					$mk_shift_post = $mk_shift_cek;
+				}
+				
+			}
+		}
+		
+		$jam_shift = date("H:i", $mk_shift_post);
+		$tanggal_jam_shift = date("Y-m-d H:i", $mk_shift_post).":00";
+		
+		//CEK SHIFT LOG
+		$this->db->select('a.*');
+		$this->db->from($this->prefix2.'shift_log as a');
+		$this->db->where("a.tanggal_shift", $tanggal_shift);
+		//$this->db->where("a.tipe_shift", 'open');
+		$this->db->where("a.user_shift = ".$user_shift);
+		$this->db->order_by("a.id", 'DESC');
+		
+		$get_openShiftLog = $this->db->get();
+		if($get_openShiftLog->num_rows() > 0){
+			
+			$get_dataShiftLog = $get_openShiftLog->row();
+			
+			//shift_log
+			$update_shift_log = array(
+				'jam_shift_start'	=> $jam_shift,
+				'tanggal_jam_start'	=> $tanggal_jam_shift,
+				'updated'			=> $date_now,
+				'updatedby'			=> $session_user
+			);
+			
+			$save_shift_log = $this->db->update($this->prefix.'shift_log', $update_shift_log, "user_shift = ".$user_shift." AND tanggal_shift = '".$tanggal_shift."'");
+			
+		}else{
+			
+			//other close
+			$close_shift_log = array("tipe_shift" => "close");
+			$save_shift_log = $this->db->update($this->prefix.'shift_log', $close_shift_log, "tanggal_shift = '".$tanggal_shift."'");
+			
+			
+			//shift_log
+			$insert_shift_log = array(
+				'tipe_shift'		=> $tipe_shift,
+				'tanggal_shift'		=> $tanggal_shift,
+				'jam_shift_start'	=> $jam_shift,
+				'tanggal_jam_start'	=> $tanggal_jam_start,
+				'user_shift'	=> $user_shift,
+				'created'		=>	$date_now,
+				'createdby'		=>	$session_user,
+				'updated'		=>	$date_now,
+				'updatedby'		=>	$session_user
+			);
+			$save_shift_log = $this->db->insert($this->prefix.'shift_log', $insert_shift_log);
+			
+			//shift_active
+			$data_option = array("shift_active" => $user_shift);
+			$update_option = update_option($data_option);
+			
+		}
+	}
+	
+	public function cekCloseShift(){
+			
+		$this->table = $this->prefix.'open_close_shift';
+		$this->prefix2 = config_item('db_prefix2'); //pos_
 		
 		$session_user = $this->session->userdata('user_username');
 		$id_user = $this->session->userdata('id_user');
 		
 		$user_shift = $this->input->post('user_shift', true);
+		$jam_shift_start = $this->input->post('jam_shift_start', true);
+		$tanggal_shift = $this->input->post('tanggal_shift', true);
+		
+		$closeShiftData = array();
+		$tanggal_shift = date("Y-m-d",strtotime($tanggal_shift));
+		
+		$this->db->select('a.*');
+		$this->db->from($this->prefix2.'shift_log as a');
+		$this->db->where("a.tanggal_shift", $tanggal_shift);
+		$this->db->where("a.tipe_shift", 'close');
+		
+		if(!empty($user_shift)){
+			$user_shift_before = $user_shift-1;
+			$this->db->where("a.user_shift = ".$user_shift_before);
+		}
+		
+		$this->db->order_by("a.id", 'DESC');
+		
+		$get_closeShift = $this->db->get();
+		if($get_closeShift->num_rows() == 0){
+			
+			$this->db->select('a.*');
+			$this->db->from($this->prefix2.'shift as a');
+			$this->db->where("a.id", $user_shift_before);
+			$getShift = $this->db->get();
+			
+			$nama_shift_sebelumnya = '-';
+			if($getShift->num_rows() > 0){
+				$shiftData = $getShift->row();
+				$nama_shift_sebelumnya = $shiftData->nama_shift;
+			}
+			
+			$r = array('success' => false, 'info' => 'Shift: <b>'.$nama_shift_sebelumnya.'</b> harus di Close terlebih dahulu!<br/>Lakukan di Module: Close Cashier (Shift) / Settlement');
+			echo json_encode($r);
+			die();
+		}
+		
+	}
+	
+	public function loadOpenShift($is_return = false, $id_open = ''){
+				
+		$this->table = $this->prefix.'open_close_shift';
+		$this->prefix2 = config_item('db_prefix2'); //pos_
+		
+		$session_user = $this->session->userdata('user_username');
+		$id_user = $this->session->userdata('id_user');
+		
+		$user_shift = $this->input->post('user_shift', true);
+		$jam_shift_start = $this->input->post('jam_shift_start', true);
+		$tanggal_shift = $this->input->post('tanggal_shift', true);
 		
 		$ip_addr = get_client_ip();
 		if(empty($session_user)){
@@ -157,33 +323,42 @@ class OpenCashierShift extends MY_Controller {
 		
 		if(!empty($get_opt['role_id_kasir'])){
 			$role_id_kasir = $get_opt['role_id_kasir'];
+		}else{
+			$r = array('success' => false, 'info' => 'Harus Role: Cashier agar bisa menggunakan module ini!');
+			echo json_encode($r);
+			die();
 		}
 		
 		//get open close data
-		$tanggal_shift = date("d-m-Y");
+		//$tanggal_shift = date("d-m-Y");
 		$jam_shift = date("H:i");
-		$get_date = date("Y-m-d");
-		$this->db->select('a.*');
+		$get_date = date("Y-m-d", strtotime($tanggal_shift));
+		
+		$this->db->select('a.*, b.nama_shift');
 		$this->db->from($this->table.' as a');
-		$this->db->join($this->prefix2.'users as b', 'b.user_username = a.kasir_user'); 
-		//$this->db->join($this->prefix2.'users as b', 'b.user_username = a.kasir_user','LEFT'); //TESTING
-		//$this->db->where("a.kasir_user", $session_user);
-		if(!empty($role_id_kasir)){
-			$this->db->where("b.role_id IN (".$role_id_kasir.")");
-		}else{
-			$this->db->where("b.role_id", 0);
-		}
-		$this->db->where("a.tanggal_shift", $get_date);
-		$this->db->where("a.tipe_shift", 'open');
-		$this->db->order_by("a.id", 'DESC');
+		$this->db->join($this->prefix2.'shift as b',"b.id = a.user_shift");
 		
 		if(!empty($id_open)){
 			$this->db->where("a.id", $id_open);
+		}else{
+			
+			$this->db->where("a.tanggal_shift", $get_date);
+			$this->db->where("a.tipe_shift", 'open');
+			
+			if(!empty($user_shift)){
+				$this->db->where("a.user_shift", $user_shift);
+			}else{
+				$this->db->where("a.user_shift", -1);
+			}
+			
+			if(!empty($session_user)){
+				$this->db->where("a.kasir_user", $session_user);
+			}else{
+				$this->db->where("a.kasir_user", -1);
+			}
 		}
 		
-		if(!empty($user_shift)){
-			$this->db->where("a.user_shift", $user_shift);
-		}
+		$this->db->order_by("a.id", 'DESC');
 		
 		$get_openShift = $this->db->get();
 		
@@ -191,14 +366,17 @@ class OpenCashierShift extends MY_Controller {
 			$openShiftData = $get_openShift->row_array();
 		}else{
 			
+			if(empty($jam_shift_start)){
+				$jam_shift_start = $jam_shift;
+			}
 			
 			$openShiftData = array(
-				'id'	=> '',
-				'spv_user'	=> '',
+				'id'			=> '',
+				'spv_user'		=> '',
 				'kasir_user'	=> $session_user,
 				'tipe_shift'	=> 'open',
 				'tanggal_shift'	=> $tanggal_shift,
-				'jam_shift'	=> $jam_shift,
+				'jam_shift'		=> $jam_shift_start,
 				'user_shift'	=> $user_shift,
 				'uang_kertas_100000'=> 0,
 				'uang_kertas_50000'	=> 0,
@@ -207,11 +385,11 @@ class OpenCashierShift extends MY_Controller {
 				'uang_kertas_5000'	=> 0,
 				'uang_kertas_2000'	=> 0,
 				'uang_kertas_1000'	=> 0,
-				'jumlah_uang_kertas'	=> 0,
+				'jumlah_uang_kertas'=> 0,
 				'uang_koin_1000'	=> 0,
-				'uang_koin_500'	=> 0,
-				'uang_koin_200'	=> 0,
-				'uang_koin_100'	=> 0,
+				'uang_koin_500'		=> 0,
+				'uang_koin_200'		=> 0,
+				'uang_koin_100'		=> 0,
 				'jumlah_uang_koin'	=> 0
 			);
 		}
@@ -274,22 +452,46 @@ class OpenCashierShift extends MY_Controller {
 			$cashierReceipt_openclose_layout = $get_opt['cashierReceipt_openclose_layout'];
 			//---------------------- Cashier Printer
 			
-			$printer_pin_cashierReceipt = 'PIN 42';
+			$printer_pin_cashierReceipt = '42 CHAR';
 			if(!empty($get_opt['printer_pin_cashierReceipt_'.$ip_addr])){
 				$printer_pin_cashierReceipt = $get_opt['printer_pin_cashierReceipt_'.$ip_addr];
 			}
 			
 			//trim prod name
-			$max_text = 18;
-			
-			if($printer_pin_cashierReceipt == 'PIN 32'){
-				$max_text -= 7;
+			$max_text = 18; //42
+			$max_number_1 = 9;
+			$max_number_2 = 11;
+			$max_number_3 = 13;
+
+			if($printer_pin_cashierReceipt == 32){
+				$max_text -= 6;
+				$max_number_1 = 7;
+				$max_number_2 = 8;
+				$max_number_3 = 13;
 			}
-			if($printer_pin_cashierReceipt == 'PIN 40'){
+			if($printer_pin_cashierReceipt == 40){
 				$max_text -= 2;
+				$max_number_1 = 8;
+				$max_number_2 = 11;
+				$max_number_3 = 13;
 			}
-			if($printer_pin_cashierReceipt == 'PIN 48'){
-				$max_text += 6;
+			if($printer_pin_cashierReceipt == 42){
+				//$max_text -= 2;
+				$max_number_1 = 8;
+				$max_number_2 = 11;
+				$max_number_3 = 13;
+			}
+			if($printer_pin_cashierReceipt == 46){
+				$max_text += 2;
+				$max_number_1 = 10;
+				$max_number_2 = 12;
+				$max_number_3 = 13;
+			}
+			if($printer_pin_cashierReceipt == 48){
+				$max_text += 4;
+				$max_number_1 = 10;
+				$max_number_2 = 12;
+				$max_number_3 = 13;
 			}
 			
 			$info_data = "";	
@@ -355,45 +557,56 @@ class OpenCashierShift extends MY_Controller {
 				}
 				
 				if(strstr($key, 'uang_kertas_')){
+					
+					$data_name = ucwords(str_replace("_"," ",$key));
+					$data_name = ucwords(str_replace("Uang Kertas","",$data_name));
+					$data_name = ucwords(str_replace("Uang Koin","",$data_name));
+					
 					$new_data_kertas[$key] = array("name" => '', "value" => '');
 					$new_data_kertas[$key]['name'] = $data_name;
 					$new_data_kertas[$key]['value'] = $dt;
 					
+					$get_nominal = str_replace("Nominal","",$data_name);
+					$value_show = printer_command_align_right(priceFormat($dt*$get_nominal), $max_number_3);
 					
-					$value_show = printer_command_align_right($dt, 9);
-					
-					if($printer_pin_cashierReceipt == 'PIN 32'){
-						$value_show = printer_command_align_right($dt, 8);
+					if(!empty($dt)){
+						if(empty($uang_kertas_data)){
+							$total_uang_kertas = $get_data['jumlah_uang_kertas'];
+							$total_uang_kertas = printer_command_align_right(priceFormat($total_uang_kertas), $max_number_3);
+							$uang_kertas_data = "[size=0][align=0]UANG KERTAS[tab]".$total_uang_kertas."\n";
+						}
+						
+						$strlen_x = strlen(priceFormat($get_nominal));
+						$selisih_char = 7-$strlen_x;
+						
+						$uang_kertas_data .= "[size=0][align=0] ".priceFormat($get_nominal).str_repeat(" ",$selisih_char)." x ".$dt."[tab]".$value_show."\n"; 
 					}
-					
-					if(empty($uang_kertas_data)){
-						$total_uang_kertas = $get_data['jumlah_uang_kertas'];
-						$total_uang_kertas = printer_command_align_right($total_uang_kertas, 9);
-						$uang_kertas_data = "[size=1][align=0]UANG KERTAS[tab]".$total_uang_kertas."\n";
-					}
-					
-					$uang_kertas_data .= "[size=0][align=0]".$data_name."[tab]X ".$value_show."\n"; 
-					
 				}else
 				if(strstr($key, 'uang_koin_')){
+					
+					$data_name = ucwords(str_replace("_"," ",$key));
+					$data_name = ucwords(str_replace("Uang Kertas","",$data_name));
+					$data_name = ucwords(str_replace("Uang Koin","",$data_name));
+					
 					$new_data_koin[$key] = array("name" => '', "value" => '');
 					$new_data_koin[$key]['name'] = $data_name;
 					$new_data_koin[$key]['value'] = $dt;
 					
-					$value_show = printer_command_align_right($dt, 9);
+					$get_nominal = str_replace("Nominal","",$data_name);
+					$value_show = printer_command_align_right(priceFormat($dt*$get_nominal), $max_number_3);
 					
-					if($printer_pin_cashierReceipt == 'PIN 32'){
-						$value_show = printer_command_align_right($dt, 8);
+					if(!empty($dt)){
+						if(empty($uang_koin_data)){
+							$total_uang_koin = $get_data['jumlah_uang_koin'];
+							$total_uang_koin = printer_command_align_right(priceFormat($total_uang_koin), $max_number_3);
+							$uang_koin_data = "[size=0][align=0]UANG KOIN[tab]".$total_uang_koin."\n";
+						}
+						
+						$strlen_x = strlen(priceFormat($get_nominal));
+						$selisih_char = 5-$strlen_x;
+						
+						$uang_koin_data .= "[size=0][align=0] ".priceFormat($get_nominal).str_repeat(" ",$selisih_char)." x ".$dt."[tab]".$value_show."\n";
 					}
-					
-					if(empty($uang_koin_data)){
-						$total_uang_koin = $get_data['jumlah_uang_koin'];
-						$total_uang_koin = printer_command_align_right($total_uang_koin, 9);
-						$uang_koin_data = "[size=1][align=0]UANG KOIN[tab]".$total_uang_koin."\n";
-					}
-					
-					$uang_koin_data .= "\n"."[size=0][align=0]".$data_name."[tab]X ".$value_show;
-					
 				}else{
 					$new_data[$key] = array("name" => '', "value" => '');
 					$new_data[$key]['name'] = $data_name;
@@ -401,10 +614,14 @@ class OpenCashierShift extends MY_Controller {
 					$new_val = $dt;
 					if($key == 'user_shift'){
 						
-						$new_val = 'Morning Shift';
-						if($dt == 2){
-							$new_val = 'Evening Shift';
+						$new_val = 'Shift';
+						if(!empty($get_data['nama_shift'])){
+							$new_val = $get_data['nama_shift'];
+						}else{
+							$new_val = 'Shift '.$dt;
 						}
+						
+						
 					}
 					
 					if(empty($new_val)){
@@ -413,7 +630,7 @@ class OpenCashierShift extends MY_Controller {
 					
 					$new_data[$key]['value'] = $new_val;
 					
-					$info_data .= "[size=1][align=0]".$data_name."[tab]".$new_val."\n";
+					$info_data .= "[size=0][align=0]".$data_name."[tab]".$new_val."\n";
 					
 				}
 				
@@ -447,7 +664,8 @@ class OpenCashierShift extends MY_Controller {
 			
 			
 			$print_attr = array(
-				"{tipe_openclose}"		=> 'Open Cashier',
+				"{tipe_openclose}"		=> 'Open',
+				"{user}"				=> $new_data['kasir_user']['value'],
 				"{tanggal_shift}"		=> date("d/m/Y", strtotime($new_data['tanggal_shift']['value'])),
 				"{jam_shift}"			=> $new_data['jam_shift']['value'],
 				"{tipe_shift}"			=> strtoupper($new_data['tipe_shift']['value']),
@@ -465,7 +683,7 @@ class OpenCashierShift extends MY_Controller {
 			$print_content_cashierReceipt = strtr($cashierReceipt_openclose_layout, $print_attr);
 			
 			//echo '<pre>';
-			//print_r($print_content_cashierReceipt);
+			//print_r($get_data);
 			//die();
 			
 			$print_content_cashierReceipt = replace_to_printer_command($print_content_cashierReceipt, $printer_type_cashier, $printer_pin_cashierReceipt);

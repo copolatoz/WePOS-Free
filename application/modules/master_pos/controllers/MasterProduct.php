@@ -95,10 +95,16 @@ class MasterProduct extends MY_Controller {
 		
 		
 		//cek opt
-		$get_opt = get_option_value(array('hide_compliment_order'));
+		$get_opt = get_option_value(array('hide_compliment_order','display_kode_menu_dipencarian'));
   		$hide_compliment_order = 0;
 		if(!empty($get_opt['hide_compliment_order'])){
 			$hide_compliment_order = 1;
+		}
+		
+		//update-1912-001
+		$display_kode_menu_dipencarian = 0;
+		if(!empty($get_opt['display_kode_menu_dipencarian'])){
+			$display_kode_menu_dipencarian = 1;
 		}
 		
 		//GET PROMO
@@ -353,6 +359,13 @@ class MasterProduct extends MY_Controller {
 				
 				$s['hide_compliment_order'] = $hide_compliment_order;
 				$s['product_name_show'] = $s['product_name'];
+				$s['product_name_code'] = $s['product_name'];
+				
+				//update-1912-001
+				if(!empty($display_kode_menu_dipencarian)){
+					$s['product_name_code'] =  $s['product_code'].' '.$s['product_name'];
+					$s['product_name_show'] =  $s['product_code'].' '.$s['product_name'];
+				}
 				
 				$s['product_id'] = $s['id'];
 				$s['product_price_hpp'] = $s['product_hpp'];
@@ -400,6 +413,10 @@ class MasterProduct extends MY_Controller {
 					$s['product_name_show'] = $s['product_name'].' <font color="orange">Promo</font>';
 					$s['product_price_show'] = '<strike>'.$s['product_price_show'].'</strike> <font color="orange">'.priceFormat($s['product_price']).'</font>';
 					
+					//update-1912-001
+					if(!empty($display_kode_menu_dipencarian)){
+						$s['product_name_show'] =  $s['product_code'].' '.$s['product_name'].' <font color="orange">Promo</font>';
+					}
 				}	
 				
 				//BUY & GET
@@ -428,6 +445,11 @@ class MasterProduct extends MY_Controller {
 					$s['buyget_qty'] = $data_buyget_product[$s['id']]->get_qty;
 					$s['buyget_percentage'] = numberFormat($data_buyget_product[$s['id']]->get_percentage,2);
 					$s['buyget_item'] = $data_buyget_product[$s['id']]->get_item;
+					
+					//update-1912-001
+					if(!empty($display_kode_menu_dipencarian)){
+						$s['product_name_show'] =  $s['product_code'].' '.$s['product_name'].' <font color="red">BG</font>';
+					}
 				}
 
 				$s['is_kerjasama_text'] = ($s['is_kerjasama'] == '1') ? '<span style="color:green;">Yes</span>':'<span style="color:red;">No</span>';

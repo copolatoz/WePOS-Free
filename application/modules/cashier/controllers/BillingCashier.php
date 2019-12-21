@@ -578,10 +578,18 @@ class BillingCashier extends MY_Controller {
 			return false;
 		}
 		
+		//update-1912-001
 		$opt_var = array('include_tax','include_service',
 		'default_tax_percentage','default_service_percentage',
-		'takeaway_no_tax','takeaway_no_service','autohold_create_billing','default_tipe_billing');
+		'takeaway_no_tax','takeaway_no_service','autohold_create_billing',
+		'default_tipe_billing','diskon_sebelum_pajak_service',
+		'jumlah_shift','shift_active');
 		$get_opt = get_option_value($opt_var);
+		
+		$diskon_sebelum_pajak_service = 0;
+		if(!empty($get_opt['diskon_sebelum_pajak_service'])){
+			$diskon_sebelum_pajak_service = $get_opt['diskon_sebelum_pajak_service'];
+		}
 		
 		$include_tax = 0;
 		if(!empty($get_opt['include_tax'])){
@@ -626,11 +634,39 @@ class BillingCashier extends MY_Controller {
 			$table_id = $get_opt['default_tipe_billing'];
 		}
 		
+		//update-1912-001
+		$shift = 0;
+		$jumlah_shift = 1;
+		if(!empty($get_opt['jumlah_shift'])){
+			$jumlah_shift = $get_opt['jumlah_shift'];
+		}
+		if(!empty($get_opt['shift_active'])){
+			$shift = $get_opt['shift_active'];
+		}
+		
+		if($jumlah_shift > 1 AND empty($shift)){
+			$this->db->select('a.*, b.nama_shift');
+			$this->db->from($this->prefix.'shift_log as a');
+			$this->db->where("a.tanggal_shift", date("Y-m-d"));
+			$this->db->order_by("a.id", 'DESC');
+			$getShiftLog = $this->db->get();
+			if($getShiftLog->num_rows() > 0){
+				$dataShiftLog = $getShiftLog->row_array();
+				$shift = $dataShiftLog['user_shift'];
+			}
+		}
+		
+		if($jumlah_shift == 1 AND empty($shift)){
+			$shift = 1;
+		}
+		
 		$is_new = false;
 		if(empty($billing_id)){
 			//CREATE BILLING
 			$get_no_billing = $this->generate_billing_no();
 			$date_now = date('Y-m-d H:i:s');
+			
+			//update-1912-001
 			$var = array(
 				'fields'	=>	array(
 				    'billing_no'  	=> 	$get_no_billing,
@@ -640,10 +676,12 @@ class BillingCashier extends MY_Controller {
 					'service_percentage'=>	$default_service_percentage,
 					'takeaway_no_tax'	=>	$takeaway_no_tax,
 					'takeaway_no_service'=>	$takeaway_no_service,
+					'diskon_sebelum_pajak_service'	=>	$diskon_sebelum_pajak_service,
 					'created'		=>	$date_now,
 					'createdby'		=>	$session_user,
 					'updated'		=>	$date_now,
-					'updatedby'		=>	$session_user
+					'updatedby'		=>	$session_user,
+					'shift'			=>	$shift
 				),
 				'table'		=>  $this->table
 			);
@@ -1524,7 +1562,7 @@ class BillingCashier extends MY_Controller {
 				$billingData = $get_billing->row();
 				
 				if($billingData->billing_status == 'paid'){
-					$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' sudah dibayar!<br/>Tidak bisa cancel order, lakukan void billing atau hold billing'); 
+					$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' sudah dibayar!<br/>Tidak dapat melakukan Hold Billing, Silahkan lakukan Refresh List Billing'); 
 					echo json_encode($r);
 					die();
 				}
@@ -1671,9 +1709,16 @@ class BillingCashier extends MY_Controller {
 		
 		$date_now = date('Y-m-d H:i:s');
 		
+		//update-1912-001
 		if(!empty($billingData)){
 			//update status to hold
 			$var = array('fields'	=>	array(
+				    'is_half_payment'=> 0,
+				    'total_cash'	=> 0,
+				    'total_credit'	=> 0,
+				    'payment_id'	=> 0,
+				    'bank_id'		=> 0,
+				    'card_no'  		=> '',
 				    'billing_status'  => 'hold',
 					'updated'		=>	$date_now,
 					'updatedby'		=>	$session_user
@@ -2186,11 +2231,27 @@ class BillingCashier extends MY_Controller {
 			}
 		}	
 		
-		if(empty($main_billing_id)){
+		//update-1912-001
+		//NO HOLD BILLING
+		$opt_value = array(
+			'cashier_max_pembulatan',
+			'cashier_pembulatan_keatas',
+			'pembulatan_dinamis',
+			'use_order_counter',
+			'wepos_tipe',
+			'save_order_note',
+			'as_server_backup',
+			'no_hold_billing',
+			'all_status_order_printed'
+		);
+		$get_opt = get_option_value($opt_value);
+		
+		$all_status_order_printed = 0;
+		if(!empty($get_opt['all_status_order_printed'])){
+			$all_status_order_printed = 1;
+		}
 			
-			//NO HOLD BILLING
-			$opt_var = array('no_hold_billing','as_server_backup');
-			$get_opt = get_option_value($opt_var);
+		if(empty($main_billing_id)){
 			
 			cek_server_backup($get_opt);
 			
@@ -2208,7 +2269,7 @@ class BillingCashier extends MY_Controller {
 				}
 				
 			}
-		}	
+		}
 		
 		//CREATE BILLING WITH USER - IF EMPTY
 		$billingData = $this->getBilling($main_billing_id);	
@@ -2438,21 +2499,16 @@ class BillingCashier extends MY_Controller {
 			
 		}
 		
-		$opt_value = array(
-			'cashier_max_pembulatan',
-			'cashier_pembulatan_keatas',
-			'pembulatan_dinamis',
-			'use_order_counter',
-			'wepos_tipe',
-			'save_order_note',
-			'as_server_backup'
-		);
-		
-		$get_opt = get_option_value($opt_value);
-		
+		//update-1912-001
 		cek_server_backup($get_opt);
 		
 		$r = '';
+		
+		//update-1912-001
+		$order_status_default = 'order';
+		if(!empty($all_status_order_printed)){
+			$order_status_default = 'done';
+		}
 		
 		if($form_type_orderProduct == 'add')
 		{
@@ -2499,7 +2555,7 @@ class BillingCashier extends MY_Controller {
 					'product_normal_price'	=>	$product_normal_price,
 					'order_qty'		=>	$order_qty,
 					'order_notes'	=>	$order_notes,
-					'order_status'	=>	'order',
+					'order_status'	=>	$order_status_default,
 					'order_counter'	=>	$order_counter,
 					'order_day_counter'	=>	$order_day_counter,
 					'created'		=>	$date_now,
@@ -2618,7 +2674,7 @@ class BillingCashier extends MY_Controller {
 							'product_normal_price'	=>	$product_normal_price,
 							'order_qty'		=>	$buyget_qty,
 							'order_notes'	=>	$order_notes,
-							'order_status'	=>	'order',
+							'order_status'	=>	$order_status_default,
 							'order_counter'	=>	$order_counter,
 							'order_day_counter'	=>	$order_day_counter,
 							'created'		=>	$date_now,
@@ -2736,7 +2792,11 @@ class BillingCashier extends MY_Controller {
 				'primary_key'	=>  'id'
 			);
 			
+			//update-1912-001
 			//$var['fields']['order_status'] = 'done'; <-- Retail
+			if(!empty($all_status_order_printed)){
+				$var['fields']['order_status'] = $order_status_default;
+			}
 			
 			if($is_buyget == 1 OR !empty($buyget_id)){
 				if($buyget_tipe == 'percentage'){
@@ -2849,7 +2909,7 @@ class BillingCashier extends MY_Controller {
 										'product_normal_price'	=>	$product_normal_price,
 										'order_qty'		=>	$buyget_qty,
 										'order_notes'	=>	$order_notes,
-										'order_status'	=>	'order',
+										'order_status'	=>	$order_status_default,
 										'order_counter'	=>	$order_counter,
 										'order_day_counter'	=>	$order_day_counter,
 										'created'		=>	$date_now,
@@ -3415,10 +3475,32 @@ class BillingCashier extends MY_Controller {
 		$get_opt_var = array('role_id_kasir','table_available_after_paid','include_tax','include_service,', 
 		'diskon_sebelum_pajak_service','cashier_max_pembulatan','cashier_pembulatan_keatas','pembulatan_dinamis',
 		'wepos_tipe','retail_warehouse','autocut_stok_sales_to_usage','cashier_credit_ar','min_noncash',
-		'must_choose_customer','as_server_backup');
+		'must_choose_customer','as_server_backup','jumlah_shift','shift_active');
 		$get_opt = get_option_value($get_opt_var);
 		
 		cek_server_backup($get_opt);
+		
+		//update-1912-001
+		$shift = 1;
+		$jumlah_shift = 1;
+		if(!empty($get_opt['jumlah_shift'])){
+			$jumlah_shift = $get_opt['jumlah_shift'];
+		}
+		if(!empty($get_opt['shift_active'])){
+			$shift = $get_opt['shift_active'];
+		}
+		
+		if($jumlah_shift > 1 AND empty($shift)){
+			$this->db->select('a.*, b.nama_shift');
+			$this->db->from($this->prefix.'shift_log as a');
+			$this->db->where("a.tanggal_shift", date("Y-m-d"));
+			$this->db->order_by("a.id", 'DESC');
+			$getShiftLog = $this->db->get();
+			if($getShiftLog->num_rows() > 0){
+				$dataShiftLog = $getShiftLog->row_array();
+				$shift = $dataShiftLog['user_shift'];
+			}
+		}
 		
 		//IF ONLY ROLE KASIR
 		$role_id_kasir = 0;		
@@ -3663,8 +3745,10 @@ class BillingCashier extends MY_Controller {
 		}else{
 			$is_half_payment = 0;
 			if($payment_id == 1){
+				//update-1912-001
 				//CASH
 				$total_cash = $get_total;
+				$total_credit = 0;
 			}else{
 				$total_credit = $get_total;	
 			}	
@@ -4122,8 +4206,9 @@ class BillingCashier extends MY_Controller {
 				'total_credit'		=>	$total_credit,
 				'grand_total'		=>	$grand_total,
 				'total_return'		=>	$total_return,
-				'updated'		=>	$datetime_now,
-				'updatedby'		=>	$session_user
+				'updated'			=>	$datetime_now,
+				'updatedby'			=>	$session_user,
+				'shift'				=>	$shift
 			),
 			'table'			=>  $this->table,
 			'primary_key'	=>  'id'
@@ -4449,7 +4534,7 @@ class BillingCashier extends MY_Controller {
 		$printer_tipe = $this->input->get_post('printer_tipe', true);	
 		$do_print = $this->input->get_post('do_print', true);	
 		$new_no = $this->input->get_post('new_no', true);
-		$order_apps = $this->input->get_post('order_apps', true);	
+		$order_apps = $this->input->get_post('order_apps', true);
 		
 		if(!empty($initialize_printing)){
 			die();
@@ -4520,13 +4605,31 @@ class BillingCashier extends MY_Controller {
 			'order_timer',
 			'produk_nama',
 			'produk_expired',
-			'custom_print_APS'
+			'custom_print_APS',
+			'display_kode_menu_dibilling',
+			'theme_print_billing',
+			'print_sebaris_product_name'
 			
 		);
 		$get_opt = get_option_value($opt_value);
 		
-		//custom_print_APS
-		$custom_print_APS = $get_opt['custom_print_APS'];
+		//update-1912-001
+		$custom_print_APS = 0;
+		if(!empty($get_opt['custom_print_APS'])){
+			$custom_print_APS = $get_opt['custom_print_APS'];
+		}
+		$display_kode_menu_dibilling = 0;
+		if(!empty($get_opt['display_kode_menu_dibilling'])){
+			$display_kode_menu_dibilling = $get_opt['display_kode_menu_dibilling'];
+		}
+		$theme_print_billing = 0;
+		if(!empty($get_opt['theme_print_billing'])){
+			$theme_print_billing = $get_opt['theme_print_billing'];
+		}
+		$print_sebaris_product_name = 0;
+		if(!empty($get_opt['print_sebaris_product_name'])){
+			$print_sebaris_product_name = $get_opt['print_sebaris_product_name'];
+		}
 		
 		//DATA PRINTER & SETUP -- update 2019-11-24
 		$cashierReceipt_layout = $get_opt['cashierReceipt_layout'];
@@ -4808,7 +4911,7 @@ class BillingCashier extends MY_Controller {
 				$is_print_error = false;
 				
 				$this->db->select("a.*, d.table_no, a2.billing_no, a2.discount_perbilling,
-								b.product_name, b.product_chinese_name, b.product_desc, b.product_type, b.product_image, 
+								b.product_name, b.product_code, b.product_chinese_name, b.product_desc, b.product_type, b.product_image, 
 								b.category_id, b.product_group, c.product_category_name,
 								e.varian_name
 								");
@@ -4835,6 +4938,23 @@ class BillingCashier extends MY_Controller {
 		
 				$order_data = "";	
 				$order_data2 = "";	
+				//update-1912-001
+				$template_order_data = "";
+				if(!empty($theme_print_billing)){
+					if($theme_print_billing == 1){
+						$template_order_data = "[list_order_tipe1]";
+						//$print_sebaris_product_name = 1;
+					}
+					
+					if($theme_print_billing == 2){
+						$template_order_data = "";
+						//$print_sebaris_product_name = 1;
+						$no_limit_text = true;
+					}
+				}else{
+					$template_order_data = "[set_tab1]";
+				}
+				
 				$order_data_APS = "";	
 				$order_data_kitchen = array();	
 				$order_data_bar = array();
@@ -4891,7 +5011,7 @@ class BillingCashier extends MY_Controller {
 					$max_number_3 = 13;
 				}
 				if($printer_pin_cashierReceipt == 48){
-					$max_text += 3;
+					$max_text += 4;
 					$max_number_1 = 10;
 					$max_number_2 = 12;
 					$max_number_3 = 13;
@@ -4927,6 +5047,9 @@ class BillingCashier extends MY_Controller {
 								if($bil_det->package_item == 0){
 									$order_data .= "\n";
 									$order_data2 .= "\n";
+									//update-1912-001
+									$template_order_data .= "\n";
+									
 									//custom_print_APS
 									if(!empty($custom_print_APS)){
 										$order_data_APS .= "\n";
@@ -5057,6 +5180,75 @@ class BillingCashier extends MY_Controller {
 						$all_text_array = array();
 						//$product_name = $bil_det->product_name.$promo_name.$product_chinese_name.$varian_name.$diskon_name.$takeaway_name.$compliment_name;
 						$product_name = $bil_det->product_name.$promo_name.$product_chinese_name.$varian_name.$takeaway_name.$compliment_name;
+						
+						//update-1912-001
+						if(!empty($display_kode_menu_dibilling)){
+							$product_name = $bil_det->product_code.' '.$bil_det->product_name.$promo_name.$product_chinese_name.$varian_name.$takeaway_name.$compliment_name;
+						}
+						
+						//update-1912-001
+						if(!empty($theme_print_billing)){
+							if($theme_print_billing == 1 OR $theme_print_billing == 2){
+								if($printer_pin_cashierReceipt == 32){
+									$max_text = 16;
+									$max_number_1 = 0;
+									$max_number_2 = 11;
+									$max_number_3 = 13;
+									
+								}
+								if($printer_pin_cashierReceipt == 40){
+									$max_text = 24;
+									$max_number_1 = 0;
+									$max_number_2 = 11;
+									$max_number_3 = 13;
+								}
+								if($printer_pin_cashierReceipt == 42){
+									$max_text = 26;
+									$max_number_1 = 0;
+									$max_number_2 = 11;
+									$max_number_3 = 13;
+								}
+								if($printer_pin_cashierReceipt == 46){
+									$max_text = 28;
+									$max_number_1 = 0;
+									$max_number_2 = 13;
+									$max_number_3 = 13;
+								}
+								if($printer_pin_cashierReceipt == 48){
+									$max_text = 30;
+									$max_number_1 = 0;
+									$max_number_2 = 13;
+									$max_number_3 = 13;
+								}
+							}
+							
+							if($theme_print_billing == 1){
+								if(!empty($print_sebaris_product_name)){
+									$last_text_perline = 3;
+									if(strlen($product_name) >= $max_text){
+										$product_name = substr($product_name,0,($max_text-$last_text_perline)).'..';
+									}
+								}
+							}
+							
+							if($theme_print_billing == 2){
+								$max_text = $printer_pin_cashierReceipt;
+								if(!empty($print_sebaris_product_name)){
+									$last_text_perline = 3;
+									if(strlen($product_name) >= $printer_pin_cashierReceipt){
+										$product_name = substr($product_name,0,($printer_pin_cashierReceipt-$last_text_perline)).'..';
+									}
+								}
+							}
+							
+						}else{
+							if(!empty($print_sebaris_product_name)){
+								$last_text_perline = 3;
+								if(strlen($product_name) >= $max_text){
+									$product_name = substr($product_name,0,($max_text-$last_text_perline)).'..';
+								}
+							}
+						} 
 						
 						//custom_print_APS
 						if(!empty($custom_print_APS)){
@@ -5200,17 +5392,44 @@ class BillingCashier extends MY_Controller {
 							$order_total_show = printer_command_align_right($order_total, $max_number_2);
 						}
 						
-						//update 2018-02-14
+						//update-1912-001
+						if(!empty($theme_print_billing)){
+							$product_price_show_theme = printer_command_align_right(priceFormat($bil_det->product_price), $max_number_1);
+							$order_total_show_theme = printer_command_align_right(priceFormat($order_total), $max_number_2);
+						}
+						
+						
+						//update-1912-001
 						if($bil_det->package_item == 0){
 							$order_data .= "[align=0]".$bil_det->order_qty."[tab]".$product_name."[tab]".$product_price_show."[tab]".$order_total_show;
-							$order_data2 .= "[align=0]".$bil_det->order_qty."[tab]".$product_name."[tab] [tab]".$order_total_show;
+							$order_data2 .= "[align=0]".$bil_det->order_qty."[tab]".$product_name."[tab]".$order_total_show;
+							
+							if(!empty($theme_print_billing)){
+								if($theme_print_billing == 2){
+									$template_order_data .= "[clear_set_tab][align=0]".$product_name."\n";
+									
+									if(strlen($bil_det->order_qty) == 1){
+										$template_order_data .= "[list_order_tipe2][align=0][tab]".$bil_det->order_qty."  x ".$product_price_show_theme."[tab]".$order_total_show_theme;
+									}else{
+										$template_order_data .= "[list_order_tipe2][align=0][tab]".$bil_det->order_qty." x ".$product_price_show_theme."[tab]".$order_total_show_theme;
+									}
+								}else{
+									if(strlen($bil_det->order_qty) == 1){
+										$template_order_data .= "[align=0]".$bil_det->order_qty."  x[tab]".$product_name."[tab]".$order_total_show_theme;
+									}else{
+										$template_order_data .= "[align=0]".$bil_det->order_qty." x[tab]".$product_name."[tab]".$order_total_show_theme;
+									}
+								}
+							}else{
+								$template_order_data .= "[align=0]".$bil_det->order_qty."[tab]".$product_name."[tab]".$product_price_show."[tab]".$order_total_show;
+							}
 							
 							//custom_print_APS
 							if(!empty($custom_print_APS)){
 								if(strlen($bil_det->order_qty) == 1){
-									$order_data_APS .= "[align=0]".$bil_det->order_qty." x[tab]".$product_name."[tab]".$order_total_show_APS;
+									$order_data_APS .= "[align=0]".$bil_det->order_qty."  x[tab]".$product_name."[tab]".$order_total_show_APS;
 								}else{
-									$order_data_APS .= "[align=0]".$bil_det->order_qty."x[tab]".$product_name."[tab]".$order_total_show_APS;
+									$order_data_APS .= "[align=0]".$bil_det->order_qty." x[tab]".$product_name."[tab]".$order_total_show_APS;
 								}
 							}
 							
@@ -5372,7 +5591,16 @@ class BillingCashier extends MY_Controller {
 								$order_data .= "[align=0][tab]".$product_name_extend."[tab] [tab]";
 								
 								$order_data2 .= "\n"; 
-								$order_data2 .= "[align=0][tab]".$product_name_extend."[tab] [tab]";
+								$order_data2 .= "[align=0][tab]".$product_name_extend."[tab]";
+								
+								//update-1912-001
+								if(!empty($theme_print_billing)){
+									$template_order_data .= "\n"; 
+									$template_order_data .= "[align=0][tab]".$product_name_extend."[tab]";
+								}else{
+									$template_order_data .= "\n"; 
+									$template_order_data .= "[align=0][tab]".$product_name_extend."[tab] [tab]";
+								}
 								
 								//custom_print_APS
 								if(!empty($custom_print_APS)){
@@ -5401,28 +5629,33 @@ class BillingCashier extends MY_Controller {
 							if(in_array($printer_pin_cashierReceipt, array(32,40))){
 								$discount_total_print = printer_command_align_right(($bil_det->discount_total*-1), $max_number_2);
 							}
+							
+							//update-1912-001
+							$discount_total_print_Theme = printer_command_align_right(priceFormat($bil_det->discount_total*-1), $max_number_2);
+							$discount_total_print_APS = printer_command_align_right(priceFormat($bil_det->discount_total*-1), $max_number_2);
+							$discount_price_show_theme = printer_command_align_right(priceFormat($bil_det->discount_price*-1), $max_number_1);
+									
 
-							if($bil_det->is_promo == 1 AND !empty($bil_det->promo_id)){
-								
-								$order_data .= "\n"."[align=0] [tab]".$diskon_name."[tab]".($bil_det->discount_price*-1)."[tab]".$discount_total_print;
-								$order_data2 .= "\n"."[align=0] [tab]".$diskon_name."[tab]".($bil_det->discount_price*-1)."[tab]".$discount_total_print;
-								
-								//custom_print_APS
-								if(!empty($custom_print_APS)){
-									$order_data_APS .= "\n"."[align=0] [tab]".$diskon_name."[tab]".$discount_total_print;
+							//update-1912-001
+							$order_data .= "\n"."[align=0] [tab]".$diskon_name."[tab]".($bil_det->discount_price*-1)."[tab]".$discount_total_print;
+							$order_data2 .= "\n"."[align=0] [tab]".$diskon_name."[tab]".$discount_total_print;
+							
+							//update-1912-001
+							if(!empty($theme_print_billing)){
+								if($printer_pin_cashierReceipt >= 42){
+									$template_order_data .= "\n"."[align=0][tab]".$diskon_name." @".$discount_price_show_theme."[tab]".$discount_total_print_Theme;
+								}else{
+									$template_order_data .= "\n"."[align=0][tab]".$diskon_name."[tab]".$discount_total_print_Theme;
 								}
-
 							}else{
-								
-								$order_data .= "\n"."[align=0] [tab]".$diskon_name."[tab]".($bil_det->discount_price*-1)."[tab]".$discount_total_print;
-								$order_data2 .= "\n"."[align=0] [tab]".$diskon_name."[tab]".($bil_det->discount_price*-1)."[tab]".$discount_total_print;
-								
-								//custom_print_APS
-								if(!empty($custom_print_APS)){
-									$order_data_APS .= "\n"."[align=0] [tab]".$diskon_name."[tab]".$discount_total_print;
-								}
-								
+								$template_order_data .= "\n"."[align=0] [tab]".$diskon_name."[tab]".$discount_price_show_theme."[tab]".$discount_total_print;
 							}
+							
+							//custom_print_APS
+							if(!empty($custom_print_APS)){
+								$order_data_APS .= "\n"."[align=0][tab]".$diskon_name."[tab]".$discount_total_print_APS;
+							}
+							
 						}
 						
 						$subtotal += $order_total;
@@ -5574,8 +5807,8 @@ class BillingCashier extends MY_Controller {
 					//$half_payment_show .= '[tab]Cash/Tunai[tab]'.$total_cash_show."\n";
 					//$half_payment_show .= '[tab]'.$payment_type_show.'[tab]'.$total_credit_show."\n";
 					$half_payment_show = "Sebagian Tunai\n";
-					$half_payment_show .= "[align=0] - Cash/Tunai : ".$total_cash_show."\n";
-					$half_payment_show .= "[align=0] - ".$payment_type_show." : ".$total_credit_show;
+					$half_payment_show .= "[align=0] - Cash/Tunai: ".$total_cash_show."\n";
+					$half_payment_show .= "[align=0] - ".$payment_type_show.": ".$total_credit_show;
 					$payment_type_show = $half_payment_show;
 					
 					//card_no
@@ -5682,6 +5915,7 @@ class BillingCashier extends MY_Controller {
 					"{billing_no_APS}"	=> $billing_no_APS,
 					"{order_data}"	=> $order_data,
 					"{order_data2}"	=> $order_data2,
+					"{template_order_data}"	=> $template_order_data,
 					"{order_data_APS}"	=> $order_data_APS,
 					"{subtotal}"	=> $subtotal_show,
 					//"{additional_total}" => $additional_total,
@@ -5721,6 +5955,11 @@ class BillingCashier extends MY_Controller {
 				
 				if($tax_total == 0){
 					$cashierReceipt_layout = empty_value_printer_text($cashierReceipt_layout, '{tax_total}');
+				}
+				
+				//update-1912-001
+				if($service_total == 0){
+					$cashierReceipt_layout = empty_value_printer_text($cashierReceipt_layout, '{service_total}');
 				}
 				
 				if($discount_total == 0){
@@ -5831,12 +6070,18 @@ class BillingCashier extends MY_Controller {
 						
 						if($is_print_error){					
 							$r['info'] .= 'Komunikasi dengan Printer Kasir Gagal!<br/>';
-							echo $r['info'];
+							//echo $r['info'];
+							printing_process_error($r['info']);
 							die();
 						}
 					}
 					
 					$custom_print_data = '';
+					
+					//update-1912-001
+					if(!empty($theme_print_billing)){
+						$custom_print_data = 'theme'.$theme_print_billing;
+					}
 					if(!empty($custom_print_APS)){
 						$custom_print_data = 'APS';
 					}
@@ -5855,10 +6100,11 @@ class BillingCashier extends MY_Controller {
 					
 					//if(empty($print_qcReceipt) AND $printMonitoring_qc == 0){
 					if(empty($print_qcReceipt)){
-						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print ke '.$printer_ip_qcReceipt;
+						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print QC ke '.$printer_ip_qcReceipt;
 						//echo json_encode($r);
 						//die();
-						echo $r['info'];
+						//echo $r['info'];
+						printing_process_error($r['info']);
 						die();
 					}
 					
@@ -6005,7 +6251,8 @@ class BillingCashier extends MY_Controller {
 										$r['info'] .= 'Komunikasi dengan Printer QC Gagal!<br/>';
 										
 										if($is_void_order == 0){
-											echo $r['info'];
+											//echo $r['info'];
+											printing_process_error($r['info']);
 											die();
 										}
 									}
@@ -6023,7 +6270,8 @@ class BillingCashier extends MY_Controller {
 							if($is_print_error){					
 								$r['info'] .= 'Komunikasi dengan Printer QC Gagal!<br/>';
 								if($is_void_order == 0){
-									echo $r['info'];
+									//echo $r['info'];
+									printing_process_error($r['info']);
 									die();
 								}
 							}
@@ -6032,7 +6280,8 @@ class BillingCashier extends MY_Controller {
 							
 							if($is_void_order == 0){
 								$r['info'] .= 'Semua Order Kitchen dan Bar utk QC Sudah diPrint<br/>';
-								echo $r['info'];
+								//echo $r['info'];
+								printing_process_error($r['info']);
 								die();
 							}
 						}
@@ -6060,9 +6309,10 @@ class BillingCashier extends MY_Controller {
 					
 					//if(empty($print_kitchenReceipt) AND $printMonitoring_kitchen == 0){
 					if(empty($print_kitchenReceipt)){
-						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print ke '.$printer_ip_kitchenReceipt;
+						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print Kitchen ke '.$printer_ip_kitchenReceipt;
 						//echo json_encode($r);
-						echo $r['info'];
+						//echo $r['info'];
+						printing_process_error($r['info']);
 						die();
 					}
 					
@@ -6489,7 +6739,7 @@ class BillingCashier extends MY_Controller {
 					
 					//if(empty($print_barReceipt) AND $printMonitoring_bar == 0){
 					if(empty($print_barReceipt)){
-						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print ke '.$printer_ip_barReceipt;
+						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print Bar ke '.$printer_ip_barReceipt;
 						//echo json_encode($r);
 						printing_process_error($r['info']);
 						die();
@@ -6908,7 +7158,7 @@ class BillingCashier extends MY_Controller {
 					
 					//if(empty($print_otherReceipt) AND $printMonitoring_other == 0){
 					if(empty($print_otherReceipt)){
-						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print ke '.$printer_ip_otherReceipt;
+						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print Other ke '.$printer_ip_otherReceipt;
 						//echo json_encode($r);
 						printing_process_error($r['info']);
 						die();
@@ -11364,9 +11614,11 @@ class BillingCashier extends MY_Controller {
 		$this->table_billing = $this->prefix.'billing';
 		$this->table_billing_detail = $this->prefix.'billing_detail';
 	
+		//update-1912-001
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
 		'cashier_max_pembulatan','cashier_pembulatan_keatas','pembulatan_dinamis',
-		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
+		'jam_operasional_from','jam_operasional_to','jam_operasional_extra','jumlah_shift','settlement_per_shift'));
+		
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -11386,6 +11638,17 @@ class BillingCashier extends MY_Controller {
 			$get_opt['pembulatan_dinamis'] = 0;
 		}
 		
+		//update-1912-001
+		$jumlah_shift = 1;
+		if(!empty($get_opt['jumlah_shift'])){
+			$jumlah_shift = $get_opt['jumlah_shift'];
+		}
+		
+		$settlement_per_shift = 0;
+		if(!empty($get_opt['settlement_per_shift'])){
+			$settlement_per_shift = $get_opt['settlement_per_shift'];
+		}
+		
 		
 		$date_from = date("d-m-Y");
 		$date_till = date("d-m-Y");
@@ -11393,7 +11656,7 @@ class BillingCashier extends MY_Controller {
 		//STILL ON CURR DAY
 		$billing_time = date('G');
 		$datenowstr = strtotime(date("d-m-Y H:i:s"));
-		if($billing_time < 7){
+		if($billing_time < 4){
 			$datenowstr = strtotime(date("d-m-Y H:i:s"))-ONE_DAY_UNIX;
 			$date_from = date("d-m-Y", $datenowstr);
 			$date_till = date("d-m-Y", $datenowstr);
@@ -11414,12 +11677,49 @@ class BillingCashier extends MY_Controller {
 		//$qdate_till = date("Y-m-d",strtotime($date_till));
 		//$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
 		//$add_where = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
+		//update-1912-001
+		//SHIFT
+		$nama_shift = '-';
+		$tanggal_cetak = date("d/m/Y"); //d/m/Y
+		$jam_cetak = date("H:i");
+		$user_shift = 1;
+		if($jumlah_shift > 1 AND $settlement_per_shift == 1){
+			$tanggal_shift = date("Y-m-d", $datenowstr);
+			$this->db->select('a.*, b.nama_shift');
+			$this->db->from($this->prefix.'shift_log as a');
+			$this->db->join($this->prefix.'shift as b',"b.id = a.user_shift","LEFT");
+			$this->db->where("a.tanggal_shift", $tanggal_shift);
+			$this->db->order_by("a.id", 'DESC');
+			$getShiftLog = $this->db->get();
+			if($getShiftLog->num_rows() > 0){
+				$dataShiftLog = $getShiftLog->row_array();
+				
+				$tanggal_jam_start = $dataShiftLog['tanggal_jam_start'];
+				$jam_shift_end = $dataShiftLog['jam_shift_end'];
+				if(empty($jam_shift_end)){
+					$jam_shift_end = date("H:i", $datenowstr);
+				}
+				$nama_shift = $dataShiftLog['nama_shift'];
+				$jam_cetak = $jam_shift_end;
+				
+				//$qdate_from = $tanggal_jam_start;
+				//$qdate_till = $tanggal_jam_end;
+				//$qdate_till_max = $tanggal_jam_end;
+				
+				$user_shift = $dataShiftLog['user_shift'];
+			}
+		}
 		
 		//laporan = jam_operasional
 		$qdate_from = $ret_dt['qdate_from'];
 		$qdate_till = $ret_dt['qdate_till'];
 		$qdate_till_max = $ret_dt['qdate_till_max'];
+		
+		//update-1912-001
 		$add_where = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
+		if($jumlah_shift > 1 AND $settlement_per_shift == 1){
+			$add_where = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."') AND shift = ".$user_shift;
+		}
 		
 		$this->db->select("a.*, a.id as billing_id, a.updated as billing_date, d.payment_type_name, e.bank_name");
 		$this->db->from($this->table_billing." as a");
@@ -11806,6 +12106,8 @@ class BillingCashier extends MY_Controller {
 					foreach($payment_data as $key_id => $dtPay){
 				
 						$tot_payment = 0;
+						//update-1912-001
+						$tot_payment_halfpayment = 0; 
 						$tot_payment_show = 0;
 						if($s['payment_id'] == $key_id){
 							//$tot_payment = $s['grand_total'];
@@ -11823,7 +12125,9 @@ class BillingCashier extends MY_Controller {
 							//credit half payment
 							if(!empty($s['is_half_payment']) AND $key_id != 1){
 								$tot_payment = $s['total_credit'];
-								$tot_payment_show = priceFormat($s['total_credit']);
+								$tot_payment_halfpayment = $s['total_cash'];
+								//$tot_payment_show = priceFormat($s['total_credit']);
+								$tot_payment_show = priceFormat($tot_payment+$tot_payment_halfpayment);
 							}else{
 								
 								$tot_payment_show = priceFormat($tot_payment);	
@@ -11847,7 +12151,9 @@ class BillingCashier extends MY_Controller {
 						}
 						
 						$summary_payment[$var_payment]['payment_'.$key_id] += $tot_payment;
-														
+						if(!empty($tot_payment_halfpayment)){
+							$summary_payment[0]['payment_1'] += $tot_payment_halfpayment;
+						}								
 					}
 				}
 				
@@ -12310,8 +12616,15 @@ class BillingCashier extends MY_Controller {
 		$compliment_total = printer_command_align_right(priceFormat($data_post['summary_data']['compliment_total']), $max_number_3);
 		$grand_total = printer_command_align_right(priceFormat($data_post['summary_data']['grand_total']), $max_number_3);
 		
+		//update-1912-001
+		$total_of_billing = printer_command_align_right(priceFormat($data_post['summary_data']['total_of_billing']), $max_number_3);
+		$total_of_guest = printer_command_align_right(priceFormat($data_post['summary_data']['total_of_guest']), $max_number_3);
+		
+		//update-1912-001
 		$all_summary_data = "[align=0][size=1][tab]SALES SUMMARY[tab]\n";
 		$all_summary_data .= "[size=0]";
+		$all_summary_data .= "[align=0][tab]QTY BILLING[tab]".$total_of_billing."\n"; 
+		$all_summary_data .= "[align=0][tab]TOTAL GUEST[tab]".$total_of_guest."\n"; 
 		$all_summary_data .= "[align=0][tab]MENU SALES[tab]".$menu_sales."\n"; 
 		$all_summary_data .= "[align=0][tab]DISC/ITEM[tab]".$disc_per_item."\n"; 
 		$all_summary_data .= "[align=0][tab]NET SALES[tab]".$menu_net_sales."\n"; 
@@ -12319,7 +12632,7 @@ class BillingCashier extends MY_Controller {
 		$all_summary_data .= "[align=0][tab]TOTAL NET SALES[tab]".$total_net_sales."\n"; 
 		$all_summary_data .= "[align=0][tab]SERVICE[tab]".$service_total."\n"; 
 		$all_summary_data .= "[align=0][tab]TAX[tab]".$tax_total."\n"; 
-		$all_summary_data .= "[align=0][tab]PEMBULATAN[tab]".$total_pembulatan."\n"; 
+		$all_summary_data .= "[align=0][tab]PEMBULATAN[tab]".$total_pembulatan."\n";
 		if(!empty($data_post['summary_data']['compliment_total'])){
 			$all_summary_data .= "[align=0][tab]COMPLIMENT[tab]".$compliment_total."\n"; 
 		}
@@ -12413,21 +12726,23 @@ class BillingCashier extends MY_Controller {
 			}
 		}
 		
+		//update-1912-001
 		$print_attr = array(
 			"{user}"	=> $session_user,
-			"{tanggal_settlement}"		=> date("d/m/Y", $datenowstr),
-			"{tanggal_shift}"		=> date("d/m/Y"),
-			"{jam_shift}"			=> date("H:i"),
-			"{summary_data}"			=> $all_summary_data,
-			"{payment_data}"			=> $all_payment_data
+			"{tanggal_settlement}"	=> date("d/m/Y", $datenowstr),
+			"{tanggal_shift}"		=> $tanggal_cetak,
+			"{jam_shift}"			=> $jam_cetak,
+			"{summary_data}"		=> $all_summary_data,
+			"{payment_data}"		=> $all_payment_data,
+			"{nama_shift}"			=> $nama_shift
 		);
 		
 		//TXMARK
 		if(!empty($get_date)){
 			$print_attr["{user}"] = 'kasir';
 			$print_attr["{tanggal_settlement}"] = date("d/m/Y", strtotime($get_date));
-			$print_attr["{tanggal_shift}"] = '';
-			$print_attr["{jam_shift}"] = '';
+			$print_attr["{tanggal_shift}"] = date("d/m/Y", strtotime($get_date));
+			$print_attr["{jam_shift}"] = $jam_cetak;
 		}
 		
 		$print_content_cashierReceipt = strtr($cashierReceipt_settlement_layout, $print_attr);
@@ -12480,7 +12795,7 @@ class BillingCashier extends MY_Controller {
 			echo json_encode($r);
 			die();
 		}
-			
+				
 		printing_process($data_printer, $print_content_cashierReceipt, 'print');
 		
 

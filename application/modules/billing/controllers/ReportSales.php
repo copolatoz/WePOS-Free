@@ -1425,123 +1425,14 @@ class ReportSales extends MY_Controller {
 			$qdate_from = $ret_dt['qdate_from'];
 			$qdate_from_plus1_max = $ret_dt['qdate_till_max'];
 			
-			//$qdate_from = date("Y-m-d",strtotime($date_from));
-			//$qdate_till_max = date("Y-m-d",strtotime($date_from)+ONE_DAY_UNIX);
-			//$add_where = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_from_plus1." 06:00:00')";
-			
-			$where_shift_billing = '';
+			$qdate_from = $ret_dt['qdate_from'];
+			$qdate_till_max = $ret_dt['qdate_till_max'];
+			$where_shift_billing = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
+				
+			//update-1912-001
 			if(!empty($shift_billing)){
-				$skip_date = true;
-				
-				//get shift range
-				$this->db->from($this->prefix.'open_close_shift');
-				$this->db->where("user_shift",$shift_billing);
-				$this->db->where("(tanggal_shift = '".$date_from."' OR (tipe_shift = 'close' AND tanggal_shift = '".$qdate_from_plus1."' 
-				AND created <= '".$qdate_from_plus1_max."'))");
-				$get_shift = $this->db->get();
-				
-				if($get_shift->num_rows() > 0){
-					
-					$data_shift = array();
-					foreach($get_shift->result() as $dtS){
-						if(empty($data_shift[$dtS->user_shift])){
-							$data_shift[$dtS->user_shift] = array(
-								'jam_from' => '',
-								'jam_till' => ''
-							);
-						}
-						
-						if($dtS->tipe_shift == 'open'){
-							$data_shift[$dtS->user_shift]['jam_from'] = $dtS->jam_shift;		
-						}
-						
-						if($dtS->tipe_shift == 'close'){
-							$data_shift[$dtS->user_shift]['jam_till'] = $dtS->jam_shift;
-						}
-						
-					}
-					
-					if(!empty($data_shift[$shift_billing])){
-						//FROM
-						if(empty($data_shift[$shift_billing]['jam_from'])){
-							if($shift_billing == 1){
-								$data_shift[$shift_billing]['jam_from'] = '07:00'; //default													
-								$qdate_till_max = date("Y-m-d",strtotime($date_from));
-							}
-							
-							if($shift_billing == 2){
-								$data_shift[$shift_billing]['jam_from'] = '07:00:00'; //default
-								if(!empty($data_shift[1]['jam_till'])){
-									//take from shift 1
-									$data_shift[$shift_billing]['jam_from'] = $data_shift[1]['jam_till'].':59';
-								}
-							}
-						}else{
-							$data_shift[$shift_billing]['jam_from'] .= ':00';
-						}
-						
-						//TILL
-						if(empty($data_shift[$shift_billing]['jam_till'])){
-							if($shift_billing == 1){
-								$data_shift[$shift_billing]['jam_till'] = '06:00:00'; //default
-								if(!empty($data_shift[2]['jam_from'])){
-									//take from shift 2
-									$data_shift[$shift_billing]['jam_till'] = $data_shift[1]['jam_from'].':00';
-								}
-							}
-							
-							if($shift_billing == 2){
-								$data_shift[$shift_billing]['jam_till'] = '06:00:00'; //default
-							}
-							
-						}else{
-							$data_shift[$shift_billing]['jam_till'] .= ':00';
-						}
-
-						//$where_shift_billing = "(a.payment_date a.payment_date >= '".$qdate_from." ".$data_shift[$shift_billing]['jam_from']."'
-						//AND a.payment_date <= '".$qdate_from." ".$data_shift[$shift_billing]['jam_till']."')";
-						
-						
-						//$qdate_till_max = date("Y-m-d",strtotime($qdate_from)+ONE_DAY_UNIX);
-						if($shift_billing == 1){
-							$qdate_till_max = date("Y-m-d",strtotime($qdate_from));
-						}else
-						if($shift_billing == 2){
-							$jam_shift = (int)substr($data_shift[$shift_billing]['jam_till'],0,2);
-							if(strlen($jam_shift) == 1){
-								//asumsi pagi
-								$qdate_till_max = date("Y-m-d",strtotime($qdate_from)+ONE_DAY_UNIX);
-							}else{
-								$qdate_till_max = date("Y-m-d",strtotime($qdate_from));
-							}
-						}
-						
-						$where_shift_billing = "(a.payment_date >= '".$qdate_from." ".$data_shift[$shift_billing]['jam_from']."' AND a.payment_date <= '".$qdate_till_max." ".$data_shift[$shift_billing]['jam_till']."')";
-					
-					}
-				}else{
-					
-					//$where_shift_billing = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
-					
-					$qdate_from = $ret_dt['qdate_from'];
-					$qdate_till_max = $ret_dt['qdate_till_max'];
-					$where_shift_billing = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
-					
-				}
-				
-				if($shift_billing == 1){
-					$data_post['user_shift'] = 'Morning Shift';
-				}else
-				if($shift_billing == 2){
-					$data_post['user_shift'] = 'Evening Shift';
-				}
-				
-			}else{
-				//$where_shift_billing = "(DATE_FORMAT(a.payment_date, '%Y-%m-%d') = '".$qdate_from."')  AND (DATE_FORMAT(a.payment_date, '%H:%i:%s') BETWEEN '00:00:01' AND '24:00:00')";
-				//$where_shift_billing = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
-				$qdate_from = $ret_dt['qdate_from'];
-				$qdate_till_max = $ret_dt['qdate_till_max'];
-				$where_shift_billing = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
+				$where_shift_billing = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."') AND a.shift = ".$shift_billing;
+				$data_post['user_shift'] = '';
 			}
 			
 			$this->db->select("a.*, a.id as billing_id, a.updated as billing_date, d.payment_type_name, e.user_firstname, e.user_lastname, f.bank_name");
@@ -1589,6 +1480,14 @@ class ReportSales extends MY_Controller {
 			$newData = array();
 			if(!empty($data_post['report_data'])){
 				foreach ($data_post['report_data'] as $s){
+					
+					//update-1912-001
+					if(!empty($shift_billing) AND empty($data_post['user_shift'])){
+						if(!empty($s['nama_shift'])){
+							$data_post['user_shift'] = $s['nama_shift'];
+						}
+					}
+					
 					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
 					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 				

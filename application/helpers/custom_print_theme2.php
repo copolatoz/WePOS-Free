@@ -31,7 +31,7 @@ $printer_pin = trim(str_replace("CHAR", "", $printer_pin));
 
 $align_text = array('[align=0','[align=1','[align=2');
 $size_text = array('[size=0','[size=1','[size=2','[size=2');
-$settab_text = array('[set_tab1_APS','[set_tab2_APS','[set_tab1','[set_tab2','[set_tab3','[set_tab1a','[set_tab1b','[tab');
+$settab_text = array('[list_order_tipe1','[list_order_tipe2','[clear_set_tab','[set_tab1','[set_tab2','[set_tab3','[set_tab1a','[set_tab1b','[tab');
 $set_tab = array();
 $set_tab_chr = array();
 $set_tab_pxl = array();
@@ -65,7 +65,10 @@ $set_tab[32] = array(
 				1, 6, 22
 			),	
 	'7' => array(
-				1, 5, 22
+				1, 2, 22
+			),
+	'8' => array(
+				1, 31
 			)	
 );
 
@@ -89,8 +92,11 @@ $set_tab[40] = array(
 				1, 6, 28
 			),	
 	'7' => array(
-				1, 5, 28
-			)
+				1, 2, 28
+			),
+	'8' => array(
+				1, 39
+			)	
 );
 
 $set_tab[42] = array(
@@ -113,7 +119,10 @@ $set_tab[42] = array(
 				1, 6, 30
 			),	
 	'7' => array(
-				1, 5, 30
+				1, 2, 30
+			),
+	'8' => array(
+				1, 41
 			)
 );
 
@@ -137,7 +146,10 @@ $set_tab[46] = array(
 				1, 6, 34
 			),	
 	'7' => array(
-				1, 5, 34
+				1, 2, 34
+			),
+	'8' => array(
+				1, 45
 			)
 );
 
@@ -161,7 +173,10 @@ $set_tab[48] = array(
 				1, 6, 36
 			),	
 	'7' => array(
-				1, 5, 36
+				1, 2, 36
+			),
+	'8' => array(
+				1, 47
 			)
 );
 
@@ -185,7 +200,10 @@ $set_tab_chr[32] = array(
 				5, 16, 11
 			),	
 	'7' => array(
-				4, 17, 11
+				1, 20, 11
+			),	
+	'8' => array(
+				31,1
 			)	
 );
 
@@ -206,10 +224,13 @@ $set_tab_chr[40] = array(
 				25, 15
 			),	
 	'6' => array(
-				5, 22, 13
+				5, 24, 11
 			),	
 	'7' => array(
-				4, 23, 13
+				1, 28, 11
+			),	
+	'8' => array(
+				39,1
 			)
 );
 
@@ -230,10 +251,13 @@ $set_tab_chr[42] = array(
 				27, 15
 			),	
 	'6' => array(
-				5, 24, 13
+				5, 26, 11
 			),	
 	'7' => array(
-				4, 25, 13
+				1, 30, 11
+			),	
+	'8' => array(
+				41,1
 			)
 );
 
@@ -257,7 +281,10 @@ $set_tab_chr[46] = array(
 				5, 28, 13
 			),	
 	'7' => array(
-				4, 29, 13
+				1, 32, 13
+			),	
+	'8' => array(
+				45,1
 			)
 );
 
@@ -281,7 +308,10 @@ $set_tab_chr[48] = array(
 				5, 30, 13
 			),	
 	'7' => array(
-				4, 31, 13
+				1, 34, 13
+			),	
+	'8' => array(
+				47,1
 			)
 );
 
@@ -305,7 +335,10 @@ $set_tab_pxl[32] = array(
 				30, 96, 66
 			),	
 	'7' => array(
-				24, 102, 66
+				6, 114, 66
+			),	
+	'8' => array(
+				186, 6
 			)	
 );
 
@@ -326,11 +359,14 @@ $set_tab_pxl[40] = array(
 				150, 90
 			),	
 	'6' => array(
-				30, 132, 78
+				30, 144, 66
 			),	
 	'7' => array(
-				24, 138, 78
-			)
+				6, 168, 66
+			),	
+	'8' => array(
+				234, 6
+			)	
 );
 
 $set_tab_pxl[42] = array(
@@ -350,10 +386,13 @@ $set_tab_pxl[42] = array(
 				162, 90
 			),	
 	'6' => array(
-				30, 144, 78
+				30, 156, 66
 			),	
 	'7' => array(
-				24, 150, 78
+				6, 180, 66
+			),	
+	'8' => array(
+				246, 6
 			)
 );
 
@@ -377,7 +416,10 @@ $set_tab_pxl[46] = array(
 				30, 168, 78
 			),	
 	'7' => array(
-				24, 174, 78
+				6, 192, 78
+			),	
+	'8' => array(
+				270, 6
 			)
 );
 
@@ -401,7 +443,10 @@ $set_tab_pxl[48] = array(
 				30, 180, 78
 			),	
 	'7' => array(
-				24, 186, 78
+				6, 204, 78
+			),	
+	'8' => array(
+				282, 6
 			)
 );
 
@@ -528,11 +573,14 @@ if(!empty($set_tab[$printer_pin])){
 					if($dt_exp == '[set_tab1b'){
 						$curr_settab_text = 5;
 					}
-					if($dt_exp == '[set_tab1_APS'){
+					if($dt_exp == '[list_order_tipe1'){
 						$curr_settab_text = 6;
 					}
-					if($dt_exp == '[set_tab2_APS'){
+					if($dt_exp == '[list_order_tipe2'){
 						$curr_settab_text = 7;
+					}
+					if($dt_exp == '[clear_set_tab'){
+						$curr_settab_text = 8;
 					}
 					
 					$dt_exp = '';

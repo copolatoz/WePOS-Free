@@ -1,6 +1,6 @@
 
 WePOS - Cafe v.3.42.21 (Free Version)
-Updated: 22-11-2019 20:00:00
+Updated: 21-12-2019 18:00:00
 
 Cocok untuk:
 Cafe/Resto/Rumah Makan (semua penjualan berbasis Cafe)
