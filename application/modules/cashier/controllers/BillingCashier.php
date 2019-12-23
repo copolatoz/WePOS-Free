@@ -647,6 +647,7 @@ class BillingCashier extends MY_Controller {
 		if($jumlah_shift > 1 AND empty($shift)){
 			$this->db->select('a.*, b.nama_shift');
 			$this->db->from($this->prefix.'shift_log as a');
+			$this->db->join($this->prefix.'shift as b',"b.id = a.user_shift","LEFT");
 			$this->db->where("a.tanggal_shift", date("Y-m-d"));
 			$this->db->order_by("a.id", 'DESC');
 			$getShiftLog = $this->db->get();
@@ -3493,6 +3494,7 @@ class BillingCashier extends MY_Controller {
 		if($jumlah_shift > 1 AND empty($shift)){
 			$this->db->select('a.*, b.nama_shift');
 			$this->db->from($this->prefix.'shift_log as a');
+			$this->db->join($this->prefix.'shift as b',"b.id = a.user_shift","LEFT");
 			$this->db->where("a.tanggal_shift", date("Y-m-d"));
 			$this->db->order_by("a.id", 'DESC');
 			$getShiftLog = $this->db->get();
