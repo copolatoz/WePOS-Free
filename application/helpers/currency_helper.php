@@ -27,6 +27,7 @@ if( ! function_exists('priceFormatAcc')){
 if( ! function_exists('priceFormat')){
 	function priceFormat($nominal = 0, $decimal = 2, $decimal_point = ',', $thousand_separator = '.', $show_00 = false){
 		
+		$nominal = floatval($nominal);
 		$priceFormat = number_format($nominal, $decimal, $decimal_point, $thousand_separator);
 		
 		if($show_00 == false){

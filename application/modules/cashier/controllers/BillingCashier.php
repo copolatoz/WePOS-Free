@@ -116,9 +116,9 @@ class BillingCashier extends MY_Controller {
 			die();
 		}
 		
-		
+		//update-1912-002
 		$opt_value = array(
-			'wepos_tipe','retail_warehouse', 'autocut_stok_sales_to_usage','as_server_backup'
+			'wepos_tipe','retail_warehouse', 'autocut_stok_sales_to_usage','autocut_stok_sales','as_server_backup'
 		);
 		
 		$get_opt = get_option_value($opt_value);
@@ -1139,9 +1139,9 @@ class BillingCashier extends MY_Controller {
 				if($is_paid == true AND !empty($billing_id)){
 					//$this->doPrint('void_paid_cancel', $billing_id);
 				}
-				
+				//update-1912-002
 				$opt_value = array(
-					'wepos_tipe','retail_warehouse','autocut_stok_sales_to_usage'
+					'wepos_tipe','retail_warehouse','autocut_stok_sales_to_usage','autocut_stok_sales'
 				);
 				
 				$get_opt = get_option_value($opt_value);
@@ -1159,6 +1159,11 @@ class BillingCashier extends MY_Controller {
 				$autocut_stok_sales_to_usage = 0;
 				if(!empty($get_opt['autocut_stok_sales_to_usage'])){
 					$autocut_stok_sales_to_usage = $get_opt['autocut_stok_sales_to_usage'];
+				}
+				//update-1912-002
+				$autocut_stok_sales = 0;
+				if(!empty($get_opt['autocut_stok_sales'])){
+					$autocut_stok_sales = $get_opt['autocut_stok_sales'];
 				}
 				
 				//stok
@@ -1483,22 +1488,23 @@ class BillingCashier extends MY_Controller {
 
 						
 					}else{
-						$update_stok = 'rollback';
-						$return_data = $this->m2->billingDetail($billing_id, $retail_warehouse, $update_stok);
-						
-						if(!empty($return_data['update_stock'])){
+						//update-1912-002
+						if($autocut_stok_sales == 1){
+							$update_stok = 'rollback';
+							$return_data = $this->m2->billingDetail($billing_id, $retail_warehouse, $update_stok);
 							
-							$r['update_stock'] = $return_data['update_stock'];
-							$post_params = array(
-								'storehouse_item'	=> $return_data['update_stock']
-							);
-							
-							$updateStock = $this->stock->update_stock_rekap($post_params);
-							
+							if(!empty($return_data['update_stock'])){
+								
+								$r['update_stock'] = $return_data['update_stock'];
+								$post_params = array(
+									'storehouse_item'	=> $return_data['update_stock']
+								);
+								
+								$updateStock = $this->stock->update_stock_rekap($post_params);
+								
+							}
 						}
 					}
-
-					
 					
 				}
 				
@@ -1654,9 +1660,9 @@ class BillingCashier extends MY_Controller {
 		
 		$r = array('success' => true, 'id' => $billing_id);
 		
-		
+		//update-1912-002
 		$opt_value = array(
-			'wepos_tipe','retail_warehouse','autocut_stok_sales_to_usage',
+			'wepos_tipe','retail_warehouse','autocut_stok_sales_to_usage','autocut_stok_sales',
 			'diskon_sebelum_pajak_service','cashier_credit_ar','no_hold_billing','as_server_backup'
 		);
 		
@@ -1677,6 +1683,11 @@ class BillingCashier extends MY_Controller {
 		$autocut_stok_sales_to_usage = 0;
 		if(!empty($get_opt['autocut_stok_sales_to_usage'])){
 			$autocut_stok_sales_to_usage = $get_opt['autocut_stok_sales_to_usage'];
+		}
+		//update-1912-002		
+		$autocut_stok_sales = 0;
+		if(!empty($get_opt['autocut_stok_sales'])){
+			$autocut_stok_sales = $get_opt['autocut_stok_sales'];
 		}
 		
 		$diskon_sebelum_pajak_service = 0;
@@ -2050,21 +2061,23 @@ class BillingCashier extends MY_Controller {
 							$ret_usage = $this->usagewaste->save_sales_usage($params);
 							
 						}else{
-							$update_stok = 'rollback';
-							$return_data = $this->m2->billingDetail($billing_id, $retail_warehouse, $update_stok);
-							
-							if(!empty($return_data['update_stock'])){
+							//update-1912-002
+							if($autocut_stok_sales == 1){
+								$update_stok = 'rollback';
+								$return_data = $this->m2->billingDetail($billing_id, $retail_warehouse, $update_stok);
 								
-								$r['update_stock'] = $return_data['update_stock'];
-								$post_params = array(
-									'storehouse_item'	=> $return_data['update_stock']
-								);
-								
-								$updateStock = $this->stock->update_stock_rekap($post_params);
-								
+								if(!empty($return_data['update_stock'])){
+									
+									$r['update_stock'] = $return_data['update_stock'];
+									$post_params = array(
+										'storehouse_item'	=> $return_data['update_stock']
+									);
+									
+									$updateStock = $this->stock->update_stock_rekap($post_params);
+									
+								}
 							}
 						}
-						
 						
 					}
 					
@@ -3472,10 +3485,10 @@ class BillingCashier extends MY_Controller {
 			echo json_encode($r);
 			die();
 		}
-		
+		//update-1912-002
 		$get_opt_var = array('role_id_kasir','table_available_after_paid','include_tax','include_service,', 
 		'diskon_sebelum_pajak_service','cashier_max_pembulatan','cashier_pembulatan_keatas','pembulatan_dinamis',
-		'wepos_tipe','retail_warehouse','autocut_stok_sales_to_usage','cashier_credit_ar','min_noncash',
+		'wepos_tipe','retail_warehouse','autocut_stok_sales_to_usage','autocut_stok_sales','cashier_credit_ar','min_noncash',
 		'must_choose_customer','as_server_backup','jumlah_shift','shift_active');
 		$get_opt = get_option_value($get_opt_var);
 		
@@ -3521,6 +3534,11 @@ class BillingCashier extends MY_Controller {
 		$autocut_stok_sales_to_usage = 0;
 		if(!empty($get_opt['autocut_stok_sales_to_usage'])){
 			$autocut_stok_sales_to_usage = $get_opt['autocut_stok_sales_to_usage'];
+		}
+		//update-1912-002		
+		$autocut_stok_sales = 0;
+		if(!empty($get_opt['autocut_stok_sales'])){
+			$autocut_stok_sales = $get_opt['autocut_stok_sales'];
 		}
 		
 		$diskon_sebelum_pajak_service = 0;
@@ -4470,19 +4488,20 @@ class BillingCashier extends MY_Controller {
 					$ret_usage = $this->usagewaste->save_sales_usage($params);
 					
 				}else{
-					
-					$r['info'] = 'Update Stok';
-					$update_stok = 'update';
-					
-					$return_data = $this->m2->billingDetail($billing_id, $retail_warehouse, $update_stok);
-					$r['update_stock'] = $return_data['update_stock'];
-					
-					$post_params = array(
-						'storehouse_item'	=> $return_data['update_stock']
-					);
-					
-					$updateStock = $this->stock->update_stock_rekap($post_params);
-					
+					//update-1912-002
+					if($autocut_stok_sales == 1){
+						$r['info'] = 'Update Stok';
+						$update_stok = 'update';
+						
+						$return_data = $this->m2->billingDetail($billing_id, $retail_warehouse, $update_stok);
+						$r['update_stock'] = $return_data['update_stock'];
+						
+						$post_params = array(
+							'storehouse_item'	=> $return_data['update_stock']
+						);
+						
+						$updateStock = $this->stock->update_stock_rekap($post_params);
+					}
 				}
 			
 			}else{

@@ -43,11 +43,57 @@ class ReportSales extends MY_Controller {
 			'report_name'	=> 'SALES REPORT',
 			'date_from'	=> $date_from,
 			'date_till'	=> $date_till,
+			'user_shift'	=> 'Semua Shift',
+			'cashier_name'	=> '',
 			'user_fullname'	=> $user_fullname,
-			'sorting'	=> $sorting,
 			'diskon_sebelum_pajak_service' => 0,
-			'only_txmark'	=> $only_txmark
+			'display_discount_type'	=> array(),
+			'only_txmark'	=> $only_txmark,
+			'filter_column'	=> array(),
+			'user_kasir'	=> ''
 		);
+		
+		$display_discount_type = array();
+
+		//update-0120.001
+		if(empty($sorting)){
+			$sorting = 'a-z';
+		}
+		
+		if(!empty($shift_billing)){
+			if($shift_billing == 'null'){
+				$shift_billing = 0;
+			}
+		}
+		if(!empty($kasir_billing)){
+			if($kasir_billing == 'null'){
+				$kasir_billing = '';
+			}
+		}
+		
+		//filter-column
+		$show_payment = json_decode($show_payment);
+		$show_compliment = json_decode($show_compliment);
+		$show_tax = json_decode($show_tax);
+		$show_service = json_decode($show_service);
+		$show_dp = json_decode($show_dp);
+		$show_pembulatan = json_decode($show_pembulatan);
+		$show_note = json_decode($show_note);
+		$show_shift_kasir = json_decode($show_shift_kasir);
+		$format_nominal = json_decode($format_nominal);
+		
+		$data_post['filter_column'] = array(
+			'show_payment' => $show_payment,
+			'show_compliment' => $show_compliment,
+			'show_tax' => $show_tax,
+			'show_service' => $show_service,
+			'show_dp' => $show_dp,
+			'show_pembulatan' => $show_pembulatan,
+			'show_note' => $show_note,
+			'show_shift_kasir' => $show_shift_kasir,
+			'format_nominal' => $format_nominal
+		);
+
 		
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
 		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report',
@@ -84,15 +130,32 @@ class ReportSales extends MY_Controller {
 			$qdate_from = $ret_dt['qdate_from'];
 			$qdate_till = $ret_dt['qdate_till'];
 			$qdate_till_max = $ret_dt['qdate_till_max'];
-			$add_where = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
 			
-			$this->db->select("a.*, a.id as billing_id, a.updated as billing_date, d.payment_type_name, e.bank_name");
+			//update-0120.001
+			$where_shift_billing = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
+				
+			//update-0120.001
+			if(!empty($shift_billing)){
+				$where_shift_billing .= " AND a.shift = ".$shift_billing;
+				$data_post['user_shift'] = '';
+			}
+			if(!empty($kasir_billing)){
+				$where_shift_billing .= " AND a.updatedby = '".$kasir_billing."'";
+				$data_post['user_kasir'] = '';
+			}
+			
+			$this->db->select("a.*, a.id as billing_id, a.updated as billing_date, d.payment_type_name, e.bank_name,
+								g.nama_shift, CONCAT(h.user_firstname,' ',h.user_lastname) as nama_kasir");
 			$this->db->from($this->table." as a");
 			$this->db->join($this->prefix.'payment_type as d','d.id = a.payment_id','LEFT');
 			$this->db->join($this->prefix.'bank as e','e.id = a.bank_id','LEFT');
+			$this->db->join($this->prefix.'shift as g','g.id = a.shift','LEFT');
+			$this->db->join($this->prefix_apps.'users as h','h.user_username = a.updatedby','LEFT');
 			$this->db->where("a.billing_status", 'paid');
 			$this->db->where("a.is_deleted", 0);
-			$this->db->where($add_where);
+			
+			//update-0120.001
+			$this->db->where($where_shift_billing);
 			
 			if(!empty($only_txmark)){
 				$this->db->where("a.txmark",1);
@@ -101,7 +164,7 @@ class ReportSales extends MY_Controller {
 			if(empty($sorting)){
 				$this->db->order_by("a.payment_date","ASC");
 			}else{
-				$this->db->order_by($sorting,"ASC");
+				$this->db->order_by('a.'.$sorting,"ASC");
 			}
 			
 			$get_dt = $this->db->get();
@@ -126,6 +189,19 @@ class ReportSales extends MY_Controller {
 			$dt_payment = array();
 			if(!empty($data_post['report_data'])){
 				foreach ($data_post['report_data'] as $s){
+					
+					//update-0120.001
+					if(!empty($shift_billing) AND empty($data_post['user_shift'])){
+						if(!empty($s['nama_shift'])){
+							$data_post['user_shift'] = $s['nama_shift'];
+						}
+					}
+					if(!empty($kasir_billing) AND empty($data_post['user_kasir'])){
+						if(!empty($s['nama_kasir'])){
+							$data_post['user_kasir'] = $s['nama_kasir'];
+						}
+					}
+					
 					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
 					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 					
@@ -169,6 +245,7 @@ class ReportSales extends MY_Controller {
 						}
 					}
 					
+					//COMPLIMENT
 					if(!empty($s['is_compliment'])){
 						$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
 						$s['service_total'] = 0;
@@ -353,9 +430,16 @@ class ReportSales extends MY_Controller {
 					if(!empty($total_hpp[$dt['billing_id']])){
 						$dt['total_hpp'] = $total_hpp[$dt['billing_id']];
 					}
-					
-					$dt['total_profit'] = $dt['total_billing']-$dt['total_hpp'];
 					$dt['total_hpp_show'] = priceFormat($dt['total_hpp']);
+					
+					//$dt['total_profit'] = $dt['total_billing']-$dt['total_hpp'];
+					$dt['total_billing_profit'] = $dt['total_billing'];
+					$dt['total_billing_profit'] -= $dt['discount_total'];
+					$dt['total_billing_profit'] -= $dt['discount_billing_total'];
+					$dt['total_billing_profit'] -= $dt['total_compliment'];
+					$dt['total_billing_profit_show'] = priceFormat($dt['total_billing_profit']);
+					
+					$dt['total_profit'] = $dt['total_billing_profit']-$dt['total_hpp'];
 					$dt['total_profit_show'] = priceFormat($dt['total_profit']);
 					
 					$newData[] = $dt;
@@ -364,6 +448,7 @@ class ReportSales extends MY_Controller {
 	
 			$data_post['report_data'] = $newData;
 			$data_post['payment_data'] = $dt_payment_name;
+			$data_post['display_discount_type'] = $display_discount_type;
 			//$data_post['total_hpp'] = $total_hpp;
 		}
 		
@@ -423,10 +508,56 @@ class ReportSales extends MY_Controller {
 			'report_name'	=> 'SALES REPORT (RECAP)',
 			'date_from'	=> $date_from,
 			'date_till'	=> $date_till,
+			'user_shift'	=> 'Semua Shift',
+			'cashier_name'	=> '',
 			'user_fullname'	=> $user_fullname,
-			'diskon_sebelum_pajak_service' => 0
+			'diskon_sebelum_pajak_service' => 0,
+			'display_discount_type'	=> array(),
+			'filter_column'	=> array(),
+			'user_kasir'	=> ''
 		);
 		
+		$display_discount_type = array();
+
+		//update-0120.001
+		if(empty($sorting)){
+			$sorting = 'tanggal';
+		}
+		
+		if(!empty($shift_billing)){
+			if($shift_billing == 'null'){
+				$shift_billing = 0;
+			}
+		}
+		if(!empty($kasir_billing)){
+			if($kasir_billing == 'null'){
+				$kasir_billing = '';
+			}
+		}
+		
+		//filter-column
+		$show_payment = json_decode($show_payment);
+		$show_compliment = json_decode($show_compliment);
+		$show_tax = json_decode($show_tax);
+		$show_service = json_decode($show_service);
+		$show_dp = json_decode($show_dp);
+		$show_pembulatan = json_decode($show_pembulatan);
+		$show_note = json_decode($show_note);
+		$show_shift_kasir = json_decode($show_shift_kasir);
+		$format_nominal = json_decode($format_nominal);
+		
+		$data_post['filter_column'] = array(
+			'show_payment' => $show_payment,
+			'show_compliment' => $show_compliment,
+			'show_tax' => $show_tax,
+			'show_service' => $show_service,
+			'show_dp' => $show_dp,
+			'show_pembulatan' => $show_pembulatan,
+			'show_note' => $show_note,
+			'show_shift_kasir' => $show_shift_kasir,
+			'format_nominal' => $format_nominal
+		);
+
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
 		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report',
 		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
@@ -464,26 +595,43 @@ class ReportSales extends MY_Controller {
 			$qdate_from = $ret_dt['qdate_from'];
 			$qdate_till = $ret_dt['qdate_till'];
 			$qdate_till_max = $ret_dt['qdate_till_max'];
-			$add_where = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
 			
-			$this->db->select("a.*, a.id as billing_id, a.updated as billing_date, d.payment_type_name, e.bank_name");
+			//update-0120.001
+			$where_shift_billing = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
+				
+			//update-0120.001
+			if(!empty($shift_billing)){
+				$where_shift_billing .= " AND a.shift = ".$shift_billing;
+				$data_post['user_shift'] = '';
+			}
+			if(!empty($kasir_billing)){
+				$where_shift_billing .= " AND a.updatedby = '".$kasir_billing."'";
+				$data_post['user_kasir'] = '';
+			}
+			
+			$this->db->select("a.*, a.id as billing_id, a.updated as billing_date, d.payment_type_name, e.bank_name,
+								g.nama_shift, CONCAT(h.user_firstname,' ',h.user_lastname) as nama_kasir");
 			$this->db->from($this->table." as a");
 			$this->db->join($this->prefix.'payment_type as d','d.id = a.payment_id','LEFT');
 			$this->db->join($this->prefix.'bank as e','e.id = a.bank_id','LEFT');
+			$this->db->join($this->prefix.'shift as g','g.id = a.shift','LEFT');
+			$this->db->join($this->prefix_apps.'users as h','h.user_username = a.updatedby','LEFT');
 			$this->db->where("a.billing_status", 'paid');
 			$this->db->where("a.is_deleted", 0);
-			$this->db->where($add_where);
+			
+			//update-0120.001
+			$this->db->where($where_shift_billing);
 			
 			if(!empty($only_txmark)){
 				$this->db->where("a.txmark",1);
 			}
 			
-			if(empty($sorting)){
+			//if(empty($sorting)){
 				$this->db->order_by("a.payment_date","ASC");
-			}else{
-				$this->db->order_by($sorting,"ASC");
-			}
-
+			//}else{
+			//	$this->db->order_by('a.'.$sorting,"ASC");
+			//}
+			
 			$get_dt = $this->db->get();
 			if($get_dt->num_rows() > 0){
 				$data_post['report_data'] = $get_dt->result_array();				
@@ -502,7 +650,8 @@ class ReportSales extends MY_Controller {
 			
 			$payment_data = $dt_payment_name;
 			
-			
+			//update-0120.001
+			$recap_sort = array();		  
 			$all_group_date = array();		  
 			$all_bil_id = array();	  
 			$all_bil_id_date = array();
@@ -511,6 +660,19 @@ class ReportSales extends MY_Controller {
 			$no_id = 1;
 			if(!empty($data_post['report_data'])){
 				foreach ($data_post['report_data'] as $s){
+					
+					//update-0120.001
+					if(!empty($shift_billing) AND empty($data_post['user_shift'])){
+						if(!empty($s['nama_shift'])){
+							$data_post['user_shift'] = $s['nama_shift'];
+						}
+					}
+					if(!empty($kasir_billing) AND empty($data_post['user_kasir'])){
+						if(!empty($s['nama_kasir'])){
+							$data_post['user_kasir'] = $s['nama_kasir'];
+						}
+					}
+					
 					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
 					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 					
@@ -520,7 +682,6 @@ class ReportSales extends MY_Controller {
 					
 					$s['total_billing_awal'] = $s['total_billing'];
 
-					
 					//CHECK REAL TOTAL BILLING
 					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
@@ -726,6 +887,44 @@ class ReportSales extends MY_Controller {
 						$no_id++;
 					}
 					
+					
+					//update-0120.001
+					//if(!empty($sorting)){
+						if(empty($recap_sort[$payment_date])){
+							$recap_sort[$payment_date] = 0;
+						}
+						if($sorting == 'tanggal'){
+							$recap_sort[$payment_date] = strtotime($s['payment_date']);
+						}
+						if($sorting == 'qty'){
+							$recap_sort[$payment_date] += 1;
+						}
+						if($sorting == 'total_billing'){
+							$recap_sort[$payment_date] += $s['total_billing'];
+						}
+						if($sorting == 'discount_total'){
+							$recap_sort[$payment_date] += $s['discount_total'];
+						}
+						if($sorting == 'tax_total'){
+							$recap_sort[$payment_date] += $s['tax_total'];
+						}
+						if($sorting == 'service_total'){
+							$recap_sort[$payment_date] += $s['service_total']; 
+						}
+						if($sorting == 'grand_total'){
+							$recap_sort[$payment_date] += $s['grand_total'];
+						}
+						if($sorting == 'pembulatan'){
+							$recap_sort[$payment_date] += $s['total_pembulatan'];
+						}
+						if($sorting == 'compliment'){
+							$recap_sort[$payment_date] += $s['compliment_total'];
+						}
+						if($sorting == 'dp'){
+							$recap_sort[$payment_date] += $s['total_dp'];
+						}
+					//}
+					
 					$all_bil_id_date[$s['billing_id']] = $payment_date;
 					
 					$all_group_date[$payment_date]['qty_billing'] += 1;
@@ -878,41 +1077,55 @@ class ReportSales extends MY_Controller {
 				}
 			}
 			
+			//update-0120.001
+			//sorting
+			if($sorting == 'tanggal'){
+				asort($recap_sort);
+			}else{
+				arsort($recap_sort);
+			}
+			
 			$newData = array();
-			if(!empty($all_group_date)){
-				foreach($all_group_date as $key => $detail){
+			if(!empty($recap_sort)){
+				foreach($recap_sort as $key => $xvalue){
+					if(!empty($all_group_date[$key])){
+						$detail = $all_group_date[$key];
 					
-					$detail['total_billing_show'] = priceFormat($detail['total_billing']);
-					$detail['tax_total_show'] = priceFormat($detail['tax_total']);
-					$detail['service_total_show'] = priceFormat($detail['service_total']);
-					$detail['grand_total_show'] = priceFormat($detail['grand_total']);
-					$detail['sub_total_show'] = priceFormat($detail['sub_total']);
-					$detail['total_pembulatan_show'] = priceFormat($detail['total_pembulatan']);
-					
-					//$detail['total_cash_show'] = priceFormat($detail['total_cash']);
-					//$detail['total_credit_show'] = priceFormat($detail['total_credit']);
-					
-					foreach($payment_data as $key_id => $dtPay){
-						$detail['total_payment_'.$key_id.'_show'] = priceFormat($detail['total_payment_'.$key_id]);
-					}
-					
-					$detail['discount_total_show'] = priceFormat($detail['discount_total']);
-					$detail['discount_billing_total_show'] = priceFormat($detail['discount_billing_total']);
-					$detail['total_dp_show'] = priceFormat($detail['total_dp']);
-					$detail['total_compliment_show'] = priceFormat($detail['total_compliment']);
-					
-
-					if(!empty($total_hpp[$key])){
-						$detail['total_hpp'] = $total_hpp[$key];
-					}
-
-					$detail['total_profit'] = $detail['total_billing']-$detail['total_hpp'];
-					$detail['total_hpp_show'] = priceFormat($detail['total_hpp']);
-					$detail['total_profit_show'] = priceFormat($detail['total_profit']);
+						$detail['total_billing_show'] = priceFormat($detail['total_billing']);
+						$detail['tax_total_show'] = priceFormat($detail['tax_total']);
+						$detail['service_total_show'] = priceFormat($detail['service_total']);
+						$detail['grand_total_show'] = priceFormat($detail['grand_total']);
+						$detail['sub_total_show'] = priceFormat($detail['sub_total']);
+						$detail['total_pembulatan_show'] = priceFormat($detail['total_pembulatan']);
 						
-					
-					$newData[$key] = $detail;
-					
+						//$detail['total_cash_show'] = priceFormat($detail['total_cash']);
+						//$detail['total_credit_show'] = priceFormat($detail['total_credit']);
+						
+						foreach($payment_data as $key_id => $dtPay){
+							$detail['total_payment_'.$key_id.'_show'] = priceFormat($detail['total_payment_'.$key_id]);
+						}
+						
+						$detail['discount_total_show'] = priceFormat($detail['discount_total']);
+						$detail['discount_billing_total_show'] = priceFormat($detail['discount_billing_total']);
+						$detail['total_dp_show'] = priceFormat($detail['total_dp']);
+						$detail['total_compliment_show'] = priceFormat($detail['total_compliment']);
+						
+						if(!empty($total_hpp[$key])){
+							$detail['total_hpp'] = $total_hpp[$key];
+						}
+						$detail['total_hpp_show'] = priceFormat($detail['total_hpp']);
+						
+						$detail['total_billing_profit'] = $detail['total_billing'];
+						$detail['total_billing_profit'] -= $detail['discount_total'];
+						$detail['total_billing_profit'] -= $detail['discount_billing_total'];
+						$detail['total_billing_profit'] -= $detail['total_compliment'];
+						$detail['total_billing_profit_show'] = priceFormat($detail['total_billing_profit']);
+						
+						$detail['total_profit'] = $detail['total_billing_profit']-$detail['total_hpp'];
+						$detail['total_profit_show'] = priceFormat($detail['total_profit']);
+						
+						$newData[$key] = $detail;
+					}
 				}
 			}	
 			
@@ -930,6 +1143,7 @@ class ReportSales extends MY_Controller {
 			
 			$data_post['report_data'] = $newData;
 			$data_post['payment_data'] = $dt_payment_name;
+			$data_post['display_discount_type'] = $display_discount_type;
 		}
 		
 		//DO-PRINT

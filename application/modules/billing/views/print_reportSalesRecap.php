@@ -11,15 +11,47 @@
 		$set_width = 1330;
 		$total_cols = 13;
 		
+		//update-0120.001
+		if(!empty($filter_column)){
+			extract($filter_column);
+		}
+		
 		$payment_data_content = '';
-		if(!empty($payment_data)){
-			foreach($payment_data as $key_id => $dtPay){
-				$payment_data_content .= '<td class="xcenter" width="100">'.$dtPay.'</td>';
-				$set_width += 100;
-				$total_cols++;
+		if($show_payment == true){
+			if(!empty($payment_data)){
+				foreach($payment_data as $key_id => $dtPay){
+					$payment_data_content .= '<td class="xcenter" width="100">'.$dtPay.'</td>';
+					$set_width += 100;
+					$total_cols++;
+				}
 			}
 		}
 		
+		if(count($display_discount_type) > 1){
+			$set_width += 200;
+			$total_cols += 2;
+		}
+		
+		if($show_tax == false){
+			$set_width -= 100;
+			$total_cols -= 1;
+		}
+		if($show_service == false){
+			$set_width -= 100;
+			$total_cols -= 1;
+		}
+		if($show_compliment == false){
+			$set_width -= 100;
+			$total_cols -= 1;
+		}
+		if($show_pembulatan == false){
+			$set_width -= 100;
+			$total_cols -= 1;
+		}
+		if($show_dp == false){
+			$set_width -= 100;
+			$total_cols -= 1;
+		}
 	?>
 	<div class="report_area" style="width:<?php echo $set_width.'px'; ?>;">
 		
@@ -35,8 +67,34 @@
 								
 							</div>
 										
-							<div class="title_report xcenter"><?php echo $report_name;?></div>
-							<div class="subtitle_report xcenter"><?php echo 'Period : '.$date_from.' TO '.$date_till;?></div>			
+							<div class="title_report"><?php echo $report_name; ?></div>
+							<?php
+							if($date_from == $date_till){
+								?>
+								<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from; ?></div>		
+								<?php
+							}else{
+								?>
+								<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from.' s/d '.$date_till; ?></div>		
+								<?php
+							}
+							
+							if(!empty($user_shift)){ 
+								?>
+								<div class="subtitle_report"><?php echo 'Shift: '.$user_shift; ?></div>		
+								<?php 				
+							}else{
+								?>
+								<div class="subtitle_report"><?php echo 'Shift: All Shift'; ?></div>		
+								<?php 
+								//$total_cols++;
+							}
+							if(!empty($user_kasir)){ 
+								?>
+								<div class="subtitle_report"><?php echo 'Kasir: '.$user_kasir; ?></div>		
+								<?php 				
+							}
+							?>	
 							
 						</div>
 					</td>
@@ -52,9 +110,18 @@
 						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>	
 						<?php
 					}
+				
+					if($show_tax == true){
 					?>
-					<td class="xcenter" width="100" rowspan="2">TAX</td>
-					<td class="xcenter" width="100" rowspan="2">SERVICE</td>
+					<td class="xcenter" width="90" rowspan="2">TAX</td>
+					<?php
+					}
+					if($show_service == true){
+					?>
+					<td class="xcenter" width="90" rowspan="2">SERVICE</td>
+					<?php
+					}
+					?>
 					<td class="xcenter" width="100" rowspan="2">SUB TOTAL</td>
 					<?php
 					if($diskon_sebelum_pajak_service == 0){
@@ -62,12 +129,31 @@
 						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>	
 						<?php
 					}
+					if($show_pembulatan == true){
+						?>
+						<td class="xcenter" width="100" rowspan="2">PEMBULATAN</td>	
+						<?php
+					}
+					if($show_compliment == true){
+						?>
+						<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
+						<?php
+					}
 					?>
-					<td class="xcenter" width="100" rowspan="2">PEMBULATAN</td>
-					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
 					<td class="xcenter" width="120" rowspan="2">GRAND TOTAL</td>
-					<td class="xcenter" width="100" rowspan="2">DP</td>
-					<td class="xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>
+					<?php
+					if($show_dp == true){
+						?>
+						<td class="xcenter" width="100" rowspan="2">DP</td>
+						<?php
+					}
+					
+					if($show_payment == true){
+						?>
+						<td class="xcenter" width="<?php echo count($payment_data)*100; ?>" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>	
+						<?php
+					}
+					?>
 				</tr>
 				<tr class="tbl-header">
 					
@@ -86,7 +172,9 @@
 						<?php
 					}
 					
-					echo $payment_data_content;
+					if($show_payment == true){
+						echo $payment_data_content;
+					}
 					?>
 					
 				</tr>
@@ -110,6 +198,12 @@
 					$grand_discount_billing_total = 0;
 					$grand_total_dp = 0;
 					$grand_total_compliment = 0;
+					
+					$grand_discount_total_before = 0;
+					$grand_discount_billing_total_before = 0;
+					$grand_discount_total_after = 0;
+					$grand_discount_billing_total_after = 0;
+					
 					foreach($report_data as $det){
 						
 						?>
@@ -125,9 +219,18 @@
 								<td class="xright"><?php echo $det['discount_billing_total_show']; ?></td>
 								<?php
 							}
+							
+							if($show_tax == true){
 							?>
 							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
+							<?php
+							}
+							if($show_service == true){
+							?>
 							<td class="xright"><?php echo $det['service_total_show']; ?></td>
+							<?php
+							}
+							?>
 							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
 							<?php
 							if($diskon_sebelum_pajak_service == 0){
@@ -136,23 +239,39 @@
 								<td class="xright"><?php echo $det['discount_billing_total_show']; ?></td>
 								<?php
 							}
+							
+							if($show_pembulatan == true){
 							?>
 							<td class="xright"><?php echo $det['total_pembulatan_show']; ?></td>
-							<td class="xright"><?php echo $det['total_compliment_show']; ?></td>
-							<td class="xright"><?php echo $det['grand_total_show']; ?></td>
-							<td class="xright"><?php echo $det['total_dp_show']; ?></td>
+							<?php
+							}
 							
-							<?php 
-							if(!empty($payment_data)){
-								foreach($payment_data as $key_id => $dtPay){
-									?>
-									<td class="xright"><?php echo $det['total_payment_'.$key_id.'_show']; ?></td>
-									<?php
-									if(empty($grand_total_payment[$key_id])){
-										$grand_total_payment[$key_id] = 0;
+							if($show_compliment == true){
+							?>
+							<td class="xright"><?php echo $det['total_compliment_show']; ?></td>
+							<?php
+							}
+							?>
+							<td class="xright"><?php echo $det['grand_total_show']; ?></td>
+							<?php
+							if($show_dp == true){
+							?>
+							<td class="xright"><?php echo $det['total_dp_show']; ?></td>
+							<?php
+							}
+							
+							if($show_payment == true){
+								if(!empty($payment_data)){
+									foreach($payment_data as $key_id => $dtPay){
+										?>
+										<td class="xright"><?php echo $det['total_payment_'.$key_id.'_show']; ?></td>
+										<?php
+										if(empty($grand_total_payment[$key_id])){
+											$grand_total_payment[$key_id] = 0;
+										}
+										
+										$grand_total_payment[$key_id] += $det['total_payment_'.$key_id];
 									}
-									
-									$grand_total_payment[$key_id] += $det['total_payment_'.$key_id];
 								}
 							}
 							?>
@@ -188,9 +307,19 @@
 							<td class="xright xbold"><?php echo priceFormat($grand_discount_billing_total); ?></td>
 							<?php
 						}
+					
+						if($show_tax == true){
 						?>
 						<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
+						<?php
+						}
+						
+						if($show_service == true){
+						?>
 						<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
+						<?php
+						}
+						?>
 						<td class="xright xbold"><?php echo priceFormat($grand_sub_total); ?></td>
 						<?php
 						if($diskon_sebelum_pajak_service == 0){
@@ -199,18 +328,33 @@
 							<td class="xright xbold"><?php echo priceFormat($grand_discount_billing_total); ?></td>
 							<?php
 						}
+						
+						if($show_pembulatan == true){
 						?>
 						<td class="xright xbold"><?php echo priceFormat($grand_total_pembulatan); ?></td>
+						<?php
+						}
+						
+						if($show_compliment == true){
+						?>
 						<td class="xright xbold"><?php echo priceFormat($grand_total_compliment); ?></td>
+						<?php
+						}
+						?>
 						<td class="xright xbold"><?php echo priceFormat($grand_total); ?></td>
+						<?php
+						if($show_dp == true){
+						?>
 						<td class="xright xbold"><?php echo priceFormat($grand_total_dp); ?></td>
+						<?php
+						}
 						
-						<?php 
-						
-						foreach($grand_total_payment as $dt){
-							?>
-							<td class="xright xbold"><?php echo priceFormat($dt); ?></td>
-							<?php 
+						if($show_payment == true){
+							foreach($grand_total_payment as $dt){
+								?>
+								<td class="xright xbold"><?php echo priceFormat($dt); ?></td>
+								<?php 
+							}
 						}
 						
 						?>

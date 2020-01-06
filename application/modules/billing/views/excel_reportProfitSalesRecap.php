@@ -7,9 +7,17 @@ header("Expires: 0");
 header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
 header("Cache-Control: private",false);
 
-$set_width = 670;
-$total_cols = 6;
+$set_width = 900;
+$total_cols = 9;
 
+//update-0120.001
+if(!empty($filter_column)){
+	extract($filter_column);
+}
+if($show_compliment == false){
+	$set_width -= 100;
+	$total_cols -= 1;
+}
 ?>
 <html>
 <body>
@@ -26,8 +34,34 @@ $total_cols = 6;
 				<td colspan="<?php echo $total_cols ?>">
 					<div>
 					
-						<div class="title_report_xcenter"><?php echo $report_name;?></div>		
-						<div class="subtitle_report_xcenter"><?php echo 'Period : '.$date_from.' TO '.$date_till;?></div>		
+						<div class="title_report"><?php echo $report_name; ?></div>
+						<?php
+						if($date_from == $date_till){
+							?>
+							<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from; ?></div>		
+							<?php
+						}else{
+							?>
+							<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from.' s/d '.$date_till; ?></div>		
+							<?php
+						}
+						
+						if(!empty($user_shift)){ 
+							?>
+							<div class="subtitle_report"><?php echo 'Shift: '.$user_shift; ?></div>		
+							<?php 				
+						}else{
+							?>
+							<div class="subtitle_report"><?php echo 'Shift: All Shift'; ?></div>		
+							<?php 
+							//$total_cols++;
+						}
+						if(!empty($user_kasir)){ 
+							?>
+							<div class="subtitle_report"><?php echo 'Kasir: '.$user_kasir; ?></div>		
+							<?php 				
+						}
+						?>	
 						
 					</div>
 				</td>
@@ -37,6 +71,15 @@ $total_cols = 6;
 				<td class="tbl_head_td_xcenter" width="130">DATE</td>
 				<td class="tbl_head_td_xcenter" width="80">QTY BILLING</td>
 				<td class="tbl_head_td_xcenter" width="100">TOTAL BILLING</td>
+				<td class="tbl_head_td_xcenter" width="100">DISCOUNT</td>
+				<?php
+				if($show_compliment == true){
+				?>
+				<td class="tbl_head_td_xcenter" width="100">COMPLIMENT</td>
+				<?php
+				}
+				?>
+				<td class="tbl_head_td_xcenter" width="100">NET SALES</td>
 				<td class="tbl_head_td_xcenter" width="120">TOTAL HPP</td>
 				<td class="tbl_head_td_xcenter" width="120">TOTAL PROFIT</td>
 			</tr>
@@ -59,18 +102,51 @@ $total_cols = 6;
 				$grand_sub_total = 0;
 				$grand_total_pembulatan = 0;			
 				$grand_total_payment = array();
-				$grand_total_discount = 0;
+				$grand_discount_total = 0;
+				$grand_discount_billing_total = 0;
 				$grand_total_dp = 0;
 				$grand_total_compliment = 0;
+				
 				foreach($report_data as $det){
+					$discount_total = $det['discount_total']+$det['discount_billing_total'];
 					?>
 					<tr>
 						<td class="tbl_data_td_first_xcenter"><?php echo $no; ?></td>
-						<td class="tbl_data_td"><?php echo date("Y-m-d", strtotime($det['date'])); ?></td>
+						<td class="tbl_data_td">&nbsp;<?php echo date("d-m-Y", strtotime($det['date'])); ?></td>
 						<td class="tbl_data_td_xcenter"><?php echo $det['qty_billing']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['total_billing_show']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['total_hpp']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['total_profit']; ?></td>
+						<?php
+						if($format_nominal == true){
+							$det['total_billing_show'] = 'Rp. '.$det['total_billing_show'];
+							$discount_total = 'Rp. '.priceFormat($discount_total);
+							$det['total_billing_profit_show'] = 'Rp. '.$det['total_billing_profit_show'];
+							$det['total_hpp_show'] = 'Rp. '.$det['total_hpp_show'];
+							$det['total_profit_show'] = 'Rp. '.$det['total_profit_show'];
+							$det['total_compliment_show'] = 'Rp. '.$det['total_compliment_show'];
+						}else{
+							$det['total_billing_show'] = str_replace(".","",$det['total_billing_show']);
+							$det['total_billing_show'] = str_replace(",",".",$det['total_billing_show']);
+							$det['total_billing_profit_show'] = str_replace(".","",$det['total_billing_profit_show']);
+							$det['total_billing_profit_show'] = str_replace(",",".",$det['total_billing_profit_show']);
+							$det['total_hpp_show'] = str_replace(".","",$det['total_hpp_show']);
+							$det['total_hpp_show'] = str_replace(",",".",$det['total_hpp_show']);
+							$det['total_profit_show'] = str_replace(".","",$det['total_profit_show']);
+							$det['total_profit_show'] = str_replace(",",".",$det['total_profit_show']);
+							$det['total_compliment_show'] = str_replace(".","",$det['total_compliment_show']);
+							$det['total_compliment_show'] = str_replace(",",".",$det['total_compliment_show']);
+						}
+						?>
+						<td class="tbl_data_td_xright"><?php echo $det['total_billing_show']; ?></td>
+						<td class="tbl_data_td_xright"><?php echo $discount_total; ?></td>
+						<?php
+						if($show_compliment == true){
+						?>
+						<td class="tbl_data_td_xright"><?php echo $det['total_compliment_show']; ?></td>
+						<?php
+						}
+						?>
+						<td class="tbl_data_td_xright"><?php echo $det['total_billing_profit_show']; ?></td>
+						<td class="tbl_data_td_xright"><?php echo $det['total_hpp_show']; ?></td>
+						<td class="tbl_data_td_xright"><?php echo $det['total_profit_show']; ?></td>
 					</tr>
 					<?php	
 					
@@ -78,12 +154,13 @@ $total_cols = 6;
 					$total_billing +=  $det['total_billing'];
 					$total_tax +=  $det['tax_total'];
 					$total_service +=  $det['service_total'];
-					$grand_total +=  $det['grand_total'];
+					$grand_total +=  $det['total_billing_profit'];
 					//$grand_total_cash +=  $det['total_cash'];
 					//$grand_total_credit +=  $det['total_credit'];
 					$grand_sub_total += $det['sub_total'];
 					$grand_total_pembulatan += $det['total_pembulatan'];
-					$grand_total_discount +=  $det['discount_total'];
+					$grand_discount_total += $det['discount_total'];
+					$grand_discount_billing_total += $det['discount_billing_total'];
 					$grand_total_dp +=  $det['total_dp'];
 					$grand_total_compliment +=  $det['total_compliment'];
 					$total_hpp +=  $det['total_hpp'];
@@ -91,13 +168,34 @@ $total_cols = 6;
 					$no++;
 				}
 				
+				$discount_total = $grand_discount_total+$grand_discount_billing_total;
+				
+				if($format_nominal == true){ 
+					$total_qty =  priceFormat($total_qty);
+					$discount_total = 'Rp. '.priceFormat($discount_total);
+					$total_billing = 'Rp. '.priceFormat($total_billing);
+					$grand_total_compliment = 'Rp. '.priceFormat($grand_total_compliment);
+					$grand_total = 'Rp. '.priceFormat($grand_total);
+					
+					$total_hpp = 'Rp. '.priceFormat($total_hpp);
+					$total_profit = 'Rp. '.priceFormat($total_profit);
+				}
 				?>
 				<tr>
-					<td class="tbl_summary_td_first_xright" colspan="<?php echo 2; ?>">TOTAL</td>
+					<td class="tbl_summary_td_first_xright" colspan="2">TOTAL</td>
 					<td class="tbl_summary_td_xcenter"><?php echo $total_qty; ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_billing); ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_hpp); ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_profit); ?></td>
+					<td class="tbl_summary_td_xright"><?php echo $total_billing; ?></td>
+					<td class="tbl_summary_td_xright"><?php echo $discount_total; ?></td>
+					<?php
+					if($show_compliment == true){
+					?>
+					<td class="tbl_summary_td_xright"><?php echo $grand_total_compliment; ?></td>
+					<?php
+					}
+					?>
+					<td class="tbl_summary_td_xright"><?php echo $grand_total; ?></td>
+					<td class="tbl_summary_td_xright"><?php echo $total_hpp; ?></td>
+					<td class="tbl_summary_td_xright"><?php echo $total_profit; ?></td>
 				</tr>
 				<?php
 			}else{
@@ -115,8 +213,8 @@ $total_cols = 6;
 			<td colspan="<?php echo $total_cols; ?>">&nbsp;</td>
 		</tr>
 		<tr>
-			<td colspan="2">Printed: <?php echo date("d-m-Y H:i:s");?></td>
-			<td colspan="<?php echo $total_cols-6; ?>" class="xcenter">&nbsp;</td>
+			<td colspan="3">Printed: <?php echo date("d-m-Y H:i:s");?></td>
+			<td colspan="<?php echo $total_cols-7; ?>" class="xcenter">&nbsp;</td>
 			<td colspan="2" class="xcenter">
 					Prepared by:<br/><br/><br/><br/>
 					----------------------------

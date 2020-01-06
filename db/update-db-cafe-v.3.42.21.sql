@@ -2,7 +2,7 @@
 
 MIGRASI DATABASE
 WePOS - Cafe: v3.42.19 ke v3.42.20
-Updated: 21-12-2019 18:00
+Updated: 07-01-2020 01:00
 
 *********************************************************************
 
@@ -624,3 +624,30 @@ insert  into `pos_shift`(`id`,`nama_shift`,`jam_shift_start`,`jam_shift_end`,`cr
 (1,'Shift Pagi','07:00','23:00','administrator','2019-12-09 19:42:49','administrator','2019-12-09 19:44:33',0),
 (2,'','','','administrator','2019-12-09 19:42:49','administrator','2019-12-09 19:44:33',1),
 (3,'','','','administrator','2019-12-09 19:42:49','administrator','2019-12-09 19:44:33',1);
+#
+INSERT INTO `apps_modules`(id,`module_name`,`module_author`,`module_version`,`module_description`,`module_folder`,`module_controller`,`module_is_menu`,`module_breadcrumb`,`module_order`,`module_icon`,`module_shortcut_icon`,`module_glyph_icon`,`module_glyph_font`,`module_free`,`running_background`,`show_on_start_menu`,`show_on_right_start_menu`,`start_menu_path`,`start_menu_order`,`start_menu_icon`,`start_menu_glyph`,`show_on_context_menu`,`context_menu_icon`,`context_menu_glyph`,`show_on_shorcut_desktop`,`desktop_shortcut_icon`,`desktop_shortcut_glyph`,`show_on_preference`,`preference_icon`,`preference_glyph`,`createdby`,`created`,`updatedby`,`updated`,`is_active`,`is_deleted`) values 
+(173,'Sales By Menu Code','dev@wepos.id','v.1.0.0','Sales By Menu Code','billing','reportSalesByMenuCode',0,'6. Reports>Sales (Menu)>Sales By Menu Code',1,'icon-grid','icon-grid','','',1,0,1,0,'6. Reports>Sales (Menu)>Sales By Menu Code',6120,'icon-grid','',0,'icon-grid','',1,'icon-grid','',1,'icon-grid','','administrator','2019-12-24 05:51:55','administrator','2019-12-24 17:47:33',1,0);
+#
+INSERT INTO `apps_roles_module` (`role_id`, `module_id`, `start_menu_path`, `module_order`, `createdby`, `created`, `updatedby`, `updated`, `is_active`, `is_deleted`) VALUES
+(1, 173, NULL, 0, 'admin', '2019-12-24 10:14:10', 'admin', '2019-12-24 10:14:10', 1, 0),
+(2, 173, NULL, 0, 'admin', '2019-12-24 10:14:10', 'admin', '2019-12-24 10:14:10', 1, 0),
+(5, 173, NULL, 0, 'admin', '2019-12-24 10:14:10', 'admin', '2019-12-24 10:14:10', 1, 0);
+#
+UPDATE apps_options 
+SET option_value = REPLACE(option_value, '[size=0][tab]TUNAI[tab]{cash}', '[size=0][tab]BAYAR[tab]{cash}');
+#
+UPDATE apps_options SET option_value = '3.42.21' WHERE option_var = 'wepos_version';
+#
+UPDATE apps_options SET option_value = 'WePOS.Cafe' WHERE option_var = 'app_name';
+#
+UPDATE apps_options SET option_value = 'WePOS.Cafe' WHERE option_var = 'app_name_short';
+#
+UPDATE apps_options SET option_value = '2020' WHERE option_var = 'app_release';
+#
+UPDATE apps_modules 
+SET is_active = 0
+WHERE module_controller IN ('reportSalesByCashier','reportSalesByShift','reportSalesByMenuQty','reportSalesByMenuCode','reportSalesByMenuVarian','reportSalesByMenuPackage','reportSalesByTaxService');
+#
+UPDATE apps_modules 
+SET is_active = 0
+WHERE module_controller IN ('reportSalesProfitByCashier','reportSalesProfitByShift','reportSalesProfitByMenuRanking','reportSalesProfitByMenuVarian','reportSalesProfitByMenuPackage','reportSalesProfitByTaxService');

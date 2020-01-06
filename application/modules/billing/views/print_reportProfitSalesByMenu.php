@@ -8,8 +8,18 @@
 	</head>
 <body>
 	<?php
-		$set_width = 770;
-		$total_cols = 7;
+		$set_width = 1110;
+		$total_cols = 10;
+		
+		//update-0120.001
+		if(!empty($filter_column)){
+			extract($filter_column);
+		}
+		
+		if($show_compliment == false){
+			$set_width -= 110;
+			$total_cols -= 1;
+		}
 	?>
 	<div class="report_area" style="width:<?php echo $set_width.'px'; ?>;">
 		<div>
@@ -19,8 +29,34 @@
 				
 			</div>
 						
-			<div class="title_report xcenter"><?php echo $report_name;?></div>
-			<div class="subtitle_report xcenter"><?php echo 'Period : '.$date_from.' TO '.$date_till;?></div>			
+			<div class="title_report"><?php echo $report_name; ?></div>
+			<?php
+			if($date_from == $date_till){
+				?>
+				<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from; ?></div>		
+				<?php
+			}else{
+				?>
+				<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from.' s/d '.$date_till; ?></div>		
+				<?php
+			}
+			
+			if(!empty($user_shift)){ 
+				?>
+				<div class="subtitle_report"><?php echo 'Shift: '.$user_shift; ?></div>		
+				<?php 				
+			}else{
+				?>
+				<div class="subtitle_report"><?php echo 'Shift: All Shift'; ?></div>		
+				<?php 
+				//$total_cols++;
+			}
+			if(!empty($user_kasir)){ 
+				?>
+				<div class="subtitle_report"><?php echo 'Kasir: '.$user_kasir; ?></div>		
+				<?php 				
+			}
+			?>	
 			
 		</div>
 		<br/>
@@ -32,6 +68,15 @@
 				<td class="xcenter" width="260">PRODUCT / MENU</td>
 				<td class="xcenter" width="60">TOTAL QTY</td>
 				<td class="xcenter" width="110">TOTAL BILLING</td>
+				<td class="xcenter" width="110">DISCOUNT</td>	
+				<?php
+				if($show_compliment == true){
+				?>
+				<td class="xcenter" width="110">COMPLIMENT</td>	
+				<?php
+				}
+				?>
+				<td class="xcenter" width="120">NET SALES</td>
 				<td class="xcenter" width="90">TOTAL HPP</td>
 				<td class="xcenter" width="110">TOTAL PROFIT</td>
 			</tr>
@@ -41,12 +86,18 @@
 			
 				$no = 1;
 				$total_qty = 0;
-				$total_billing = 0;
 				$total_hpp = 0;
 				$total_profit = 0;
+				$total_billing = 0;
 				$total_tax = 0;
 				$total_service = 0;
 				$grand_total = 0;
+				$grand_total_dp = 0;
+				$grand_sub_total = 0;
+				$grand_total_pembulatan = 0;
+				$grand_discount_total = 0;
+				$grand_discount_billing_total = 0;
+				$grand_total_compliment = 0;
 				$grand_total_payment = array();
 				foreach($report_data as $det){
 					
@@ -54,9 +105,11 @@
 						$det['product_name'] = '#'.$det['product_id'].' deleted';
 					}
 				
-				if(empty($det['product_code'])){
-					$det['product_code'] = 'N/A';
-				}
+					if(empty($det['product_code'])){
+						$det['product_code'] = 'N/A';
+					}
+					
+					$discount_total = $det['discount_total']+$det['discount_billing_total'];
 					?>
 					<tr class="tbl-data">
 						<td class="first xcenter"><?php echo $no; ?></td>
@@ -64,6 +117,15 @@
 						<td class="xleft"><?php echo $det['product_name']; ?></td>
 						<td class="xcenter"><?php echo $det['total_qty']; ?></td>
 						<td class="xright"><?php echo $det['total_billing_show']; ?></td>
+						<td class="xright"><?php echo priceFormat($discount_total); ?></td>
+						<?php
+						if($show_compliment == true){
+						?>
+						<td class="xright"><?php echo $det['total_compliment_show']; ?></td>
+						<?php
+						}
+						?>
+						<td class="xright"><?php echo $det['total_billing_profit_show']; ?></td>
 						<td class="xright"><?php echo $det['total_hpp_show']; ?></td>
 						<td class="xright"><?php echo $det['total_profit_show']; ?></td>
 					</tr>
@@ -71,19 +133,36 @@
 					
 					$total_qty +=  $det['total_qty'];
 					$total_billing +=  $det['total_billing'];
-					$total_hpp +=  $det['total_hpp'];
-					$total_profit +=  $det['total_profit'];
 					$total_tax +=  $det['tax_total'];
 					$total_service +=  $det['service_total'];
-					$grand_total +=  $det['grand_total'];
+					$grand_total +=  $det['total_billing_profit'];
+					$grand_total_compliment += $det['total_compliment'];
+					$grand_sub_total += $det['sub_total'];
+					$grand_total_pembulatan += $det['total_pembulatan'];
+					$grand_discount_total += $det['discount_total'];
+					$grand_discount_billing_total += $det['discount_billing_total'];
+					//$grand_total_dp += $det['total_dp'];
+					$total_hpp +=  $det['total_hpp'];
+					$total_profit +=  $det['total_profit'];
+					
 					$no++;
 				}
 				
+				$discount_total = $grand_discount_total+$grand_discount_billing_total;
 				?>
 				<tr class="tbl-data">
-					<td class="first xright xbold" colspan="<?php echo 3; ?>">TOTAL</td>
+					<td class="first xright xbold" colspan="3">TOTAL</td>
 					<td class="xcenter xbold"><?php echo priceFormat($total_qty); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_billing); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
+					<?php
+					if($show_compliment == true){
+					?>
+					<td class="xright xbold"><?php echo priceFormat($grand_total_compliment); ?></td>
+					<?php
+					}
+					?>
+					<td class="xright xbold"><?php echo priceFormat($grand_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_hpp); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_profit); ?></td>
 				</tr>

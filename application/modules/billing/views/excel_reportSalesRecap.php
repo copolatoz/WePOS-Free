@@ -9,15 +9,48 @@ header("Cache-Control: private",false);
 $set_width = 1330;
 $total_cols = 13;
 
+//update-0120.001
+if(!empty($filter_column)){
+	extract($filter_column);
+}
+
 $payment_data_content = '';
-if(!empty($payment_data)){
-	foreach($payment_data as $key_id => $dtPay){
-		$payment_data_content .= '<td class="tbl_head_td_xcenter" width="100">'.$dtPay.'</td>';
-		
-		$total_cols++;
-		$set_width += 100;
+if($show_payment == true){
+	if(!empty($payment_data)){
+		foreach($payment_data as $key_id => $dtPay){
+			$payment_data_content .= '<td class="tbl_head_td_xcenter" width="100">'.$dtPay.'</td>';
+			$set_width += 100;
+			$total_cols++;
+		}
 	}
 }
+
+if(count($display_discount_type) > 1){
+	$set_width += 200;
+	$total_cols += 2;
+}
+
+if($show_tax == false){
+	$set_width -= 100;
+	$total_cols -= 1;
+}
+if($show_service == false){
+	$set_width -= 100;
+	$total_cols -= 1;
+}
+if($show_compliment == false){
+	$set_width -= 100;
+	$total_cols -= 1;
+}
+if($show_pembulatan == false){
+	$set_width -= 100;
+	$total_cols -= 1;
+}
+if($show_dp == false){
+	$set_width -= 100;
+	$total_cols -= 1;
+}
+
 
 ?>
 <html>
@@ -34,8 +67,34 @@ if(!empty($payment_data)){
 				<td colspan="<?php echo $total_cols ?>">
 					<div>
 					
-						<div class="title_report_xcenter"><?php echo $report_name;?></div>		
-						<div class="subtitle_report_xcenter"><?php echo 'Period : '.$date_from.' TO '.$date_till;?></div>		
+						<div class="title_report"><?php echo $report_name; ?></div>
+						<?php
+						if($date_from == $date_till){
+							?>
+							<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from; ?></div>		
+							<?php
+						}else{
+							?>
+							<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from.' s/d '.$date_till; ?></div>		
+							<?php
+						}
+						
+						if(!empty($user_shift)){ 
+							?>
+							<div class="subtitle_report"><?php echo 'Shift: '.$user_shift; ?></div>		
+							<?php 				
+						}else{
+							?>
+							<div class="subtitle_report"><?php echo 'Shift: All Shift'; ?></div>		
+							<?php 
+							//$total_cols++;
+						}
+						if(!empty($user_kasir)){ 
+							?>
+							<div class="subtitle_report"><?php echo 'Kasir: '.$user_kasir; ?></div>		
+							<?php 				
+						}
+						?>	
 						
 					</div>
 				</td>
@@ -51,9 +110,18 @@ if(!empty($payment_data)){
 					<td class="tbl_head_td_xcenter" width="220" colspan="2">DISCOUNT</td>
 					<?php
 				}
+				
+				if($show_tax == true){
 				?>
 				<td class="tbl_head_td_xcenter" width="100" rowspan="2">TAX</td>
+				<?php
+				}
+				if($show_service == true){
+				?>
 				<td class="tbl_head_td_xcenter" width="100" rowspan="2">SERVICE</td>
+				<?php
+				}
+				?>
 				<td class="tbl_head_td_xcenter" width="100" rowspan="2">SUB TOTAL</td>
 				<?php
 				if($diskon_sebelum_pajak_service == 0){
@@ -61,12 +129,31 @@ if(!empty($payment_data)){
 					<td class="tbl_head_td_xcenter" width="220" colspan="2">DISCOUNT</td>
 					<?php
 				}
-				?>
+				if($show_pembulatan == true){
+					?>
 				<td class="tbl_head_td_xcenter" width="100" rowspan="2">PEMBULATAN</td>
+					<?php
+				}
+				if($show_compliment == true){
+					?>
 				<td class="tbl_head_td_xcenter" width="100" rowspan="2">COMPLIMENT</td>
+					<?php
+				}
+				?>
 				<td class="tbl_head_td_xcenter" width="120" rowspan="2">GRAND TOTAL</td>
+				<?php
+				if($show_dp == true){
+					?>
 				<td class="tbl_head_td_xcenter" width="100" rowspan="2">DP</td>
-				<td class="tbl_head_td_xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>	
+					<?php
+				}
+				
+				if($show_payment == true){
+					?>
+				<td class="tbl_head_td_xcenter" width="<?php echo count($payment_data)*100; ?>" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>	
+					<?php
+				}
+				?>
 			</tr>
 			<tr>
 				
@@ -85,7 +172,9 @@ if(!empty($payment_data)){
 					<?php
 				}
 				
-				echo $payment_data_content;
+				if($show_payment == true){
+					echo $payment_data_content;
+				}
 				?>
 				
 			</tr>
@@ -110,47 +199,131 @@ if(!empty($payment_data)){
 				$grand_discount_billing_total = 0;
 				$grand_total_dp = 0;
 				$grand_total_compliment = 0;
+				
+				$grand_discount_total_before = 0;
+				$grand_discount_billing_total_before = 0;
+				$grand_discount_total_after = 0;
+				$grand_discount_billing_total_after = 0;
+				
 				foreach($report_data as $det){
 					?>
 					<tr>
 						<td class="tbl_data_td_first_xcenter"><?php echo $no; ?></td>
 						<td class="tbl_data_td">&nbsp;<?php echo date("Y-m-d", strtotime($det['date'])); ?></td>
 						<td class="tbl_data_td_xcenter"><?php echo $det['qty_billing']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['total_billing_show']; ?></td>
+						<?php
+						if($format_nominal == true){
+							$det['total_billing_show'] = 'Rp. '.$det['total_billing_show'];
+							$det['tax_total_show'] = 'Rp. '.$det['tax_total_show'];
+							$det['service_total_show'] = 'Rp. '.$det['service_total_show'];
+							$det['sub_total_show'] = 'Rp. '.$det['sub_total_show'];
+							$det['total_pembulatan_show'] = 'Rp. '.$det['total_pembulatan_show'];
+							$det['grand_total_show'] = 'Rp. '.$det['grand_total_show'];
+							$det['total_compliment_show'] = 'Rp. '.$det['total_compliment_show'];
+						}else{
+							$det['total_billing_show'] = str_replace(".","",$det['total_billing_show']);
+							$det['total_billing_show'] = str_replace(",",".",$det['total_billing_show']);
+							$det['tax_total_show'] = str_replace(".","",$det['tax_total_show']);
+							$det['tax_total_show'] = str_replace(",",".",$det['tax_total_show']);
+							$det['service_total_show'] = str_replace(".","",$det['service_total_show']);
+							$det['service_total_show'] = str_replace(",",".",$det['service_total_show']);
+							$det['sub_total_show'] = str_replace(".","",$det['sub_total_show']);
+							$det['sub_total_show'] = str_replace(",",".",$det['sub_total_show']);
+							$det['total_pembulatan_show'] = str_replace(".","",$det['total_pembulatan_show']);
+							$det['total_pembulatan_show'] = str_replace(",",".",$det['total_pembulatan_show']);
+							$det['grand_total_show'] = str_replace(".","",$det['grand_total_show']);
+							$det['grand_total_show'] = str_replace(",",".",$det['grand_total_show']);
+							$det['total_compliment_show'] = str_replace(".","",$det['total_compliment_show']);
+							$det['total_compliment_show'] = str_replace(",",".",$det['total_compliment_show']);
+						}
+						?>
+						<td class="tbl_data_td_xright"><?php echo $det['total_billing_show']; ?></td>
 						<?php
 						if($diskon_sebelum_pajak_service == 1){
+							if($format_nominal == true){
+								$det['discount_total_show'] = 'Rp. '.$det['discount_total_show'];
+								$det['discount_billing_total_show'] = 'Rp. '.$det['discount_billing_total_show'];
+							}else{
+								$det['discount_total_show'] = str_replace(".","",$det['discount_total_show']);
+								$det['discount_total_show'] = str_replace(",",".",$det['discount_total_show']);
+								$det['discount_billing_total_show'] = str_replace(".","",$det['discount_billing_total_show']);
+								$det['discount_billing_total_show'] = str_replace(",",".",$det['discount_billing_total_show']);
+							}
 							?>
-							<td class="tbl_data_td_xright">Rp. <?php echo $det['discount_total_show']; ?></td>
-							<td class="tbl_data_td_xright">Rp. <?php echo $det['discount_billing_total_show']; ?></td>
+							<td class="tbl_data_td_xright"><?php echo $det['discount_total_show']; ?></td>
+							<td class="tbl_data_td_xright"><?php echo $det['discount_billing_total_show']; ?></td>
 							<?php
 						}
+							
+						if($show_tax == true){
 						?>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['tax_total_show']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['service_total_show']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['sub_total_show']; ?></td>
+						<td class="tbl_data_td_xright"><?php echo $det['tax_total_show']; ?></td>
+						<?php
+						}
+						if($show_service == true){
+						?>
+						<td class="tbl_data_td_xright"><?php echo $det['service_total_show']; ?></td>
+						<?php
+						}
+						?>
+						<td class="tbl_data_td_xright"><?php echo $det['sub_total_show']; ?></td>
 						<?php
 						if($diskon_sebelum_pajak_service == 0){
+							if($format_nominal == true){
+								$det['discount_total_show'] = 'Rp. '.$det['discount_total_show'];
+								$det['discount_billing_total_show'] = 'Rp. '.$det['discount_billing_total_show'];
+							}else{
+								$det['discount_total_show'] = str_replace(".","",$det['discount_total_show']);
+								$det['discount_total_show'] = str_replace(",",".",$det['discount_total_show']);
+								$det['discount_billing_total_show'] = str_replace(".","",$det['discount_billing_total_show']);
+								$det['discount_billing_total_show'] = str_replace(",",".",$det['discount_billing_total_show']);
+							}
 							?>
-							<td class="tbl_data_td_xright">Rp. <?php echo $det['discount_total_show']; ?></td>
-							<td class="tbl_data_td_xright">Rp. <?php echo $det['discount_billing_total_show']; ?></td>
+							<td class="tbl_data_td_xright"><?php echo $det['discount_total_show']; ?></td>
+							<td class="tbl_data_td_xright"><?php echo $det['discount_billing_total_show']; ?></td>
 							<?php
 						}
+							
+						if($show_pembulatan == true){
 						?>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['total_pembulatan_show']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['total_compliment_show']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['grand_total_show']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo $det['total_dp_show']; ?></td>
+						<td class="tbl_data_td_xright"><?php echo $det['total_pembulatan_show']; ?></td>
 						<?php
-						if(!empty($payment_data)){
-							foreach($payment_data as $key_id => $dtPay){
-								?>
-								<td class="tbl_data_td_xright">Rp. <?php echo $det['total_payment_'.$key_id.'_show']; ?></td>
-								<?php
-								if(empty($grand_total_payment[$key_id])){
-									$grand_total_payment[$key_id] = 0;
+						}
+						
+						if($show_compliment == true){
+						?>
+						<td class="tbl_data_td_xright"><?php echo $det['total_compliment_show']; ?></td>
+						<?php
+						}
+						?>
+						<td class="tbl_data_td_xright"><?php echo $det['grand_total_show']; ?></td>
+						<?php
+						if($show_dp == true){
+						?>
+						<td class="tbl_data_td_xright"><?php echo $det['total_dp_show']; ?></td>
+						<?php
+						}
+						
+						if($show_payment == true){
+							if(!empty($payment_data)){
+								foreach($payment_data as $key_id => $dtPay){
+									
+									if($format_nominal == true){
+										$det['total_payment_'.$key_id.'_show'] = 'Rp. '.$det['total_payment_'.$key_id.'_show'];
+									}else{
+										$det['total_payment_'.$key_id.'_show'] = str_replace(".","",$det['total_payment_'.$key_id.'_show']);
+										$det['total_payment_'.$key_id.'_show'] = str_replace(",",".",$det['total_payment_'.$key_id.'_show']);
+									}
+									
+									?>
+									<td class="tbl_data_td_xright"><?php echo $det['total_payment_'.$key_id.'_show']; ?></td>
+									<?php
+									if(empty($grand_total_payment[$key_id])){
+										$grand_total_payment[$key_id] = 0;
+									}
+									
+									$grand_total_payment[$key_id] += $det['total_payment_'.$key_id];
 								}
-								
-								$grand_total_payment[$key_id] += $det['total_payment_'.$key_id];
 							}
 						}
 						?>
@@ -173,43 +346,80 @@ if(!empty($payment_data)){
 					$no++;
 				}
 				
+				if($format_nominal == true){ 
+					$total_qty = priceFormat($total_qty);
+					$total_billing = 'Rp. '.priceFormat($total_billing);
+					$total_tax = 'Rp. '.priceFormat($total_tax);
+					$total_service = 'Rp. '.priceFormat($total_service);
+					$grand_total = 'Rp. '.priceFormat($grand_total);
+					$grand_total_compliment = 'Rp. '.priceFormat($grand_total_compliment);
+					$grand_sub_total = 'Rp. '.priceFormat($grand_sub_total);
+					$grand_total_pembulatan = 'Rp. '.priceFormat($grand_total_pembulatan);
+					$grand_discount_total = 'Rp. '.priceFormat($grand_discount_total);
+					$grand_discount_billing_total = 'Rp. '.priceFormat($grand_discount_billing_total);
+					$grand_total_dp = 'Rp. '.priceFormat($grand_total_dp);
+				}
 				?>
 				<tr>
 					<td class="tbl_summary_td_first_xright" colspan="<?php echo 2; ?>">TOTAL</td>
 					<td class="tbl_summary_td_xcenter"><?php echo $total_qty; ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_billing); ?></td>
+					<td class="tbl_summary_td_xright"><?php echo $total_billing; ?></td>
 					<?php
 					if($diskon_sebelum_pajak_service == 1){
 						?>
-						<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_discount_total); ?></td>
-						<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_discount_billing_total); ?></td>
+						<td class="tbl_summary_td_xright"><?php echo $grand_discount_total; ?></td>
+						<td class="tbl_summary_td_xright"><?php echo $grand_discount_billing_total; ?></td>
 						<?php
 					}
+					
+					if($show_tax == true){
 					?>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_tax); ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($total_service); ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_sub_total); ?></td>
+					<td class="tbl_summary_td_xright"><?php echo $total_tax; ?></td>
+					<?php
+					}
+					
+					if($show_service == true){
+					?>
+					<td class="tbl_summary_td_xright"><?php echo $total_service; ?></td>
+					<?php
+					}
+					?>
+					<td class="tbl_summary_td_xright"><?php echo $grand_sub_total; ?></td>
 					<?php
 					if($diskon_sebelum_pajak_service == 0){
 						?>
-						<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_discount_total); ?></td>
-						<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_discount_billing_total); ?></td>
+						<td class="tbl_summary_td_xright"><?php echo $grand_discount_total; ?></td>
+						<td class="tbl_summary_td_xright"><?php echo $grand_discount_billing_total; ?></td>
 						<?php
 					}
-					?>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_total_pembulatan); ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_total_compliment); ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_total); ?></td>
-					<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($grand_total_dp); ?></td>
 					
+					if($show_pembulatan == true){
+					?>
+					<td class="tbl_summary_td_xright"><?php echo $grand_total_pembulatan; ?></td>
 					<?php
-					foreach($grand_total_payment as $dt){
-						?>
-						<td class="tbl_summary_td_xright">Rp. <?php echo priceFormat($dt); ?></td>
-						<?php 
 					}
 					
+					if($show_compliment == true){
+					?>
+					<td class="tbl_summary_td_xright"><?php echo $grand_total_compliment; ?></td>
+					<?php
+					}
+					?>
+					<td class="tbl_summary_td_xright"><?php echo $grand_total; ?></td>
+					<?php
+					if($show_dp == true){
+					?>
+					<td class="tbl_summary_td_xright"><?php echo $grand_total_dp; ?></td>
+					<?php
+					}
 					
+					if($show_payment == true){
+						foreach($grand_total_payment as $dt){
+							?>
+							<td class="tbl_summary_td_xright"><?php echo $dt; ?></td>
+							<?php 
+						}
+					}
 					?>
 					
 				</tr>
