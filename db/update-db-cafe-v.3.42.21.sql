@@ -1,7 +1,7 @@
 /*
 
 MIGRASI DATABASE
-WePOS - Cafe: v3.42.19 ke v3.42.20
+WePOS - Cafe: v3.42.19 ke v3.42.20 / v3.42.21
 Updated: 07-01-2020 01:00
 
 *********************************************************************
@@ -651,3 +651,17 @@ WHERE module_controller IN ('reportSalesByCashier','reportSalesByShift','reportS
 UPDATE apps_modules 
 SET is_active = 0
 WHERE module_controller IN ('reportSalesProfitByCashier','reportSalesProfitByShift','reportSalesProfitByMenuRanking','reportSalesProfitByMenuVarian','reportSalesProfitByMenuPackage','reportSalesProfitByTaxService');
+#
+ALTER TABLE pos_product_category
+ADD `product_category_bg_color` CHAR(6) DEFAULT '000000',
+ADD `product_category_text_color` CHAR(6) DEFAULT 'FFFFFF';
+#
+ALTER TABLE pos_product
+ADD `product_bg_color` CHAR(6) DEFAULT '000000',
+ADD `product_text_color` CHAR(6) DEFAULT 'FFFFFF';
+#
+ALTER TABLE pos_table_inventory 
+ADD total_billing TINYINT(4) NULL DEFAULT '0';
+#
+ALTER TABLE pos_floorplan 
+ADD list_no TINYINT(4) NULL DEFAULT '0';

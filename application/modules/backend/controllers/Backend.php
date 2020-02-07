@@ -59,7 +59,10 @@ class Backend extends MY_Controller {
 		'hide_button_invoice','hide_button_halfpayment','hide_button_mergebill','hide_button_splitbill',
 		'hide_button_logoutaplikasi','min_noncash','autobackup_on_settlement','no_hold_billing',
 		'print_preview_billing','opsi_no_print_when_payment','must_choose_customer',
-		'hide_detail_taxservice','hide_detail_takeaway','hide_detail_compliment','hold_table_timer','use_block_table');
+		'hide_detail_taxservice','hide_detail_takeaway','hide_detail_compliment','hold_table_timer','use_block_table',
+		'printMonitoring_qc','printMonitoring_kitchen','printMonitoring_bar','printMonitoring_other',
+		'delay_for_safe_printing','calculator_virtual','cashier_display_menu_image','cashier_menu_bg_text_color',
+		'mode_table_layout_cashier','table_multi_order','mode_cashier_express','cashier_credit_ar');
 		
 		$get_opt = get_option_value($opt_var);
 		

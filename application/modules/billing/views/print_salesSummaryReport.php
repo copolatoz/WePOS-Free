@@ -17,6 +17,7 @@
 				$payment_data_content .= '<td class="xcenter" width="100">'.$dtPay.'</td>';
 				$set_width += 100;
 				$total_cols++;
+				
 			}
 		}
 		
@@ -34,10 +35,17 @@
 								
 							</div>
 										
-							<div class="title_report xcenter"><?php echo $this->session->userdata('client_name'); ?></div>
-							<div class="title_report xcenter"><?php echo $report_name;?></div>
-							<div class="subtitle_report xcenter"><?php echo 'Period : '.$date_from.' TO '.$date_till;?></div>			
-							
+							<div class="title_report"><?php echo $this->session->userdata('client_name'); ?></div>
+							<div class="title_report"><?php echo $report_name;?></div>
+							<div class="subtitle_report" style="margin-bottom:5px;">
+							<?php
+							if($date_from == $date_till){
+								echo 'Tanggal : '.$date_from;
+							}else{
+								echo 'Tanggal : '.$date_from.' s/d '.$date_till; 
+							}
+							?>			
+							</div>
 						</div>
 					</td>
 				</tr>
@@ -73,65 +81,74 @@
 					<td class="xcenter" colspan="<?php echo $total_cols-9; ?>">&nbsp;</td>
 				</tr>
 				<?php
-				$net_sales = $summary_data['total_billing'] - $summary_data['total_discount_item'];
+				//$net_sales = $summary_data['net_sales'] + $summary_data['total_discount_billing'] + $summary_data['compliment_total'];
 				?>
 				<tr class="tbl-data">
-					<td class="first xleft" colspan="2">Menu Net Sales</td>
-					<td class="xright" colspan="2"><?php echo priceFormat($net_sales); ?></td>
+					<td class="first xleft" colspan="2">Discount Per Billing</td>
+					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['total_discount_billing']); ?></td>
 					<td class="xleft">&nbsp;</td>
 					<td class="xleft" colspan="2">Sales Per Bill</td>
 					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['sales_per_bill']); ?></td>
 					<td class="xcenter" colspan="<?php echo $total_cols-9; ?>">&nbsp;</td>
 				</tr>
 				<tr class="tbl-data">
-					<td class="first xleft" colspan="2">Discount Per Billing</td>
-					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['total_discount_billing']); ?></td>
+					<td class="first xleft" colspan="2">Compliment</td>
+					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['compliment_total']); ?></td>
 					<td class="xleft">&nbsp;</td>
 					<td class="xleft" colspan="2">Total Guest</td>
 					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['total_of_guest']); ?></td>
 					<td class="xcenter" colspan="<?php echo $total_cols-9; ?>">&nbsp;</td>
 				</tr>
 				<?php
-				$total_net_sales = $net_sales - $summary_data['total_discount_billing'];
+				//$total_net_sales = $net_sales - $summary_data['total_discount_billing'];
 				?>
 				<tr class="tbl-data">
 					<td class="first xbold" colspan="2">Total Net Sales</td>
-					<td class="xright" colspan="2"><?php echo priceFormat($total_net_sales); ?></td>
+					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['net_sales']); ?></td>
 					<td class="xleft">&nbsp;</td>
 					<td class="xleft" colspan="2">Sales Per Guest</td>
 					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['sales_per_guest']); ?></td>
 					<td class="xcenter" colspan="<?php echo $total_cols-9; ?>">&nbsp;</td>
 				</tr>
 				<tr class="tbl-data">
-					<td class="first xleft" colspan="2">Service Charge</td>
-					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['service_total']); ?></td>
+					<td class="first xleft" colspan="2">Tax</td>
+					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['tax_total']); ?></td>
 					<td class="xleft">&nbsp;</td>
 					<td class="xleft" colspan="2">Average Daily Guest</td>
 					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['average_daily_guest']); ?></td>
 					<td class="xcenter" colspan="<?php echo $total_cols-9; ?>">&nbsp;</td>
 				</tr>
 				<tr class="tbl-data">
-					<td class="first xleft" colspan="2">Tax</td>
-					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['tax_total']); ?></td>
+					<td class="first xleft" colspan="2">Service Charge</td>
+					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['service_total']); ?></td>
 					<td class="xleft">&nbsp;</td>
 					<td class="xleft" colspan="2">Average Daily Sales</td>
 					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['average_daily_sales']); ?></td>
 					<td class="xcenter" colspan="<?php echo $total_cols-9; ?>">&nbsp;</td>
 				</tr>
 				<tr class="tbl-data">
-					<td class="first xleft" colspan="2">Pembulatan</td>
-					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['total_pembulatan']); ?></td>
+					<td class="first xleft" colspan="2">Sub Total</td>
+					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['sub_total']); ?></td>
 					<td class="xleft">&nbsp;</td>
 					<td class="xleft" colspan="2">Sales without Service</td>
 					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['sales_without_service']); ?></td>
+					<td class="xcenter" colspan="<?php echo $total_cols-9; ?>">&nbsp;</td>
+					
+				</tr>
+				<tr class="tbl-data">
+					<td class="first xleft" colspan="2">Pembulatan</td>
+					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['total_pembulatan']); ?></td>
+					<td class="xleft">&nbsp;</td>
+					<td class="xleft" colspan="2">Sales without Tax</td>
+					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['sales_without_tax']); ?>&nbsp;</td>
 					<td class="xcenter" colspan="<?php echo $total_cols-9; ?>">&nbsp;</td>
 				</tr>
 				<tr class="tbl-data">
 					<td class="first xbold" colspan="2">Grand Total</td>
 					<td class="xright xbold" colspan="2"><?php echo priceFormat($summary_data['grand_total']); ?></td>
 					<td class="xleft">&nbsp;</td>
-					<td class="xleft" colspan="2">Sales without Tax</td>
-					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['sales_without_tax']); ?>&nbsp;</td>
+					<td class="xleft" colspan="2">Down Payment (DP)</td>
+					<td class="xright" colspan="2"><?php echo priceFormat($summary_data['total_dp']); ?></td>
 					<td class="xcenter" colspan="<?php echo $total_cols-9; ?>">&nbsp;</td>
 				</tr>
 				<tr class="tbl-data">
@@ -148,30 +165,28 @@
 					<?php
 					if($diskon_sebelum_pajak_service == 1){
 						?>
-						<td class="xcenter" width="100" colspan="2">DISCOUNT</td>	
-						<td class="xcenter" width="100" rowspan="2">NET SALES</td>
+						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>
+						<?php
+					}
+					if($diskon_sebelum_pajak_service == 0){
+						?>
+						<td class="xcenter" width="220" colspan="2">DISC AFTER TAX/SRV</td>
 						<?php
 					}
 					?>
+					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
+					<td class="xcenter" width="100" rowspan="2">NET SALES</td>
 					<td class="xcenter" width="100" rowspan="2">TAX</td>
 					<td class="xcenter" width="100" rowspan="2">SERVICE</td>
 					<td class="xcenter" width="100" rowspan="2">SUB TOTAL</td>
-					<?php
-					if($diskon_sebelum_pajak_service == 0){
-						?>
-						<td class="xcenter" width="100" colspan="2">DISCOUNT</td>	
-						<?php
-					}
-					?>
 					<td class="xcenter" width="100" rowspan="2">PEMBULATAN</td>
 					<td class="xcenter" width="120" rowspan="2">GRAND TOTAL</td>
 					<td class="xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>
-					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
 					<td class="xcenter" width="100" rowspan="2">DP</td>
 				</tr>
 				<tr class="tbl-header">
 					<?php
-						if($diskon_sebelum_pajak_service == 1){
+					if($diskon_sebelum_pajak_service == 1){
 						?>
 						<td class="xcenter" width="110">ITEM</td>
 						<td class="xcenter" width="110">BILLING</td>
@@ -207,6 +222,12 @@
 					$grand_total_dp = 0;
 					$compliment_total = 0;
 					$total_dp = 0;
+					
+					$discount_total_before = 0;
+					$discount_billing_total_before = 0;
+					$discount_total_after = 0;
+					$discount_billing_total_after = 0;
+					
 					foreach($summary_billing as $det){
 						?>
 						<tr class="tbl-data">
@@ -219,14 +240,9 @@
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
 								<td class="xright"><?php echo $det['discount_billing_total_show']; ?></td>
-								<td class="xright"><?php echo $det['net_sales_show']; ?></td>
 								<?php
 							}
-							?>
-							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
-							<td class="xright"><?php echo $det['service_total_show']; ?></td>
-							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
-							<?php
+							
 							if($diskon_sebelum_pajak_service == 0){
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
@@ -234,6 +250,11 @@
 								<?php
 							}
 							?>
+							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
+							<td class="xright"><?php echo $det['net_sales_show']; ?></td>
+							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
+							<td class="xright"><?php echo $det['service_total_show']; ?></td>
+							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_pembulatan_show']; ?></td>
 							<td class="xright"><?php echo $det['grand_total_show']; ?></td>
 							<?php
@@ -265,7 +286,6 @@
 								}
 							}
 							?>
-							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_dp_show']; ?></td>
 						</tr>
 						<?php	
@@ -278,11 +298,17 @@
 						$total_service +=  $det['service_total'];
 						$total_pembulatan +=  $det['total_pembulatan'];
 						$grand_total +=  $det['grand_total'];
-						$discount_total +=  $det['discount_total'];
-						$discount_billing_total +=  $det['discount_billing_total'];
 						$grand_total_dp +=  $det['total_dp'];
 						$compliment_total +=  $det['compliment_total'];
 						$total_dp +=  $det['total_dp'];
+						
+						$discount_total +=  $det['discount_total'];
+						$discount_billing_total +=  $det['discount_billing_total'];
+						$discount_total_before += $det['discount_total_before'];
+						$discount_billing_total_before += $det['discount_billing_total_before'];
+						$discount_total_after += $det['discount_total_after'];
+						$discount_billing_total_after += $det['discount_billing_total_after'];
+					
 						$no++;
 					}
 				
@@ -296,14 +322,9 @@
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($discount_billing_total); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
 						<?php
 					}
-					?>
-					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
-					<?php
+					
 					if($diskon_sebelum_pajak_service == 0){
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
@@ -311,6 +332,11 @@
 						<?php
 					}
 					?>
+					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_pembulatan); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($grand_total); ?></td>
 					<?php
@@ -327,7 +353,6 @@
 						}
 					}
 					?>
-					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_dp); ?></td>
 				</tr>
 				<?php
@@ -350,25 +375,24 @@
 					if($diskon_sebelum_pajak_service == 1){
 						?>
 						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>	
-						<td class="xcenter" width="100" rowspan="2">NET SALES</td>
+						<?php
+					}
+					
+					if($diskon_sebelum_pajak_service == 0){
+						?>
+						<td class="xcenter" width="220" colspan="2">DISC AFTER TAX/SRV</td>	
 						<?php
 					}
 					?>
+						<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
+						<td class="xcenter" width="100" rowspan="2">NET SALES</td>
 					<td class="xcenter" width="100" rowspan="2">TAX</td>
 					<td class="xcenter" width="100" rowspan="2">SERVICE</td>
 					<td class="xcenter" width="100" rowspan="2">SUB TOTAL</td>
-					<?php
-					if($diskon_sebelum_pajak_service == 0){
-						?>
-						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>	
-						<?php
-					}
-					?>
 					<td class="xcenter" width="100" rowspan="2">PEMBULATAN</td>
 					<td class="xcenter" width="120" rowspan="2">GRAND TOTAL</td>
-					<td class="xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>
-					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
-					<td class="xcenter" width="100" rowspan="2">DP</td>
+					<td class="xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT + DP</td>
+					<td class="xcenter" width="100" rowspan="2">&nbsp;</td>
 					
 				</tr>
 				<tr class="tbl-header">
@@ -420,14 +444,9 @@
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
 								<td class="xright"><?php echo $det['discount_billing_total_show']; ?></td>
-								<td class="xright"><?php echo $det['net_sales_show']; ?></td>
 								<?php
 							}
-							?>
-							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
-							<td class="xright"><?php echo $det['service_total_show']; ?></td>
-							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
-							<?php
+							
 							if($diskon_sebelum_pajak_service == 0){
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
@@ -435,6 +454,11 @@
 								<?php
 							}
 							?>
+							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
+							<td class="xright"><?php echo $det['net_sales_show']; ?></td>
+							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
+							<td class="xright"><?php echo $det['service_total_show']; ?></td>
+							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_pembulatan_show']; ?></td>
 							<td class="xright"><?php echo $det['grand_total_show']; ?></td>
 							<?php
@@ -466,7 +490,6 @@
 								}
 							}
 							?>
-							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_dp_show']; ?></td>
 						</tr>
 						<?php	
@@ -497,14 +520,9 @@
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($discount_billing_total); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
 						<?php
 					}
-					?>
-					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
-					<?php
+					
 					if($diskon_sebelum_pajak_service == 0){
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
@@ -512,6 +530,11 @@
 						<?php
 					}
 					?>
+					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_pembulatan); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($grand_total); ?></td>
 					<?php
@@ -528,7 +551,6 @@
 						}
 					}
 					?>
-					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_dp); ?></td>
 				</tr>
 				<?php
@@ -551,25 +573,24 @@
 					if($diskon_sebelum_pajak_service == 1){
 						?>
 						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>
-						<td class="xcenter" width="100" rowspan="2">NET SALES</td>	
+						<?php
+					}
+					
+					if($diskon_sebelum_pajak_service == 0){
+						?>
+						<td class="xcenter" width="220" colspan="2">DISC AFTER TAX/SRV</td>
 						<?php
 					}
 					?>
+					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
+					<td class="xcenter" width="100" rowspan="2">NET SALES</td>	
 					<td class="xcenter" width="100" rowspan="2">TAX</td>
 					<td class="xcenter" width="100" rowspan="2">SERVICE</td>
 					<td class="xcenter" width="100" rowspan="2">SUB TOTAL</td>
-					<?php
-					if($diskon_sebelum_pajak_service == 0){
-						?>
-						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>	
-						<?php
-					}
-					?>
 					<td class="xcenter" width="100" rowspan="2">PEMBULATAN</td>
 					<td class="xcenter" width="120" rowspan="2">GRAND TOTAL</td>
-					<td class="xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>
-					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
-					<td class="xcenter" width="100" rowspan="2">DP</td>
+					<td class="xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT + DP</td>
+					<td class="xcenter" width="100" rowspan="2">&nbsp;</td>
 				</tr>
 				<tr class="tbl-header">
 					<?php
@@ -645,14 +666,9 @@
 										?>
 										<td class="xright"><?php echo $det['discount_total_show']; ?></td>
 										<td class="xright"><?php echo $det['discount_billing_total_show']; ?></td>
-										<td class="xright"><?php echo $det['net_sales_show']; ?></td>
 										<?php
 									}
-									?>
-									<td class="xright"><?php echo $det['tax_total_show']; ?></td>
-									<td class="xright"><?php echo $det['service_total_show']; ?></td>
-									<td class="xright"><?php echo $det['sub_total_show']; ?></td>
-									<?php
+									
 									if($diskon_sebelum_pajak_service == 0){
 										?>
 										<td class="xright"><?php echo $det['discount_total_show']; ?></td>
@@ -660,6 +676,11 @@
 										<?php
 									}
 									?>
+									<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
+									<td class="xright"><?php echo $det['net_sales_show']; ?></td>
+									<td class="xright"><?php echo $det['tax_total_show']; ?></td>
+									<td class="xright"><?php echo $det['service_total_show']; ?></td>
+									<td class="xright"><?php echo $det['sub_total_show']; ?></td>
 									<td class="xright"><?php echo $det['total_pembulatan_show']; ?></td>
 									<td class="xright"><?php echo $det['grand_total_show']; ?></td>
 									<?php
@@ -691,7 +712,6 @@
 										}
 									}
 									?>
-									<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
 									<td class="xright"><?php echo $det['total_dp_show']; ?></td>
 								</tr>
 								<?php	
@@ -736,14 +756,9 @@
 								?>
 								<td class="xright xbold"><?php echo priceFormat($cat_discount_total); ?></td>
 								<td class="xright xbold"><?php echo priceFormat($cat_discount_billing_total); ?></td>
-								<td class="xright xbold"><?php echo priceFormat($cat_total_net_sales); ?></td>
 								<?php
 							}
-							?>
-							<td class="xright xbold"><?php echo priceFormat($cat_total_tax); ?></td>
-							<td class="xright xbold"><?php echo priceFormat($cat_total_service); ?></td>
-							<td class="xright xbold"><?php echo priceFormat($cat_total_sub_total); ?></td>
-							<?php
+							
 							if($diskon_sebelum_pajak_service == 0){
 								?>
 								<td class="xright xbold"><?php echo priceFormat($cat_discount_total); ?></td>
@@ -751,6 +766,11 @@
 								<?php
 							}
 							?>
+							<td class="xright xbold"><?php echo priceFormat($cat_compliment_total); ?></td>
+							<td class="xright xbold"><?php echo priceFormat($cat_total_net_sales); ?></td>
+							<td class="xright xbold"><?php echo priceFormat($cat_total_tax); ?></td>
+							<td class="xright xbold"><?php echo priceFormat($cat_total_service); ?></td>
+							<td class="xright xbold"><?php echo priceFormat($cat_total_sub_total); ?></td>
 							<td class="xright xbold"><?php echo priceFormat($cat_total_pembulatan); ?></td>
 							<td class="xright xbold"><?php echo priceFormat($cat_grand_total); ?></td>
 							<?php
@@ -767,7 +787,6 @@
 								}
 							}
 							?>
-							<td class="xright xbold"><?php echo priceFormat($cat_compliment_total); ?></td>
 							<td class="xright xbold"><?php echo priceFormat($cat_total_dp); ?></td>
 						</tr>
 						<?php
@@ -785,14 +804,9 @@
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($discount_billing_total); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
 						<?php
 					}
-					?>
-					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
-					<?php
+					
 					if($diskon_sebelum_pajak_service == 0){
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
@@ -800,6 +814,11 @@
 						<?php
 					}
 					?>
+					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_pembulatan); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($grand_total); ?></td>
 					<?php
@@ -816,7 +835,6 @@
 						}
 					}
 					?>
-					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_dp); ?></td>
 				</tr>
 				<?php
@@ -839,25 +857,24 @@
 					if($diskon_sebelum_pajak_service == 1){
 						?>
 						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>
-						<td class="xcenter" width="100" rowspan="2">NET SALES</td>	
+						<?php
+					}
+					
+					if($diskon_sebelum_pajak_service == 0){
+						?>
+						<td class="xcenter" width="220" colspan="2">DISC AFTER TAX/SRV</td>
 						<?php
 					}
 					?>
+					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
+					<td class="xcenter" width="100" rowspan="2">NET SALES</td>	
 					<td class="xcenter" width="100" rowspan="2">TAX</td>
 					<td class="xcenter" width="100" rowspan="2">SERVICE</td>
 					<td class="xcenter" width="100" rowspan="2">SUB TOTAL</td>
-					<?php
-					if($diskon_sebelum_pajak_service == 0){
-						?>
-						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>	
-						<?php
-					}
-					?>
 					<td class="xcenter" width="100" rowspan="2">PEMBULATAN</td>
 					<td class="xcenter" width="120" rowspan="2">GRAND TOTAL</td>
-					<td class="xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>
-					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
-					<td class="xcenter" width="100" rowspan="2">DP</td>
+					<td class="xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT + DP</td>
+					<td class="xcenter" width="100" rowspan="2">&nbsp;</td>
 				</tr>
 				
 				<tr class="tbl-header">
@@ -910,14 +927,9 @@
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
 								<td class="xright"><?php echo $det['discount_billing_total_show']; ?></td>
-								<td class="xright"><?php echo $det['net_sales_show']; ?></td>
 								<?php
 							}
-							?>
-							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
-							<td class="xright"><?php echo $det['service_total_show']; ?></td>
-							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
-							<?php
+							
 							if($diskon_sebelum_pajak_service == 0){
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
@@ -925,6 +937,11 @@
 								<?php
 							}
 							?>
+							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
+							<td class="xright"><?php echo $det['net_sales_show']; ?></td>
+							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
+							<td class="xright"><?php echo $det['service_total_show']; ?></td>
+							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_pembulatan_show']; ?></td>
 							<td class="xright"><?php echo $det['grand_total_show']; ?></td>
 							<?php
@@ -956,7 +973,6 @@
 								}
 							}
 							?>
-							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_dp_show']; ?></td>
 						</tr>
 						<?php	
@@ -987,14 +1003,9 @@
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($discount_billing_total); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
 						<?php
 					}
-					?>
-					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
-					<?php
+					
 					if($diskon_sebelum_pajak_service == 0){
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
@@ -1002,6 +1013,11 @@
 						<?php
 					}
 					?>
+					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_pembulatan); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($grand_total); ?></td>
 					<?php
@@ -1018,7 +1034,6 @@
 						}
 					}
 					?>
-					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_dp); ?></td>
 				</tr>
 				<?php
@@ -1048,24 +1063,23 @@
 					if($diskon_sebelum_pajak_service == 1){
 						?>
 						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>
-						<td class="xcenter" width="100" rowspan="2">NET SALES</td>	
+						<?php
+					}
+					
+					if($diskon_sebelum_pajak_service == 0){
+						?>
+						<td class="xcenter" width="220" colspan="2">DISC AFTER TAX/SRV</td>
 						<?php
 					}
 					?>
+					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
+					<td class="xcenter" width="100" rowspan="2">NET SALES</td>	
 					<td class="xcenter" width="100" rowspan="2">TAX</td>
 					<td class="xcenter" width="100" rowspan="2">SERVICE</td>
 					<td class="xcenter" width="100" rowspan="2">SUB TOTAL</td>
-					<?php
-					if($diskon_sebelum_pajak_service == 0){
-						?>
-						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>	
-						<?php
-					}
-					?>
 					<td class="xcenter" width="100" rowspan="2">PEMBULATAN</td>
 					<td class="xcenter" width="120" rowspan="2">GRAND TOTAL</td>
 					<td class="xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>
-					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
 					<td class="xcenter" width="100" rowspan="2">DP</td>
 				</tr>
 				<tr class="tbl-header">
@@ -1117,14 +1131,9 @@
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
 								<td class="xright"><?php echo $det['discount_billing_total_show']; ?></td>
-								<td class="xright"><?php echo $det['net_sales_show']; ?></td>
 								<?php
 							}
-							?>
-							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
-							<td class="xright"><?php echo $det['service_total_show']; ?></td>
-							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
-							<?php
+							
 							if($diskon_sebelum_pajak_service == 0){
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
@@ -1132,6 +1141,11 @@
 								<?php
 							}
 							?>
+							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
+							<td class="xright"><?php echo $det['net_sales_show']; ?></td>
+							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
+							<td class="xright"><?php echo $det['service_total_show']; ?></td>
+							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_pembulatan_show']; ?></td>
 							<td class="xright"><?php echo $det['grand_total_show']; ?></td>
 							<?php
@@ -1163,7 +1177,6 @@
 								}
 							}
 							?>
-							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_dp_show']; ?></td>
 						</tr>
 						<?php	
@@ -1194,14 +1207,9 @@
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($discount_billing_total); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
 						<?php
 					}
-					?>
-					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
-					<?php
+					
 					if($diskon_sebelum_pajak_service == 0){
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
@@ -1209,6 +1217,11 @@
 						<?php
 					}
 					?>
+					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_pembulatan); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($grand_total); ?></td>
 					<?php
@@ -1225,7 +1238,6 @@
 						}
 					}
 					?>
-					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_dp); ?></td>
 				</tr>
 				<?php
@@ -1247,25 +1259,24 @@
 					<?php
 					if($diskon_sebelum_pajak_service == 1){
 						?>
-						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>	
-						<td class="xcenter" width="100" rowspan="2">NET SALES</td>
+						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>
+						<?php
+					}
+					
+					if($diskon_sebelum_pajak_service == 0){
+						?>
+						<td class="xcenter" width="220" colspan="2">DISC AFTER TAX/SRV</td>
 						<?php
 					}
 					?>
+					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
+					<td class="xcenter" width="100" rowspan="2">NET SALES</td>	
 					<td class="xcenter" width="100" rowspan="2">TAX</td>
 					<td class="xcenter" width="100" rowspan="2">SERVICE</td>
 					<td class="xcenter" width="100" rowspan="2">SUB TOTAL</td>
-					<?php
-					if($diskon_sebelum_pajak_service == 0){
-						?>
-						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>	
-						<?php
-					}
-					?>
 					<td class="xcenter" width="100" rowspan="2">PEMBULATAN</td>
 					<td class="xcenter" width="120" rowspan="2">GRAND TOTAL</td>
 					<td class="xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>
-					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
 					<td class="xcenter" width="100" rowspan="2">DP</td>
 				</tr>
 				<tr class="tbl-header">
@@ -1317,14 +1328,9 @@
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
 								<td class="xright"><?php echo $det['discount_billing_total_show']; ?></td>
-								<td class="xright"><?php echo $det['net_sales_show']; ?></td>
 								<?php
 							}
-							?>
-							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
-							<td class="xright"><?php echo $det['service_total_show']; ?></td>
-							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
-							<?php
+							
 							if($diskon_sebelum_pajak_service == 0){
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
@@ -1332,6 +1338,11 @@
 								<?php
 							}
 							?>
+							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
+							<td class="xright"><?php echo $det['net_sales_show']; ?></td>
+							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
+							<td class="xright"><?php echo $det['service_total_show']; ?></td>
+							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_pembulatan_show']; ?></td>
 							<td class="xright"><?php echo $det['grand_total_show']; ?></td>
 							<?php
@@ -1363,7 +1374,6 @@
 								}
 							}
 							?>
-							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_dp_show']; ?></td>
 						</tr>
 						<?php	
@@ -1394,14 +1404,9 @@
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($discount_billing_total); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
 						<?php
 					}
-					?>
-					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
-					<?php
+					
 					if($diskon_sebelum_pajak_service == 0){
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
@@ -1409,6 +1414,11 @@
 						<?php
 					}
 					?>
+					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_pembulatan); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($grand_total); ?></td>
 					<?php
@@ -1425,7 +1435,6 @@
 						}
 					}
 					?>
-					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_dp); ?></td>
 				</tr>
 				<?php
@@ -1448,25 +1457,24 @@
 					<?php
 					if($diskon_sebelum_pajak_service == 1){
 						?>
-						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>	
-						<td class="xcenter" width="100" rowspan="2">NET SALES</td>
+						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>
+						<?php
+					}
+					
+					if($diskon_sebelum_pajak_service == 0){
+						?>
+						<td class="xcenter" width="220" colspan="2">DISC AFTER TAX/SRV</td>
 						<?php
 					}
 					?>
+					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
+					<td class="xcenter" width="100" rowspan="2">NET SALES</td>	
 					<td class="xcenter" width="100" rowspan="2">TAX</td>
 					<td class="xcenter" width="100" rowspan="2">SERVICE</td>
 					<td class="xcenter" width="100" rowspan="2">SUB TOTAL</td>
-					<?php
-					if($diskon_sebelum_pajak_service == 0){
-						?>
-						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>	
-						<?php
-					}
-					?>
 					<td class="xcenter" width="100" rowspan="2">PEMBULATAN</td>
 					<td class="xcenter" width="120" rowspan="2">GRAND TOTAL</td>
 					<td class="xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>
-					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
 					<td class="xcenter" width="100" rowspan="2">DP</td>
 				</tr>
 				<tr class="tbl-header">
@@ -1518,14 +1526,9 @@
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
 								<td class="xright"><?php echo $det['discount_billing_total_show']; ?></td>
-								<td class="xright"><?php echo $det['net_sales_show']; ?></td>
 								<?php
 							}
-							?>
-							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
-							<td class="xright"><?php echo $det['service_total_show']; ?></td>
-							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
-							<?php
+							
 							if($diskon_sebelum_pajak_service == 0){
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
@@ -1533,6 +1536,11 @@
 								<?php
 							}
 							?>
+							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
+							<td class="xright"><?php echo $det['net_sales_show']; ?></td>
+							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
+							<td class="xright"><?php echo $det['service_total_show']; ?></td>
+							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_pembulatan_show']; ?></td>
 							<td class="xright"><?php echo $det['grand_total_show']; ?></td>
 							<?php
@@ -1564,7 +1572,6 @@
 								}
 							}
 							?>
-							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_dp_show']; ?></td>
 						</tr>
 						<?php	
@@ -1595,14 +1602,9 @@
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($discount_billing_total); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
 						<?php
 					}
-					?>
-					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
-					<?php
+					
 					if($diskon_sebelum_pajak_service == 0){
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
@@ -1610,6 +1612,11 @@
 						<?php
 					}
 					?>
+					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_pembulatan); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($grand_total); ?></td>
 					<?php
@@ -1626,7 +1633,6 @@
 						}
 					}
 					?>
-					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_dp); ?></td>
 				</tr>
 				<?php
@@ -1650,24 +1656,23 @@
 					if($diskon_sebelum_pajak_service == 1){
 						?>
 						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>
-						<td class="xcenter" width="100" rowspan="2">NET SALES</td>	
+						<?php
+					}
+					
+					if($diskon_sebelum_pajak_service == 0){
+						?>
+						<td class="xcenter" width="220" colspan="2">DISC AFTER TAX/SRV</td>
 						<?php
 					}
 					?>
+					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
+					<td class="xcenter" width="100" rowspan="2">NET SALES</td>	
 					<td class="xcenter" width="100" rowspan="2">TAX</td>
 					<td class="xcenter" width="100" rowspan="2">SERVICE</td>
 					<td class="xcenter" width="100" rowspan="2">SUB TOTAL</td>
-					<?php
-					if($diskon_sebelum_pajak_service == 0){
-						?>
-						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>	
-						<?php
-					}
-					?>
 					<td class="xcenter" width="100" rowspan="2">PEMBULATAN</td>
 					<td class="xcenter" width="120" rowspan="2">GRAND TOTAL</td>
 					<td class="xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>
-					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
 					<td class="xcenter" width="100" rowspan="2">DP</td>
 				</tr>
 				<tr class="tbl-header">
@@ -1744,14 +1749,9 @@
 										?>
 										<td class="xright"><?php echo $det['discount_total_show']; ?></td>
 										<td class="xright"><?php echo $det['discount_billing_total_show']; ?></td>
-										<td class="xright"><?php echo $det['net_sales_show']; ?></td>
 										<?php
 									}
-									?>
-									<td class="xright"><?php echo $det['tax_total_show']; ?></td>
-									<td class="xright"><?php echo $det['service_total_show']; ?></td>
-									<td class="xright"><?php echo $det['sub_total_show']; ?></td>
-									<?php
+									
 									if($diskon_sebelum_pajak_service == 0){
 										?>
 										<td class="xright"><?php echo $det['discount_total_show']; ?></td>
@@ -1759,6 +1759,11 @@
 										<?php
 									}
 									?>
+									<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
+									<td class="xright"><?php echo $det['net_sales_show']; ?></td>
+									<td class="xright"><?php echo $det['tax_total_show']; ?></td>
+									<td class="xright"><?php echo $det['service_total_show']; ?></td>
+									<td class="xright"><?php echo $det['sub_total_show']; ?></td>
 									<td class="xright"><?php echo $det['total_pembulatan_show']; ?></td>
 									<td class="xright"><?php echo $det['grand_total_show']; ?></td>
 									<?php
@@ -1790,7 +1795,6 @@
 										}
 									}
 									?>
-									<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
 									<td class="xright"><?php echo $det['total_dp_show']; ?></td>
 								</tr>
 								<?php	
@@ -1835,14 +1839,9 @@
 								?>
 								<td class="xright xbold"><?php echo priceFormat($cat_discount_total); ?></td>
 								<td class="xright xbold"><?php echo priceFormat($cat_discount_billing_total); ?></td>
-								<td class="xright xbold"><?php echo priceFormat($cat_total_net_sales); ?></td>
 								<?php
 							}
-							?>
-							<td class="xright xbold"><?php echo priceFormat($cat_total_tax); ?></td>
-							<td class="xright xbold"><?php echo priceFormat($cat_total_service); ?></td>
-							<td class="xright xbold"><?php echo priceFormat($cat_total_sub_total); ?></td>
-							<?php
+							
 							if($diskon_sebelum_pajak_service == 0){
 								?>
 								<td class="xright xbold"><?php echo priceFormat($cat_discount_total); ?></td>
@@ -1850,6 +1849,11 @@
 								<?php
 							}
 							?>
+							<td class="xright xbold"><?php echo priceFormat($cat_compliment_total); ?></td>
+							<td class="xright xbold"><?php echo priceFormat($cat_total_net_sales); ?></td>
+							<td class="xright xbold"><?php echo priceFormat($cat_total_tax); ?></td>
+							<td class="xright xbold"><?php echo priceFormat($cat_total_service); ?></td>
+							<td class="xright xbold"><?php echo priceFormat($cat_total_sub_total); ?></td>
 							<td class="xright xbold"><?php echo priceFormat($cat_total_pembulatan); ?></td>
 							<td class="xright xbold"><?php echo priceFormat($cat_grand_total); ?></td>
 							<?php
@@ -1866,7 +1870,6 @@
 								}
 							}
 							?>
-							<td class="xright xbold"><?php echo priceFormat($cat_compliment_total); ?></td>
 							<td class="xright xbold"><?php echo priceFormat($cat_total_dp); ?></td>
 						</tr>
 						<?php
@@ -1884,14 +1887,9 @@
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($discount_billing_total); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
 						<?php
 					}
-					?>
-					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
-					<?php
+					
 					if($diskon_sebelum_pajak_service == 0){
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
@@ -1899,6 +1897,11 @@
 						<?php
 					}
 					?>
+					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_pembulatan); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($grand_total); ?></td>
 					<?php
@@ -1915,7 +1918,6 @@
 						}
 					}
 					?>
-					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_dp); ?></td>
 				</tr>
 				<?php
@@ -1937,24 +1939,23 @@
 					if($diskon_sebelum_pajak_service == 1){
 						?>
 						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>
-						<td class="xcenter" width="100" rowspan="2">NET SALES</td>	
+						<?php
+					}
+					
+					if($diskon_sebelum_pajak_service == 0){
+						?>
+						<td class="xcenter" width="220" colspan="2">DISC AFTER TAX/SRV</td>
 						<?php
 					}
 					?>
+					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
+					<td class="xcenter" width="100" rowspan="2">NET SALES</td>	
 					<td class="xcenter" width="100" rowspan="2">TAX</td>
 					<td class="xcenter" width="100" rowspan="2">SERVICE</td>
 					<td class="xcenter" width="100" rowspan="2">SUB TOTAL</td>
-					<?php
-					if($diskon_sebelum_pajak_service == 0){
-						?>
-						<td class="xcenter" width="220" colspan="2">DISCOUNT</td>	
-						<?php
-					}
-					?>
 					<td class="xcenter" width="100" rowspan="2">PEMBULATAN</td>
 					<td class="xcenter" width="120" rowspan="2">GRAND TOTAL</td>
 					<td class="xcenter" width="100" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>
-					<td class="xcenter" width="100" rowspan="2">COMPLIMENT</td>
 					<td class="xcenter" width="100" rowspan="2">DP</td>
 				</tr>
 				<tr class="tbl-header">
@@ -2006,14 +2007,9 @@
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
 								<td class="xright"><?php echo $det['discount_billing_total_show']; ?></td>
-								<td class="xright"><?php echo $det['net_sales_show']; ?></td>
 								<?php
 							}
-							?>
-							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
-							<td class="xright"><?php echo $det['service_total_show']; ?></td>
-							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
-							<?php
+							
 							if($diskon_sebelum_pajak_service == 0){
 								?>
 								<td class="xright"><?php echo $det['discount_total_show']; ?></td>
@@ -2021,6 +2017,11 @@
 								<?php
 							}
 							?>
+							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
+							<td class="xright"><?php echo $det['net_sales_show']; ?></td>
+							<td class="xright"><?php echo $det['tax_total_show']; ?></td>
+							<td class="xright"><?php echo $det['service_total_show']; ?></td>
+							<td class="xright"><?php echo $det['sub_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_pembulatan_show']; ?></td>
 							<td class="xright"><?php echo $det['grand_total_show']; ?></td>
 							<?php
@@ -2052,7 +2053,6 @@
 								}
 							}
 							?>
-							<td class="xright"><?php echo $det['compliment_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_dp_show']; ?></td>
 						</tr>
 						<?php	
@@ -2083,14 +2083,9 @@
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($discount_billing_total); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
 						<?php
 					}
-					?>
-					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
-					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
-					<?php
+					
 					if($diskon_sebelum_pajak_service == 0){
 						?>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
@@ -2098,6 +2093,11 @@
 						<?php
 					}
 					?>
+					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_net_sales); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_tax); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_service); ?></td>
+					<td class="xright xbold"><?php echo priceFormat($total_sub_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_pembulatan); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($grand_total); ?></td>
 					<?php
@@ -2114,7 +2114,6 @@
 						}
 					}
 					?>
-					<td class="xright xbold"><?php echo priceFormat($compliment_total); ?></td>
 					<td class="xright xbold"><?php echo priceFormat($total_dp); ?></td>
 				</tr>
 				<?php

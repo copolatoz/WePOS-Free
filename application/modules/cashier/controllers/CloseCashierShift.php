@@ -691,7 +691,8 @@ class CloseCashierShift extends MY_Controller {
 			die();
 		}
 		
-		$id = $this->input->post('id', true);	
+		$id = $this->input->post_get('id', true);	
+		$test = $this->input->post_get('test', true);	
 		
 		//LOAD USER OPEN SHIFT
 		$get_data = $this->loadCloseShift(true, $id); //array
@@ -1043,7 +1044,7 @@ class CloseCashierShift extends MY_Controller {
 			//user_shift
 			$this->db->where("a.shift", $get_data['user_shift']);
 			
-			$this->db->order_by("payment_date","ASC");
+			$this->db->order_by("payment_id","ASC");
 			
 			$get_dt = $this->db->get();
 			if($get_dt->num_rows() > 0){
@@ -1095,6 +1096,7 @@ class CloseCashierShift extends MY_Controller {
 				'tax_total'	=> 0,
 				'total_pembulatan'	=> 0,
 				'compliment_total'	=> 0,
+				'total_dp'	=> 0,
 				'grand_total'	=> 0,
 				'total_of_item_discount'	=> 0,
 				'total_of_billing'	=> 0,
@@ -1155,16 +1157,17 @@ class CloseCashierShift extends MY_Controller {
 					}
 					
 					if(!empty($s['is_compliment'])){
-						$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
-						$s['service_total'] = 0;
-						$s['tax_total'] = 0;
+						//$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
+						if($s['total_billing'] < $s['compliment_total'] OR $s['total_billing'] == $s['compliment_total']){
+							$s['service_total'] = 0;
+							$s['tax_total'] = 0;
+						}
 					}
 					
 					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];		
-					}else{
-						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+					if($data_post['diskon_sebelum_pajak_service'] == 1){
+						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'] - $s['compliment_total'];
+						$s['net_sales'] = $s['total_billing'] - $s['discount_total'] - $s['compliment_total'];
 						
 						if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 							//CHECKING BALANCE #1
@@ -1185,8 +1188,17 @@ class CloseCashierShift extends MY_Controller {
 							}
 						}
 						
+						//GRAND TOTAL
+						$s['grand_total'] = $s['sub_total'];
 						
-						$s['net_sales'] = $s['total_billing'] - $s['discount_total'];
+					}else{
+						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'] - $s['compliment_total'];		
+						$s['net_sales'] = $s['total_billing'] - $s['compliment_total'];
+						
+						//GRAND TOTAL
+						$s['grand_total'] = $s['sub_total'];
+						$s['grand_total'] -= $s['discount_total'];
+						$s['grand_total'] -= $s['discount_billing_total'];
 					}
 					
 					if(!empty($s['discount_id'])){
@@ -1208,13 +1220,7 @@ class CloseCashierShift extends MY_Controller {
 					//}
 					
 					$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
-					$s['grand_total'] -= $s['compliment_total'];
-					
-					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['grand_total'] -= $s['discount_total'];
-						$s['grand_total'] -= $s['discount_billing_total'];
-					}
+					//$s['grand_total'] -= $s['compliment_total'];
 					
 					if($s['grand_total'] <= 0){
 						$s['grand_total'] = 0;
@@ -1273,28 +1279,34 @@ class CloseCashierShift extends MY_Controller {
 						$s['total_compliment'] = $s['compliment_total'];
 						$s['total_compliment_show'] = priceFormat($s['total_compliment']);
 						//$s['is_compliment'] = 1;
-					}else{
+					}
 					
-						if(!empty($s['is_half_payment'])){
-							$s['payment_note'] = 'HALF PAYMENT';
+					if(!empty($s['is_half_payment'])){
+						if(!empty($s['payment_note'])){
+							$s['payment_note'] .= ', ';
 						}
-						
-						if(strtolower($s['payment_type_name']) != 'cash'){
-							$s['payment_note'] = strtoupper($s['bank_name']).' '.$card_no;
+						$s['payment_note'] .= 'HALF PAYMENT';
+					}
+					
+					if(strtolower($s['payment_type_name']) != 'cash'){
+						if(!empty($s['payment_note'])){
+							$s['payment_note'] .= '<br/>';
 						}
+						$s['payment_note'] .= strtoupper($s['payment_type_name']) .': '.strtoupper($s['bank_name']).' '.$card_no;
 					}
 					
 					if(!empty($s['billing_notes'])){
 						if(!empty($s['payment_note'])){
-							$s['payment_note'] .= '<br/>'.$s['billing_notes'];
-						}else{
-							$s['payment_note'] .= $s['billing_notes'];
+							$s['payment_note'] .= '<br/>';
 						}
+						$s['payment_note'] .= $s['billing_notes'];
 					}
 					
 					$data_post['summary_data']['total_billing'] += $s['total_billing'];
 					$data_post['summary_data']['total_discount_item'] += $s['discount_total'];
 					$data_post['summary_data']['total_discount_billing'] += $s['discount_billing_total'];
+					$data_post['summary_data']['net_sales'] += $s['net_sales'];
+					$data_post['summary_data']['total_dp'] += $s['total_dp'];
 					$data_post['summary_data']['service_total'] += $s['service_total'];
 					$data_post['summary_data']['tax_total'] += $s['tax_total'];
 					$data_post['summary_data']['total_pembulatan'] += $s['total_pembulatan'];
@@ -1347,7 +1359,7 @@ class CloseCashierShift extends MY_Controller {
 							$payment_name = $dt_payment_name[$s['payment_id']];
 							
 							if($s['payment_id'] == 4){
-								$bank_name = 'AR / PIUTANG';
+								//$bank_name = 'AR / PIUTANG';
 							}
 						}
 						
@@ -1414,7 +1426,9 @@ class CloseCashierShift extends MY_Controller {
 					if(!empty($payment_data)){
 						foreach($payment_data as $key_id => $dtPay){
 					
+							//update-2001.200
 							$tot_payment = 0;
+							$tot_payment_halfpayment = 0; 
 							$tot_payment_show = 0;
 							if($s['payment_id'] == $key_id){
 								//$tot_payment = $s['grand_total'];
@@ -1432,7 +1446,9 @@ class CloseCashierShift extends MY_Controller {
 								//credit half payment
 								if(!empty($s['is_half_payment']) AND $key_id != 1){
 									$tot_payment = $s['total_credit'];
-									$tot_payment_show = priceFormat($s['total_credit']);
+									$tot_payment_halfpayment = $s['total_cash'];
+									//$tot_payment_show = priceFormat($s['total_credit']);
+									$tot_payment_show = priceFormat($tot_payment+$tot_payment_halfpayment);
 								}else{
 									
 									$tot_payment_show = priceFormat($tot_payment);	
@@ -1456,6 +1472,9 @@ class CloseCashierShift extends MY_Controller {
 							}
 							
 							$summary_payment[$var_payment]['payment_'.$key_id] += $tot_payment;
+							if(!empty($tot_payment_halfpayment)){
+								$summary_payment[0]['payment_1'] += $tot_payment_halfpayment;
+							}
 															
 						}
 					}
@@ -1850,7 +1869,7 @@ class CloseCashierShift extends MY_Controller {
 					}
 					
 					if(!empty($dt['compliment_total'])){
-						$dt['compliment_total'] += $selisih_pembulatan;
+						//$dt['compliment_total'] += $selisih_pembulatan;
 					}
 					
 					//KONVERSI PEMBULATAN PAYMENT
@@ -1908,12 +1927,12 @@ class CloseCashierShift extends MY_Controller {
 			$disc_per_item = printer_command_align_right(priceFormat($data_post['summary_data']['total_discount_item']), $max_number_3);
 			
 			$menu_net_sales_count = ($data_post['summary_data']['total_billing']-$data_post['summary_data']['total_discount_item']);
-			$menu_net_sales = printer_command_align_right(priceFormat($menu_net_sales_count), $max_number_3);
+			//$menu_net_sales = printer_command_align_right(priceFormat($menu_net_sales_count), $max_number_3);
 			$disc_per_billing = printer_command_align_right(priceFormat($data_post['summary_data']['total_discount_billing']), $max_number_3);
 			
 			//$total_net_sales_count = ($menu_net_sales_count-$data_post['summary_data']['total_discount_item']);
 			$total_net_sales_count = $menu_net_sales_count - $data_post['summary_data']['total_discount_billing'];
-			$total_net_sales = printer_command_align_right(priceFormat($total_net_sales_count), $max_number_3);
+			$total_net_sales = printer_command_align_right(priceFormat($data_post['summary_data']['net_sales']), $max_number_3);
 			
 			$service_total = printer_command_align_right(priceFormat($data_post['summary_data']['service_total']), $max_number_3);
 			$tax_total = printer_command_align_right(priceFormat($data_post['summary_data']['tax_total']), $max_number_3);
@@ -1923,22 +1942,36 @@ class CloseCashierShift extends MY_Controller {
 			
 			$total_of_billing = printer_command_align_right(priceFormat($data_post['summary_data']['total_of_billing']), $max_number_3);
 			$total_of_guest = printer_command_align_right(priceFormat($data_post['summary_data']['total_of_guest']), $max_number_3);
+			$total_dp = printer_command_align_right(priceFormat($data_post['summary_data']['total_dp']), $max_number_3);
 			
 			$all_summary_data = "[align=0][size=1][tab]SALES SUMMARY[tab]\n";
 			$all_summary_data .= "[size=0]";
 			$all_summary_data .= "[align=0][tab]QTY BILLING[tab]".$total_of_billing."\n"; 
 			$all_summary_data .= "[align=0][tab]TOTAL GUEST[tab]".$total_of_guest."\n"; 
 			$all_summary_data .= "[align=0][tab]MENU SALES[tab]".$menu_sales."\n"; 
-			$all_summary_data .= "[align=0][tab]DISC/ITEM[tab]".$disc_per_item."\n"; 
-			$all_summary_data .= "[align=0][tab]NET SALES[tab]".$menu_net_sales."\n"; 
-			$all_summary_data .= "[align=0][tab]DISC/BILLING[tab]".$disc_per_billing."\n"; 
-			$all_summary_data .= "[align=0][tab]TOTAL NET SALES[tab]".$total_net_sales."\n"; 
-			$all_summary_data .= "[align=0][tab]SERVICE[tab]".$service_total."\n"; 
-			$all_summary_data .= "[align=0][tab]TAX[tab]".$tax_total."\n"; 
-			$all_summary_data .= "[align=0][tab]PEMBULATAN[tab]".$total_pembulatan."\n"; 
-			if(!empty($data_post['summary_data']['compliment_total'])){
-				$all_summary_data .= "[align=0][tab]COMPLIMENT[tab]".$compliment_total."\n"; 
+
+			if($data_post['diskon_sebelum_pajak_service'] == 1){
+				$all_summary_data .= "[align=0][tab]DISC/ITEM[tab]".$disc_per_item."\n"; 
+				$all_summary_data .= "[align=0][tab]DISC/BILLING[tab]".$disc_per_billing."\n"; 
+				if(!empty($data_post['summary_data']['compliment_total'])){
+					$all_summary_data .= "[align=0][tab]COMPLIMENT[tab]".$compliment_total."\n"; 
+				}
+				$all_summary_data .= "[align=0][tab]NET SALES[tab]".$total_net_sales."\n";
 			}
+			
+			$all_summary_data .= "[align=0][tab]TAX[tab]".$tax_total."\n"; 
+			$all_summary_data .= "[align=0][tab]SERVICE[tab]".$service_total."\n"; 
+			
+			if($data_post['diskon_sebelum_pajak_service'] == 0){
+				$all_summary_data .= "[align=0][tab]DISC/ITEM[tab]".$disc_per_item."\n"; 
+				$all_summary_data .= "[align=0][tab]DISC/BILLING[tab]".$disc_per_billing."\n"; 
+				if(!empty($data_post['summary_data']['compliment_total'])){
+					$all_summary_data .= "[align=0][tab]COMPLIMENT[tab]".$compliment_total."\n"; 
+				}
+				$all_summary_data .= "[align=0][tab]NET SALES[tab]".$total_net_sales."\n";
+			}
+			
+			$all_summary_data .= "[align=0][tab]PEMBULATAN[tab]".$total_pembulatan."\n"; 
 			$all_summary_data .= "[align=0][tab]TOTAL SALES[tab]".$grand_total; 
 			
 			//sort index
@@ -1955,59 +1988,18 @@ class CloseCashierShift extends MY_Controller {
 							$no_payment++;
 							$payment_name = ucwords(str_replace("_"," ",$dt['payment_name']));
 							$data_name = ucwords(str_replace("_"," ",$dt['bank_name']));
+							
+							//update-2001.200
 							if(strlen($data_name) > $max_text){
-								//skip on last space
-								$explTxt = explode(" ",$data_name);
-								
-								$no_exp = 1;
-								$tot_txt = 0;
-								$text_display = '';
-								foreach($explTxt as $txt){
-									$lnTxt = strlen($txt);
-									$tot_txt += $lnTxt;
-									
-									if($tot_txt > 0){
-										$tot_txt+=1; //space
-									}
-									
-									if($tot_txt > $max_text){
-										$all_text_array[] = $text_display;
-										$tot_txt = 0;
-										$lnTxt = strlen($txt);
-										$tot_txt += $lnTxt;
-										$text_display = $txt;
-										
-										//echo '2. '.$text_display.' '.$tot_txt.'<br/>';
-										
-									}else{
-									
-										if(empty($text_display)){
-											$text_display = $txt;
-										}else{
-											$text_display .= ' '.$txt;										
-										}
-										
-										//echo '1. '.$text_display.' '.$tot_txt.'<br/>';
-										
-									}
-									
-									if(count($explTxt) == $no_exp){
-										$all_text_array[] = $text_display;
-									}
-									
-									$no_exp++;
-								}
-								
-								if(empty($all_text_array[0])){
-									$data_name = substr($data_name, 0, $max_text);
-								}else{
-									$data_name = $all_text_array[0];
-								}
+								$data_name = substr($data_name,0,$max_text);
 							}
 							
 							if(empty($all_payment_data)){
 								$all_payment_data = "[align=0][size=1][tab]PAYMENT SUMMARY[tab]\n";
 								$all_payment_data .= "[size=0]";
+								if(!empty($data_post['summary_data']['total_dp'])){
+									$all_payment_data .= "[align=0][tab]DOWN-PAYMENT[tab]".$total_dp."\n"; 
+								}
 							}
 							
 							$value_show = printer_command_align_right(priceFormat($dt['payment_'.$key]), $max_number_3);
@@ -2019,7 +2011,7 @@ class CloseCashierShift extends MY_Controller {
 									//$all_payment_data .= $payment_name."\n";
 									$all_payment_data .= "[align=0][tab]".$payment_name."[tab] \n"; 
 								}
-								$all_payment_data .= "[align=0][tab] ** ".$data_name."[tab]".$value_show."\n";
+								$all_payment_data .= "[align=0][tab] *".$data_name."[tab]".$value_show."\n";
 							}
 							
 						}
@@ -2028,6 +2020,7 @@ class CloseCashierShift extends MY_Controller {
 					
 				}
 			}
+			
 			
 			$print_attr = array(
 				"{tipe_openclose}"		=> 'Close',
@@ -2049,9 +2042,12 @@ class CloseCashierShift extends MY_Controller {
 			
 			$print_content_cashierReceipt = strtr($cashierReceipt_openclose_layout, $print_attr);
 			
-			//echo '<pre>';
-			//print_r($print_content_cashierReceipt);
-			//die();
+			//update-2001.002
+			if(!empty($test)){
+				//echo '<pre>';
+				print_r($print_content_cashierReceipt);
+				die();
+			}
 			
 			$print_content_cashierReceipt = replace_to_printer_command($print_content_cashierReceipt, $printer_type_cashier, $printer_pin_cashierReceipt);
 			

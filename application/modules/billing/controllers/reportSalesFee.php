@@ -53,9 +53,12 @@ class reportSalesFee extends MY_Controller {
 			'date_till'	=> $date_till,
 			'user_fullname'	=> $user_fullname,
 			'sorting'	=> $sorting,
-			'diskon_sebelum_pajak_service' => 0
+			'diskon_sebelum_pajak_service' => 0,
+			'display_discount_type'	=> array()
 		);
 		
+		$display_discount_type = array();
+
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
 		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report',
 		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
@@ -76,8 +79,6 @@ class reportSalesFee extends MY_Controller {
 			die('Billing Paid Not Found!');
 		}else{
 				
-			$mktime_dari = strtotime($date_from);
-			$mktime_sampai = strtotime($date_till);
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
 						
@@ -135,6 +136,14 @@ class reportSalesFee extends MY_Controller {
 			$dt_payment = array();
 			if(!empty($data_post['report_data'])){
 				foreach ($data_post['report_data'] as $s){
+					
+					if(empty($display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']] = array();
+					}
+					if(!in_array($s['billing_id'], $display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']][] = $s['billing_id'];
+					}
+					
 					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
 					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 					
@@ -152,7 +161,7 @@ class reportSalesFee extends MY_Controller {
 					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
 						
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
+							if($s['diskon_sebelum_pajak_service'] == 1){
 								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
 								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 								$s['total_billing'] = $get_total_billing;
@@ -162,7 +171,7 @@ class reportSalesFee extends MY_Controller {
 							
 						}else{
 							if(!empty($s['include_tax'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
+								if($s['diskon_sebelum_pajak_service'] == 1){
 									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
 									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 									$s['total_billing'] = $get_total_billing;
@@ -171,7 +180,7 @@ class reportSalesFee extends MY_Controller {
 								}
 							}
 							if(!empty($s['include_service'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
+								if($s['diskon_sebelum_pajak_service'] == 1){
 									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
 									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 									$s['total_billing'] = $get_total_billing;
@@ -182,15 +191,22 @@ class reportSalesFee extends MY_Controller {
 						}
 					}
 					
+					//COMPLIMENT
 					if(!empty($s['is_compliment'])){
-						$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
+						//$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
 						$s['service_total'] = 0;
 						$s['tax_total'] = 0;
 					}
 					
 					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
+					if($s['diskon_sebelum_pajak_service'] == 0){
 						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
+						
+						//GRAND TOTAL
+						$s['grand_total'] = $s['sub_total'];
+						$s['grand_total'] -= $s['discount_total'];
+						$s['grand_total'] -= $s['discount_billing_total'];
+						
 					}else{
 						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
 						
@@ -213,6 +229,8 @@ class reportSalesFee extends MY_Controller {
 							}
 						}
 						
+						//GRAND TOTAL
+						$s['grand_total'] = $s['sub_total'];
 					}
 					
 					//SPLIT DISCOUNT TYPE
@@ -227,14 +245,15 @@ class reportSalesFee extends MY_Controller {
 					//	$s['sub_total'] = $s['total_billing'];
 					//}
 					
-					$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
+					//$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
+					$s['grand_total'] += $s['total_pembulatan'];
 					$s['grand_total'] -= $s['compliment_total'];
 					
 					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['grand_total'] -= $s['discount_total'];
-						$s['grand_total'] -= $s['discount_billing_total'];
-					}
+					//if($s['diskon_sebelum_pajak_service'] == 0){
+					//	$s['grand_total'] -= $s['discount_total'];
+					//	$s['grand_total'] -= $s['discount_billing_total'];
+					//}
 					
 					if($s['grand_total'] <= 0){
 						$s['grand_total'] = 0;
@@ -394,9 +413,16 @@ class reportSalesFee extends MY_Controller {
 					if(!empty($total_hpp[$dt['billing_id']])){
 						$dt['total_hpp'] = $total_hpp[$dt['billing_id']];
 					}
-					
-					$dt['total_profit'] = $dt['total_billing']-$dt['total_hpp'];
 					$dt['total_hpp_show'] = priceFormat($dt['total_hpp']);
+					
+					//$dt['total_profit'] = $dt['total_billing']-$dt['total_hpp'];
+					$dt['total_billing_profit'] = $dt['total_billing'];
+					$dt['total_billing_profit'] -= $dt['discount_total'];
+					$dt['total_billing_profit'] -= $dt['discount_billing_total'];
+					$dt['total_billing_profit'] -= $dt['total_compliment'];
+					$dt['total_billing_profit_show'] = priceFormat($dt['total_billing_profit']);
+					
+					$dt['total_profit'] = $dt['total_billing_profit']-$dt['total_hpp'];
 					$dt['total_profit_show'] = priceFormat($dt['total_profit']);
 					
 					$newData[] = $dt;
@@ -418,6 +444,7 @@ class reportSalesFee extends MY_Controller {
 		$useview = 'print_reportSalesFee';
 		$data_post['report_name'] = 'SALES FEE REPORT';
 		$data_post['sales_name_report'] = $sales_name_report;
+		$data_post['display_discount_type'] = $display_discount_type;
 		
 		if($do == 'excel'){
 			$useview = 'excel_reportSalesFee';
@@ -455,9 +482,12 @@ class reportSalesFee extends MY_Controller {
 			'date_from'	=> $date_from,
 			'date_till'	=> $date_till,
 			'user_fullname'	=> $user_fullname,
-			'diskon_sebelum_pajak_service' => 0
+			'diskon_sebelum_pajak_service' => 0,
+			'display_discount_type'	=> array()
 		);
 		
+		$display_discount_type = array();
+
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
 		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report',
 		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
@@ -544,6 +574,14 @@ class reportSalesFee extends MY_Controller {
 			$no_id = 1;
 			if(!empty($data_post['report_data'])){
 				foreach ($data_post['report_data'] as $s){
+					
+					if(empty($display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']] = array();
+					}
+					if(!in_array($s['billing_id'], $display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']][] = $s['billing_id'];
+					}
+					
 					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
 					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 					
@@ -559,7 +597,7 @@ class reportSalesFee extends MY_Controller {
 					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
 						
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
+							if($s['diskon_sebelum_pajak_service'] == 1){
 								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
 								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 								$s['total_billing'] = $get_total_billing;
@@ -569,7 +607,7 @@ class reportSalesFee extends MY_Controller {
 							
 						}else{
 							if(!empty($s['include_tax'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
+								if($s['diskon_sebelum_pajak_service'] == 1){
 									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
 									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 									$s['total_billing'] = $get_total_billing;
@@ -578,7 +616,7 @@ class reportSalesFee extends MY_Controller {
 								}
 							}
 							if(!empty($s['include_service'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
+								if($s['diskon_sebelum_pajak_service'] == 1){
 									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
 									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
 									$s['total_billing'] = $get_total_billing;
@@ -590,7 +628,7 @@ class reportSalesFee extends MY_Controller {
 					}
 					
 					if(!empty($s['is_compliment'])){
-						$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
+						//$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
 						//if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 						//	$s['total_billing'] = $s['total_billing'];
 						//}
@@ -600,10 +638,37 @@ class reportSalesFee extends MY_Controller {
 					
 					
 					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
+					if($s['diskon_sebelum_pajak_service'] == 0){
 						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
+						
+						//GRANDTOTAL
+						$s['grand_total'] = $s['sub_total'];
+						$s['grand_total'] -= $s['discount_total'];
+						$s['grand_total'] -= $s['discount_billing_total'];
+						
 					}else{
 						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+						
+						if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+							//CHECKING BALANCE #1
+							if(empty($s['discount_total'])){
+								if($s['sub_total'] != $s['total_billing_awal']){
+									$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
+									$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+								}
+							}else{
+								if(($s['sub_total'] + $s['total_pembulatan']) != $s['grand_total']){
+									$s['sub_total'] = ($s['grand_total']-$s['total_pembulatan'])+$s['compliment_total'];
+								}
+								
+								$cek_total_billing = $s['sub_total'] - ($s['tax_total'] + $s['service_total']) + $s['discount_total'];
+								if($s['total_billing'] != $cek_total_billing){
+									$s['total_billing'] = $cek_total_billing;
+								}
+							}
+						}
+						
+						$s['grand_total'] = $s['sub_total'];
 					}
 					
 					//SPLIT DISCOUNT TYPE
@@ -618,14 +683,15 @@ class reportSalesFee extends MY_Controller {
 					//	$s['sub_total'] = $s['total_billing'];
 					//}
 					
-					$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
+					//$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
+					$s['grand_total'] += $s['total_pembulatan'];
 					$s['grand_total'] -= $s['compliment_total'];
 					
 					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['grand_total'] -= $s['discount_total'];
-						$s['grand_total'] -= $s['discount_billing_total'];
-					}
+					//if($s['diskon_sebelum_pajak_service'] == 0){
+					//	$s['grand_total'] -= $s['discount_total'];
+					//	$s['grand_total'] -= $s['discount_billing_total'];
+					//}
 					
 					if($s['grand_total'] <= 0){
 						$s['grand_total'] = 0;
@@ -756,7 +822,15 @@ class reportSalesFee extends MY_Controller {
 							'total_hpp'			=> 0, 
 							'total_hpp_show'	=> 0, 
 							'total_profit'		=> 0, 
-							'total_profit_show'=> 0
+							'total_profit_show'=> 0,
+							'discount_total_before'	=> 0,
+							'discount_total_before_show'	=> 0,
+							'discount_billing_total_before'	=> 0,
+							'discount_billing_total_before_show'	=> 0,
+							'discount_total_after'	=> 0,
+							'discount_total_after_show'	=> 0,
+							'discount_billing_total_after'	=> 0,
+							'discount_billing_total_after_show'	=> 0,
 						);
 						
 						foreach($payment_data as $key_id => $dtPay){
@@ -782,6 +856,14 @@ class reportSalesFee extends MY_Controller {
 					$all_group_date[$group_id]['sub_total'] += $s['sub_total'];
 					$all_group_date[$group_id]['total_pembulatan'] += $s['total_pembulatan'];
 					$all_group_date[$group_id]['total_compliment'] += $s['compliment_total'];
+					
+					if($s['diskon_sebelum_pajak_service'] == 1){
+						$all_group_date[$group_id]['discount_total_before'] += $s['discount_total'];
+						$all_group_date[$group_id]['discount_billing_total_before'] += $s['discount_billing_total'];
+					}else{
+						$all_group_date[$group_id]['discount_total_after'] += $s['discount_total'];
+						$all_group_date[$group_id]['discount_billing_total_after'] += $s['discount_billing_total'];
+					}
 					
 					/* if(!empty($s['discount_total'])){
 						echo '<pre>';
@@ -944,15 +1026,19 @@ class reportSalesFee extends MY_Controller {
 					$detail['total_compliment_show'] = priceFormat($detail['total_compliment']);
 					$detail['total_sales_fee_show'] = priceFormat($detail['total_sales_fee']);
 					
-
 					if(!empty($total_hpp[$key])){
 						$detail['total_hpp'] = $total_hpp[$key];
 					}
-
-					$detail['total_profit'] = $detail['total_billing']-$detail['total_hpp'];
 					$detail['total_hpp_show'] = priceFormat($detail['total_hpp']);
-					$detail['total_profit_show'] = priceFormat($detail['total_profit']);
-						
+					
+					$detail['total_billing_profit'] = $detail['total_billing'];
+					$detail['total_billing_profit'] -= $detail['discount_total'];
+					$detail['total_billing_profit'] -= $detail['discount_billing_total'];
+					$detail['total_billing_profit'] -= $detail['total_compliment'];
+					$detail['total_billing_profit_show'] = priceFormat($detail['total_billing_profit']);
+					
+					$detail['total_profit'] = $detail['total_billing_profit']-$detail['total_hpp'];
+					$detail['total_profit_show'] = priceFormat($detail['total_profit']);					
 					
 					$newData[$key] = $detail;
 					
@@ -973,6 +1059,7 @@ class reportSalesFee extends MY_Controller {
 			
 			$data_post['report_data'] = $newData;
 			$data_post['payment_data'] = $dt_payment_name;
+			$data_post['display_discount_type'] = $display_discount_type;
 		}
 		
 		//DO-PRINT

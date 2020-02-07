@@ -154,7 +154,7 @@ class MasterBank extends MY_Controller {
 			
 			//check kode
 			$this->db->from($this->table);
-			$this->db->where("bank_code = '".$bank_code."' AND id = '".$id."'");
+			$this->db->where("bank_code = '".$bank_code."' AND id != '".$id."'");
 			$get_bank = $this->db->get();
 			if($get_bank->num_rows() > 0){
 				$r = array('success' => false, 'info'	=> "Kode Bank: ".$bank_code." sudah Ada!");

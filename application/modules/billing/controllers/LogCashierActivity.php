@@ -37,7 +37,6 @@ class LogCashierActivity extends MY_Controller {
 				'user_fullname'	=> $user_fullname
 		);
 		
-		
 		$get_opt = get_option_value(array('report_place_default','role_id_kasir','maxday_cashier_report',
 		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
 		if(!empty($get_opt['report_place_default'])){
@@ -57,7 +56,7 @@ class LogCashierActivity extends MY_Controller {
 		$qdate_from = $ret_dt['qdate_from'];
 		$qdate_till = $ret_dt['qdate_till'];
 		$qdate_till_max = $ret_dt['qdate_till_max'];
-		$add_where = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
+		$add_where = "(b.payment_date >= '".$qdate_from."' AND b.payment_date <= '".$qdate_till_max."')";
 		
 		if(!empty($text_search)){
 			$add_where .= " AND (a.createdby = '".$text_search."' 

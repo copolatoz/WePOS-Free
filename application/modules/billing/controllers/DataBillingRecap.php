@@ -90,7 +90,7 @@ class DataBillingRecap extends MY_Controller {
 				
 				$mktime_dari = strtotime($date_from);
 							
-				$date_from = date("Y-m-d",strtotime($date_from));		
+				//$date_from = date("Y-m-d",strtotime($date_from));		
 			}
 			
 			$qdate_from_plus1 = date("Y-m-d",strtotime($date_from)+ONE_DAY_UNIX);
@@ -185,8 +185,6 @@ class DataBillingRecap extends MY_Controller {
 					
 					$params['where'][] = "(a.payment_date >= '".$date_from." ".$data_shift[$shift_billing]['jam_from']."' AND a.payment_date <= '".$qdate_till_max." ".$data_shift[$shift_billing]['jam_till']."')";
 					
-					/*$params['where'][] = "(DATE_FORMAT(a.payment_date, '%Y-%m-%d') = '".$date_from."') 
-					AND (DATE_FORMAT(a.payment_date, '%H:%i:%s') BETWEEN '".$data_shift[$shift_billing]['jam_from']."' AND '".$data_shift[$shift_billing]['jam_till']."')";*/
 				}
 			}else{
 			
@@ -231,7 +229,7 @@ class DataBillingRecap extends MY_Controller {
 				
 				$mktime_dari = strtotime($date_from);
 				$mktime_sampai = strtotime($date_till);
-							
+				
 				$ret_dt = check_report_jam_operasional(array(), $mktime_dari, $mktime_sampai);
 						
 				//$qdate_from = date("Y-m-d 00:00:00",strtotime($date_from));
@@ -243,7 +241,7 @@ class DataBillingRecap extends MY_Controller {
 				$qdate_till = $ret_dt['qdate_till'];
 				$qdate_till_max = $ret_dt['qdate_till_max'];
 				$params['where'][] = "(a.updated >= '".$qdate_from."' AND a.updated <= '".$qdate_till_max."')";
-						
+		
 			}
 		}
 				

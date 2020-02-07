@@ -1,13 +1,16 @@
 <?php
+$date_title = $date_from;
+if($date_from != $date_till){
+	$date_title = $date_from.' to '.$date_till;
+}
 header("Content-Type:   application/excel; charset=utf-8");
-//header("Content-Type:   application/vnd.ms-excel; charset=utf-8");
-//header("Content-type:   application/x-msexcel; charset=utf-8");
-header("Content-Disposition: attachment; filename=".url_title($report_name.' '.$date_from.' to '.$date_till).".xls"); 
+header("Content-Disposition: attachment; filename=".url_title($report_name.' '.$tipe_sales.' '.$date_title).".xls"); 
 header("Expires: 0");
 header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
 header("Cache-Control: private",false);
 
-$set_width = 1040;
+
+$set_width = 1140;
 $total_cols = 10;
 
 //update-0120.001
@@ -19,7 +22,7 @@ if($show_compliment == false){
 	$total_cols -= 1;
 }
 if($show_note == false){
-	$set_width -= 200;
+	$set_width -= 300;
 	$total_cols -= 1;
 }
 if($show_shift_kasir == false){
@@ -43,34 +46,28 @@ if($show_shift_kasir == false){
 					<div>
 					
 						<div class="title_report"><?php echo $report_name; ?></div>
+						<div class="subtitle_report" style="margin-bottom:5px;">
 						<?php
 						if($date_from == $date_till){
-							?>
-							<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from; ?></div>		
-							<?php
+							echo 'Tanggal : '.$date_from;
 						}else{
-							?>
-							<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from.' s/d '.$date_till; ?></div>		
-							<?php
+							echo 'Tanggal : '.$date_from.' s/d '.$date_till;
 						}
-						
 						if(!empty($user_shift)){ 
-							?>
-							<div class="subtitle_report"><?php echo 'Shift: '.$user_shift; ?></div>		
-							<?php 				
+							echo ' &nbsp; | &nbsp; Shift: '.$user_shift;
 						}else{
-							?>
-							<div class="subtitle_report"><?php echo 'Shift: All Shift'; ?></div>		
-							<?php 
-							//$total_cols++;
+							echo ' &nbsp; | &nbsp; Shift: Semua Shift';
 						}
 						if(!empty($user_kasir)){ 
-							?>
-							<div class="subtitle_report"><?php echo 'Kasir: '.$user_kasir; ?></div>		
-							<?php 				
+							echo ' &nbsp; | &nbsp; Kasir: '.$user_kasir;
+						}else{
+							echo ' &nbsp; | &nbsp; Kasir: Semua Kasir';
 						}
-						?>	
-						
+						if(!empty($tipe_sales)){ 
+							echo ' &nbsp; | &nbsp; Tipe Sales: '.$tipe_sales;
+						}
+						?>
+						</div>
 					</div>
 				</td>
 			</tr>
@@ -78,6 +75,7 @@ if($show_shift_kasir == false){
 				<td class="tbl_head_td_first_xcenter" width="50">NO</td>
 				<td class="tbl_head_td_xcenter" width="130">PAYMENT DATE</td>
 				<td class="tbl_head_td_xcenter" width="80">BILLING NO.</td>
+				<td class="tbl_head_td_xcenter" width="110">TOTAL HPP</td>
 				<td class="tbl_head_td_xcenter" width="100">TOTAL BILLING</td>
 				<td class="tbl_head_td_xcenter" width="110">DISCOUNT</td>
 				<?php
@@ -88,12 +86,11 @@ if($show_shift_kasir == false){
 				}
 				?>
 				<td class="tbl_head_td_xcenter" width="120">NET SALES</td>
-				<td class="tbl_head_td_xcenter" width="110">TOTAL HPP</td>
 				<td class="tbl_head_td_xcenter" width="110">TOTAL PROFIT</td>
 				<?php
 				if($show_note == true){
 				?>
-				<td class="tbl_head_td_xcenter" width="200">NOTE</td>
+				<td class="tbl_head_td_xcenter" width="300">NOTE</td>
 				<?php
 				}
 				if($show_shift_kasir == true){
@@ -118,6 +115,7 @@ if($show_shift_kasir == false){
 				$grand_total = 0;
 				$grand_total_dp = 0;
 				$grand_sub_total = 0;
+				$grand_net_sales_total = 0;
 				$grand_total_pembulatan = 0;
 				$grand_discount_total = 0;
 				$grand_total_compliment = 0;
@@ -135,15 +133,18 @@ if($show_shift_kasir == false){
 						if($format_nominal == true){
 							$det['total_billing_show'] = 'Rp. '.$det['total_billing_show'];
 							$discount_total = 'Rp. '.priceFormat($discount_total);
-							$det['total_billing_profit_show'] = 'Rp. '.$det['total_billing_profit_show'];
+							$det['sub_total_show'] = 'Rp. '.$det['sub_total_show'];
+							$det['net_sales_total_show'] = 'Rp. '.$det['net_sales_total_show'];
 							$det['total_hpp_show'] = 'Rp. '.$det['total_hpp_show'];
 							$det['total_profit_show'] = 'Rp. '.$det['total_profit_show'];
 							$det['total_compliment_show'] = 'Rp. '.$det['total_compliment_show'];
 						}else{
 							$det['total_billing_show'] = str_replace(".","",$det['total_billing_show']);
 							$det['total_billing_show'] = str_replace(",",".",$det['total_billing_show']);
-							$det['total_billing_profit_show'] = str_replace(".","",$det['total_billing_profit_show']);
-							$det['total_billing_profit_show'] = str_replace(",",".",$det['total_billing_profit_show']);
+							$det['sub_total_show'] = str_replace(".","",$det['sub_total_show']);
+							$det['sub_total_show'] = str_replace(",","",$det['sub_total_show']);
+							$det['net_sales_total_show'] = str_replace(".","",$det['net_sales_total_show']);
+							$det['net_sales_total_show'] = str_replace(",","",$det['net_sales_total_show']);
 							$det['total_hpp_show'] = str_replace(".","",$det['total_hpp_show']);
 							$det['total_hpp_show'] = str_replace(",",".",$det['total_hpp_show']);
 							$det['total_profit_show'] = str_replace(".","",$det['total_profit_show']);
@@ -152,6 +153,7 @@ if($show_shift_kasir == false){
 							$det['total_compliment_show'] = str_replace(",",".",$det['total_compliment_show']);
 						}
 						?>
+						<td class="tbl_data_td_xright"><?php echo $det['total_hpp_show']; ?></td>
 						<td class="tbl_data_td_xright"><?php echo $det['total_billing_show']; ?></td>
 						<td class="tbl_data_td_xright"><?php echo $discount_total; ?></td>
 						<?php
@@ -161,8 +163,7 @@ if($show_shift_kasir == false){
 						<?php
 						}
 						?>
-						<td class="tbl_data_td_xright"><?php echo $det['total_billing_profit_show']; ?></td>
-						<td class="tbl_data_td_xright"><?php echo $det['total_hpp_show']; ?></td>
+						<td class="tbl_data_td_xright"><?php echo $det['net_sales_total_show']; ?></td>
 						<td class="tbl_data_td_xright"><?php echo $det['total_profit_show']; ?></td>
 						<?php
 						if($show_note == true){
@@ -186,6 +187,7 @@ if($show_shift_kasir == false){
 					$grand_total +=  $det['total_billing_profit'];
 					$grand_total_compliment += $det['total_compliment'];
 					$grand_sub_total += $det['sub_total'];
+					$grand_net_sales_total += $det['net_sales_total'];
 					$grand_total_pembulatan += $det['total_pembulatan'];
 					$grand_discount_total += $det['discount_total'];
 					$grand_discount_billing_total += $det['discount_billing_total'];
@@ -205,6 +207,7 @@ if($show_shift_kasir == false){
 					$grand_total_compliment = 'Rp. '.priceFormat($grand_total_compliment);
 					$grand_total = 'Rp. '.priceFormat($grand_total);
 					$grand_sub_total = 'Rp. '.priceFormat($grand_sub_total);
+					$grand_net_sales_total = 'Rp. '.priceFormat($grand_net_sales_total);
 					$grand_total_pembulatan = 'Rp. '.priceFormat($grand_total_pembulatan);
 					$grand_discount_total = 'Rp. '.priceFormat($grand_discount_total);
 					$grand_discount_billing_total = 'Rp. '.priceFormat($grand_discount_billing_total);
@@ -216,6 +219,7 @@ if($show_shift_kasir == false){
 				?>
 				<tr>
 					<td class="tbl_summary_td_first_xright" colspan="3">TOTAL</td>
+					<td class="tbl_summary_td_xright"><?php echo $total_hpp; ?></td>
 					<td class="tbl_summary_td_xright"><?php echo $total_billing; ?></td>
 					<td class="tbl_summary_td_xright"><?php echo $discount_total; ?></td>
 					<?php
@@ -225,8 +229,7 @@ if($show_shift_kasir == false){
 					<?php
 					}
 					?>
-					<td class="tbl_summary_td_xright"><?php echo $grand_total; ?></td>
-					<td class="tbl_summary_td_xright"><?php echo $total_hpp; ?></td>
+					<td class="tbl_summary_td_xright"><?php echo $grand_net_sales_total; ?></td>
 					<td class="tbl_summary_td_xright"><?php echo $total_profit; ?></td>
 					<?php
 					if($show_note == true){

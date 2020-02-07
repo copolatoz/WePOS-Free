@@ -33,6 +33,9 @@ class ReportCancelOrder extends MY_Controller {
 		if(empty($sorting)){
 			$sorting = 'payment_date';
 		}
+		if(empty($tipe_cancel)){
+			$tipe_cancel = 'all';
+		}
 		
 		$data_post = array(
 			'do'	=> '',
@@ -41,6 +44,7 @@ class ReportCancelOrder extends MY_Controller {
 			'report_name'	=> 'CANCEL ORDER REPORT',
 			'date_from'	=> $date_from,
 			'date_till'	=> $date_till,
+			'tipe_cancel'	=> $tipe_cancel,
 			'user_fullname'	=> $user_fullname,
 			'sorting'	=> $sorting
 		);
@@ -76,6 +80,11 @@ class ReportCancelOrder extends MY_Controller {
 			$this->db->join($this->table." as b","b.id = a.billing_id","LEFT");
 			$this->db->join($this->table_product." as c","c.id = a.product_id","LEFT");
 			$this->db->where("a.order_status", 'cancel');
+			
+			if($tipe_cancel == 'paid'){
+				$this->db->where("a.cancel_order_notes NOT LIKE 'cancel order unpaid:%'");
+			}
+			
 			$this->db->where("a.is_deleted", 1);
 			$this->db->where($add_where);
 			

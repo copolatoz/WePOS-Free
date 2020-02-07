@@ -42,7 +42,7 @@
 		<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>assets/js/extjs.4.2/theme/css/ext-all-neptune.css" />	
 		<link rel="stylesheet" href="<?php echo $apps_css; ?>" />
 	
-		<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>assets/desktop/css/ext-modules.css" />	
+		<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>apps.min/helper/css/ext-modules.css" />	
 		
 		<script type="text/javascript">document.getElementById('msg').innerHTML = 'Memulai Aplikasi...';</script> 
 	

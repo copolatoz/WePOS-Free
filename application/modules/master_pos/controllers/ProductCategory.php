@@ -61,11 +61,11 @@ class ProductCategory extends MY_Controller {
   		$newData = array();
 		
 		if(!empty($show_all_text)){
-			$dt = array('id' => '-1', 'product_category_name' => 'Semua Kategori', 'product_category_code_name' => 'Semua Kategori');
+			$dt = array('id' => '-1', 'product_category_name' => 'Semua Kategori', 'product_category_code_name' => 'Semua Kategori', 'product_category_bg_color' => '000000', 'product_category_text_color' => 'FFFFFF');
 			array_push($newData, $dt);
 		}else{
 			if(!empty($show_choose_text)){
-				$dt = array('id' => '', 'product_category_name' => 'Pilih', 'product_category_code_name' => 'Pilih');
+				$dt = array('id' => '', 'product_category_name' => 'Pilih', 'product_category_code_name' => 'Pilih', 'product_category_bg_color' => '000000', 'product_category_text_color' => 'FFFFFF');
 				array_push($newData, $dt);
 			}
 		}
@@ -79,6 +79,17 @@ class ProductCategory extends MY_Controller {
 					//$s['product_category_code'] = substr($s['product_category_name'],0,3);
 					$s['product_category_code_name'] = substr($s['product_category_name'],0,3);
 				}
+				
+				//update-2001.002
+				if(empty($s['product_category_bg_color'])){
+					$s['product_category_bg_color'] = '000000';
+				}
+				
+				if(empty($s['product_category_text_color'])){
+					$s['product_category_text_color'] = 'FFFFFF';
+				}
+				
+				$s['product_category_color'] = '<div style="border:1px solid #ccc; background-color:#'.$s['product_category_bg_color'].'; color:#'.$s['product_category_text_color'].'; padding:4px 4px; text-align:center;"><b>Text</b></div>';
 				
 				array_push($newData, $s);
 			}
@@ -99,6 +110,16 @@ class ProductCategory extends MY_Controller {
 		$product_category_code = $this->input->post('product_category_code');
 		$product_category_desc = $this->input->post('product_category_desc');
 		$list_no = $this->input->post('list_no');
+		
+		//update-2001.002
+		$product_category_bg_color = $this->input->post('product_category_bg_color');
+		$product_category_text_color = $this->input->post('product_category_text_color');
+		if(empty($product_category_bg_color)){
+			$product_category_bg_color = '000000';
+		}
+		if(empty($product_category_text_color)){
+			$product_category_text_color = 'FFFFFF';
+		}
 		
 		if(empty($product_category_name)){
 			$r = array('success' => false);
@@ -146,7 +167,9 @@ class ProductCategory extends MY_Controller {
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,
-					'is_active'	=>	$is_active
+					'is_active'	=>	$is_active,
+					'product_category_bg_color'		=>	$product_category_bg_color,
+					'product_category_text_color'	=>	$product_category_text_color,
 				),
 				'table'		=>  $this->table
 			);	
@@ -175,7 +198,9 @@ class ProductCategory extends MY_Controller {
 					'list_no'		=>	$list_no,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,
-					'is_active'		=>	$is_active
+					'is_active'		=>	$is_active,
+					'product_category_bg_color'		=>	$product_category_bg_color,
+					'product_category_text_color'	=>	$product_category_text_color,
 				),
 				'table'			=>  $this->table,
 				'primary_key'	=>  'id'

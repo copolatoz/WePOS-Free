@@ -32,6 +32,9 @@ class ReportSales extends MY_Controller {
 		if(empty($sorting)){
 			$sorting = 'payment_date';
 		}
+		if(empty($sortingDesc)){
+			$sortingDesc = 'ASC';
+		}
 		if(empty($only_txmark)){
 			$only_txmark = 0;
 		}
@@ -41,6 +44,7 @@ class ReportSales extends MY_Controller {
 			'report_data'	=> array(),
 			'report_place_default'	=> '',
 			'report_name'	=> 'SALES REPORT',
+			'tipe_sales'	=> 'Semua Tipe Sales',
 			'date_from'	=> $date_from,
 			'date_till'	=> $date_till,
 			'user_shift'	=> 'Semua Shift',
@@ -56,10 +60,6 @@ class ReportSales extends MY_Controller {
 		$display_discount_type = array();
 
 		//update-0120.001
-		if(empty($sorting)){
-			$sorting = 'a-z';
-		}
-		
 		if(!empty($shift_billing)){
 			if($shift_billing == 'null'){
 				$shift_billing = 0;
@@ -69,6 +69,10 @@ class ReportSales extends MY_Controller {
 			if($kasir_billing == 'null'){
 				$kasir_billing = '';
 			}
+		}
+		
+		if(empty($tipe_sales)){
+			$tipe_sales = 'all_sales';
 		}
 		
 		//filter-column
@@ -118,13 +122,13 @@ class ReportSales extends MY_Controller {
 				
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
-					
+						
 			$ret_dt = check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
 			
 			//$qdate_from = date("Y-m-d",strtotime($date_from));
 			//$qdate_till = date("Y-m-d",strtotime($date_till));
 			//$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
-			//$add_where = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
+			//$add_where = "(a.payment_date >= '".$qdate_from." 07:00:00' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
 			
 			//laporan = jam_operasional
 			$qdate_from = $ret_dt['qdate_from'];
@@ -143,28 +147,81 @@ class ReportSales extends MY_Controller {
 				$where_shift_billing .= " AND a.updatedby = '".$kasir_billing."'";
 				$data_post['user_kasir'] = '';
 			}
-			
 			$this->db->select("a.*, a.id as billing_id, a.updated as billing_date, d.payment_type_name, e.bank_name,
-								g.nama_shift, CONCAT(h.user_firstname,' ',h.user_lastname) as nama_kasir");
+								g.nama_shift, g2.customer_name, g3.sales_name, CONCAT(h.user_firstname,' ',h.user_lastname) as nama_kasir");
 			$this->db->from($this->table." as a");
 			$this->db->join($this->prefix.'payment_type as d','d.id = a.payment_id','LEFT');
 			$this->db->join($this->prefix.'bank as e','e.id = a.bank_id','LEFT');
 			$this->db->join($this->prefix.'shift as g','g.id = a.shift','LEFT');
+			$this->db->join($this->prefix.'customer as g2','g2.id = a.customer_id','LEFT');
+			$this->db->join($this->prefix.'sales as g3','g3.id = a.sales_id','LEFT');
 			$this->db->join($this->prefix_apps.'users as h','h.user_username = a.updatedby','LEFT');
 			$this->db->where("a.billing_status", 'paid');
 			$this->db->where("a.is_deleted", 0);
 			
 			//update-0120.001
 			$this->db->where($where_shift_billing);
+			//$this->db->where("a.billing_no IN ('2002060003','2002060006')");
 			
 			if(!empty($only_txmark)){
 				$this->db->where("a.txmark",1);
 			}
 			
-			if(empty($sorting)){
+			//if(empty($sorting)){
 				$this->db->order_by("a.payment_date","ASC");
-			}else{
-				$this->db->order_by('a.'.$sorting,"ASC");
+			//}else{
+			//	$this->db->order_by('a.'.$sorting,"ASC");
+			//}
+			
+			//update-2001.002
+			if(!empty($tipe_sales)){
+				switch($tipe_sales){
+					case 'sales_no_discount': 
+						$this->db->where("(a.discount_id IS NULL OR a.discount_id = 0)");
+						$data_post['tipe_sales'] = 'Tanpa Discount/Potongan';
+						break;
+					
+					case 'sales_only_discount': 
+						$this->db->where("(a.discount_id > 0)");
+						$data_post['tipe_sales'] = 'Discount/Potongan';
+						break;
+					
+					case 'sales_no_compliment': 
+						$this->db->where("(a.is_compliment = 0 AND a.compliment_total = 0)");
+						$data_post['tipe_sales'] = 'Tanpa Compliment';
+						break;
+						
+					case 'sales_only_compliment': 
+						$this->db->where("((a.is_compliment = 1 AND a.compliment_total > 0) OR (a.is_compliment = 0 AND a.compliment_total > 0))");
+						$data_post['tipe_sales'] = 'Compliment';
+						break;
+					
+					case 'sales_no_customer': 
+						$this->db->where("(a.customer_id = 0)");
+						$data_post['tipe_sales'] = 'Tanpa Customer/Member';
+						break;
+					
+					case 'sales_only_customer': 
+						$this->db->where("(a.customer_id > 0)");
+						$data_post['tipe_sales'] = 'Customer/Member';
+						break;
+					
+					case 'sales_no_marketing': 
+						$this->db->where("(a.sales_id = 0)");
+						$data_post['tipe_sales'] = 'Tanpa Marketing/Sales-Fee';
+						break;
+					
+					case 'sales_only_marketing': 
+						$this->db->where("(a.sales_id > 0)");
+						$data_post['tipe_sales'] = 'Marketing/Sales-Fee';
+						break;
+					
+					default: 
+						//nothing	
+						break;
+					
+				}
+				
 			}
 			
 			$get_dt = $this->db->get();
@@ -183,7 +240,7 @@ class ReportSales extends MY_Controller {
 				}
 			}
 			
-			
+			$recap_sort = array();
 			$all_bil_id = array();
 			$newData = array();
 			$dt_payment = array();
@@ -202,6 +259,13 @@ class ReportSales extends MY_Controller {
 						}
 					}
 					
+					if(empty($display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']] = array();
+					}
+					if(!in_array($s['billing_id'], $display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']][] = $s['billing_id'];
+					}
+					
 					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
 					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 					
@@ -211,72 +275,55 @@ class ReportSales extends MY_Controller {
 					
 					$s['total_billing_awal'] = $s['total_billing'];
 					
+					//update-2001.002
 					//CHECK REAL TOTAL BILLING
 					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
-						
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
-								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
-								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-								$s['total_billing'] = $get_total_billing;
-							}else{
-								$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
-							}
-							
+							$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
 						}else{
 							if(!empty($s['include_tax'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
-									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
-									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-									$s['total_billing'] = $get_total_billing;
-								}else{
-									$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
-								}
+								$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
 							}
 							if(!empty($s['include_service'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
-									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
-									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-									$s['total_billing'] = $get_total_billing;
-								}else{
-									$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
-								}
+								$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
 							}
 						}
 					}
 					
+					//update-2001.002
 					//COMPLIMENT
-					if(!empty($s['is_compliment'])){
-						$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
-						$s['service_total'] = 0;
-						$s['tax_total'] = 0;
+					if(!empty($s['is_compliment']) OR !empty($s['compliment_total'])){
+						//$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
+						if($s['total_billing'] <= $s['compliment_total']){
+							$s['service_total'] = 0;
+							$s['tax_total'] = 0;
+						}
 					}
 					
-					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];		
-					}else{
+					//update-2001.002
+					if($s['diskon_sebelum_pajak_service'] == 1){
 						
-						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
-						
+						//update-2001.002
 						if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-							//CHECKING BALANCE #1
-							if(empty($s['discount_total'])){
-								if($s['sub_total'] != $s['total_billing_awal']){
-									$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
-									$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
-								}
-							}else{
-								if(($s['sub_total'] + $s['total_pembulatan']) != $s['grand_total']){
-									$s['sub_total'] = ($s['grand_total']-$s['total_pembulatan'])+$s['compliment_total'];
-								}
-								
-								$cek_total_billing = $s['sub_total'] - ($s['tax_total'] + $s['service_total']) + $s['discount_total'];
-								if($s['total_billing'] != $cek_total_billing){
-									$s['total_billing'] = $cek_total_billing;
-								}
-							}
+							$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
 						}
+						
+						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'] - $s['compliment_total'];
+						$s['net_sales_total'] = $s['total_billing'] - $s['discount_total'] - $s['compliment_total'];
+						
+						//GRAND TOTAL
+						$s['grand_total'] = $s['sub_total'];
+						
+					}else
+					{
+						//update-2001.002
+						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'] - $s['discount_total'] - $s['compliment_total'];
+						$s['net_sales_total'] = $s['total_billing'] - $s['discount_total'] - $s['compliment_total'];
+						
+						//GRAND TOTAL
+						$s['grand_total'] = $s['sub_total'];
+						//$s['grand_total'] -= $s['discount_total'];
+						//$s['grand_total'] -= $s['discount_billing_total'];
 						
 					}
 					
@@ -288,18 +335,8 @@ class ReportSales extends MY_Controller {
 						$s['discount_billing_total'] = 0;
 					}
 					
-					//if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-					//	$s['sub_total'] = $s['total_billing'];
-					//}
-					
-					$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
-					$s['grand_total'] -= $s['compliment_total'];
-					
-					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['grand_total'] -= $s['discount_total'];
-						$s['grand_total'] -= $s['discount_billing_total'];
-					}
+					$s['grand_total'] += $s['total_pembulatan'];
+					//$s['grand_total'] -= $s['compliment_total'];
 					
 					if($s['grand_total'] <= 0){
 						$s['grand_total'] = 0;
@@ -312,6 +349,7 @@ class ReportSales extends MY_Controller {
 					}
 					
 					$s['sub_total_show'] = priceFormat($s['sub_total']);
+					$s['net_sales_total_show'] = priceFormat($s['net_sales_total']);
 					$s['grand_total_show'] = priceFormat($s['grand_total']);
 					$s['total_billing_show'] = priceFormat($s['total_billing']);
 					$s['total_paid_show'] = priceFormat($s['total_paid']);
@@ -322,15 +360,6 @@ class ReportSales extends MY_Controller {
 					
 					//DP
 					$s['total_dp_show'] = priceFormat($s['total_dp']);
-					/*if($s['total_cash'] == 0){
-						if($s['total_credit'] > $s['total_dp']){
-							$s['total_credit'] -= $s['total_dp'];
-						}
-					}else{
-						if($s['total_cash'] > $s['total_dp']){
-							$s['total_cash'] -= $s['total_dp'];
-						}
-					}*/
 					
 					$s['total_compliment'] = 0;
 					$s['total_compliment_show'] = 0;
@@ -357,35 +386,156 @@ class ReportSales extends MY_Controller {
 					//NOTES
 					$s['payment_note'] = '';
 					if(!empty($s['is_compliment']) OR !empty($s['compliment_total'])){
-						$s['payment_note'] = 'COMPLIMENT';
+						$s['payment_note'] .= 'COMPLIMENT ';
 						//$s['total_compliment'] = $s['grand_total'];
 						$s['total_compliment'] = $s['compliment_total'];
 						$s['total_compliment_show'] = priceFormat($s['total_compliment']);
-					}else{
+					}
 					
-						if(!empty($s['is_half_payment'])){
-							$s['payment_note'] = 'HALF PAYMENT';
+					//update-2001.002
+					if(!empty($s['is_half_payment'])){
+						if(!empty($s['payment_note'])){
+							$s['payment_note'] .= ', ';
 						}
-						
-						if(strtolower($s['payment_type_name']) != 'cash'){
-							$s['payment_note'] = strtoupper($s['bank_name']).' '.$card_no;
+						$s['payment_note'] .= 'HALF PAYMENT ';
+					}
+					
+					if(strtolower($s['payment_type_name']) != 'cash'){
+						if(!empty($s['payment_note'])){
+							$s['payment_note'] .= '<br/>';
 						}
+						$s['payment_note'] .= strtoupper($s['payment_type_name']).': '.strtoupper($s['bank_name']).' '.$card_no.' ';
 					}
 					
 					if(!empty($s['billing_notes'])){
 						if(!empty($s['payment_note'])){
-							$s['payment_note'] .= '<br/>'.$s['billing_notes'];
-						}else{
-							$s['payment_note'] .= $s['billing_notes'];
+							$s['payment_note'] .= '<br/>';
 						}
+						$s['payment_note'] .= $s['billing_notes'];
 					}
 					
-					//if($s['billing_no'] == '1601010055'){
-						//echo '<pre>';
-						//print_r($s);
-						//die();
-					//}
-										
+					if(!empty($s['customer_id'])){
+						if(!empty($s['payment_note'])){
+							$s['payment_note'] .= '<br/>';
+						}
+						$s['payment_note'] .= 'Cust/Member: '.$s['customer_name'];
+					}
+					
+					if(!empty($s['sales_id'])){
+						if(!empty($s['payment_note'])){
+							$s['payment_note'] .= '<br/>';
+						}
+						$s['payment_note'] .= 'Marketing/Sales: '.$s['sales_name'];
+					}
+					
+					//update-2001.002
+					$get_billing_id = $s['billing_id'];
+					if($sortingDesc == 'DESC'){
+						if(empty($recap_sort[$get_billing_id])){
+							$recap_sort[$get_billing_id] = 0;
+						}
+						if($sorting == 'qty_menu'){
+							$recap_sort[$get_billing_id] += $total_qty;
+						}
+						if($sorting == 'total_billing'){
+							$recap_sort[$get_billing_id] += $s['total_billing'];
+						}
+						if($sorting == 'all_discount_total'){
+							$recap_sort[$get_billing_id] +=  ($s['discount_total']+$s['discount_billing_total']);
+						}
+						if($sorting == 'discount_total'){
+							$recap_sort[$get_billing_id] +=  $s['discount_total'];
+						}
+						if($sorting == 'discount_perbilling'){
+							$recap_sort[$get_billing_id] += $s['discount_billing_total'];
+						}
+						if($sorting == 'compliment_total'){
+							$recap_sort[$get_billing_id] += $s['compliment_total'];
+						}
+						if($sorting == 'net_sales_total'){
+							$recap_sort[$get_billing_id] += $s['net_sales_total'];
+						}
+						if($sorting == 'tax_total'){
+							$recap_sort[$get_billing_id] += $s['tax_total'];
+						}
+						if($sorting == 'service_total'){
+							$recap_sort[$get_billing_id] += $s['service_total']; 
+						}
+						if($sorting == 'total_pembulatan'){
+							$recap_sort[$get_billing_id] += $s['total_pembulatan'];
+						}
+						if($sorting == 'grand_total'){
+							$recap_sort[$get_billing_id] += $s['grand_total'];
+						}
+						if($sorting == 'total_dp'){
+							$recap_sort[$get_billing_id] += $s['total_dp'];
+						}
+						if($sorting == 'half_payment'){
+							if($s['is_half_payment'] == 1){
+								$recap_sort[$get_billing_id] += $s['grand_total'];
+							}
+						}
+						if($sorting == 'payment_cash'){
+							if($s['payment_id'] == 1){
+								$recap_sort[$get_billing_id] += $s['total_cash'];
+							}else{
+								if($s['is_half_payment'] == 1){
+									$recap_sort[$get_billing_id] += $s['total_cash'];
+								}
+							}
+						}
+						if($sorting == 'payment_debit'){
+							if($s['payment_id'] == 2){
+								if($s['is_half_payment'] == 1){
+									$recap_sort[$get_billing_id] += $s['total_credit'];
+								}else{
+									$recap_sort[$get_billing_id] += $s['grand_total'];
+								}
+							}
+						}
+						if($sorting == 'payment_credit'){
+							if($s['payment_id'] == 3){
+								if($s['is_half_payment'] == 1){
+									$recap_sort[$get_billing_id] += $s['total_credit'];
+								}else{
+									$recap_sort[$get_billing_id] += $s['grand_total'];
+								}
+							}
+						}
+						if($sorting == 'payment_ar'){
+							if($s['payment_id'] == 4){
+								if($s['is_half_payment'] == 1){
+									$recap_sort[$get_billing_id] += $s['total_credit'];
+								}else{
+									$recap_sort[$get_billing_id] += $s['grand_total'];
+								}
+							}
+						}
+						if($sorting == 'total_profit'){
+							$recap_sort[$get_billing_id] += $s['net_sales_total'];
+						}
+					}else{
+						if($sorting == 'payment_date'){
+							$recap_sort[$get_billing_id] = strtotime($s['payment_date']);
+						}
+						if($sorting == 'billing_no'){
+							$recap_sort[$get_billing_id] = $s['billing_no'];
+						}
+						if($sorting == 'discount_notes'){
+							$recap_sort[$get_billing_id] = $s['discount_notes'];
+						}
+						if($sorting == 'discount_type'){
+							if(!empty($discount_billing_total)){
+								$recap_sort[$get_billing_id] = 2;
+							}else
+							if(!empty($discount_total)){
+								$recap_sort[$get_billing_id] = 1;
+							}else{
+								$recap_sort[$get_billing_id] = 0;
+							}
+						}
+					}
+									
 					$newData[$s['id']] = $s;
 					//array_push($newData, $s);
 					
@@ -405,18 +555,25 @@ class ReportSales extends MY_Controller {
 					foreach($get_detail->result() as $dtRow){
 						
 						$total_qty = $dtRow->order_qty;
-						/*
-						$total_qty = $dtRow->order_qty - $dtRow->retur_qty;
-						if($total_qty < 0){
-							$total_qty = 0;
-						}*/
 						
 						if(empty($total_hpp[$dtRow->billing_id])){
 							$total_hpp[$dtRow->billing_id] = 0;
 						}
 						
 						$total_hpp[$dtRow->billing_id] += $dtRow->product_price_hpp * $total_qty;
-
+						
+						if($sortingDesc == 'DESC'){
+							if(empty($recap_sort[$dtRow->billing_id])){
+								$recap_sort[$dtRow->billing_id] = 0;
+							}
+							if($sorting == 'total_hpp'){
+								$recap_sort[$dtRow->billing_id] += ($dtRow->product_price_hpp * $total_qty);
+							}
+							if($sorting == 'total_profit'){
+								$recap_sort[$dtRow->billing_id] -= ($dtRow->product_price_hpp * $total_qty);
+							}
+							
+						}
 						
 					}
 				}
@@ -425,24 +582,30 @@ class ReportSales extends MY_Controller {
 			$newData_switch = $newData;
 			$newData = array();
 			if(!empty($newData_switch)){
-				foreach($newData_switch as $dt){
-					
-					if(!empty($total_hpp[$dt['billing_id']])){
-						$dt['total_hpp'] = $total_hpp[$dt['billing_id']];
+				
+				//update-2001.002
+				if($sortingDesc == 'ASC'){
+					asort($recap_sort);
+				}else{
+					arsort($recap_sort);
+				}
+				
+				if(!empty($recap_sort)){
+					foreach($recap_sort as $billing_id => $val){
+						if(!empty($newData_switch[$billing_id])){
+							$dt = $newData_switch[$billing_id];
+							
+							if(!empty($total_hpp[$dt['billing_id']])){
+								$dt['total_hpp'] = $total_hpp[$dt['billing_id']];
+							}
+							$dt['total_hpp_show'] = priceFormat($dt['total_hpp']);
+							
+							$dt['total_profit'] = $dt['net_sales_total']-$dt['total_hpp'];
+							$dt['total_profit_show'] = priceFormat($dt['total_profit']);
+							
+							$newData[] = $dt;
+						}
 					}
-					$dt['total_hpp_show'] = priceFormat($dt['total_hpp']);
-					
-					//$dt['total_profit'] = $dt['total_billing']-$dt['total_hpp'];
-					$dt['total_billing_profit'] = $dt['total_billing'];
-					$dt['total_billing_profit'] -= $dt['discount_total'];
-					$dt['total_billing_profit'] -= $dt['discount_billing_total'];
-					$dt['total_billing_profit'] -= $dt['total_compliment'];
-					$dt['total_billing_profit_show'] = priceFormat($dt['total_billing_profit']);
-					
-					$dt['total_profit'] = $dt['total_billing_profit']-$dt['total_hpp'];
-					$dt['total_profit_show'] = priceFormat($dt['total_profit']);
-					
-					$newData[] = $dt;
 				}
 			}
 	
@@ -501,6 +664,10 @@ class ReportSales extends MY_Controller {
 			$sorting = 'payment_date';
 		}
 		
+		if(empty($sortingDesc)){
+			$sortingDesc = 'ASC';
+		}
+		
 		$data_post = array(
 			'do'	=> '',
 			'report_data'	=> array(),
@@ -509,6 +676,7 @@ class ReportSales extends MY_Controller {
 			'date_from'	=> $date_from,
 			'date_till'	=> $date_till,
 			'user_shift'	=> 'Semua Shift',
+			'tipe_sales'	=> 'Semua Tipe Sales',
 			'cashier_name'	=> '',
 			'user_fullname'	=> $user_fullname,
 			'diskon_sebelum_pajak_service' => 0,
@@ -520,10 +688,6 @@ class ReportSales extends MY_Controller {
 		$display_discount_type = array();
 
 		//update-0120.001
-		if(empty($sorting)){
-			$sorting = 'tanggal';
-		}
-		
 		if(!empty($shift_billing)){
 			if($shift_billing == 'null'){
 				$shift_billing = 0;
@@ -533,6 +697,10 @@ class ReportSales extends MY_Controller {
 			if($kasir_billing == 'null'){
 				$kasir_billing = '';
 			}
+		}
+		
+		if(empty($tipe_sales)){
+			$tipe_sales = 'all_sales';
 		}
 		
 		//filter-column
@@ -610,11 +778,13 @@ class ReportSales extends MY_Controller {
 			}
 			
 			$this->db->select("a.*, a.id as billing_id, a.updated as billing_date, d.payment_type_name, e.bank_name,
-								g.nama_shift, CONCAT(h.user_firstname,' ',h.user_lastname) as nama_kasir");
+								g.nama_shift, g2.customer_name, g3.sales_name, CONCAT(h.user_firstname,' ',h.user_lastname) as nama_kasir");
 			$this->db->from($this->table." as a");
 			$this->db->join($this->prefix.'payment_type as d','d.id = a.payment_id','LEFT');
 			$this->db->join($this->prefix.'bank as e','e.id = a.bank_id','LEFT');
 			$this->db->join($this->prefix.'shift as g','g.id = a.shift','LEFT');
+			$this->db->join($this->prefix.'customer as g2','g2.id = a.customer_id','LEFT');
+			$this->db->join($this->prefix.'sales as g3','g3.id = a.sales_id','LEFT');
 			$this->db->join($this->prefix_apps.'users as h','h.user_username = a.updatedby','LEFT');
 			$this->db->where("a.billing_status", 'paid');
 			$this->db->where("a.is_deleted", 0);
@@ -631,6 +801,55 @@ class ReportSales extends MY_Controller {
 			//}else{
 			//	$this->db->order_by('a.'.$sorting,"ASC");
 			//}
+			
+			//update-2001.002
+			if(!empty($tipe_sales)){
+				switch($tipe_sales){
+					case 'sales_no_discount': 
+						$this->db->where("(a.discount_id IS NULL OR a.discount_id = 0)");
+						$data_post['tipe_sales'] = 'Tanpa Discount/Potongan';
+						break;
+					
+					case 'sales_only_discount': 
+						$this->db->where("(a.discount_id > 0)");
+						$data_post['tipe_sales'] = 'Discount/Potongan';
+						break;
+					
+					case 'sales_no_compliment': 
+						$this->db->where("(a.is_compliment = 0 AND a.compliment_total = 0)");
+						$data_post['tipe_sales'] = 'Tanpa Compliment';
+						break;
+						
+					case 'sales_only_compliment': 
+						$this->db->where("((a.is_compliment = 1 AND a.compliment_total > 0) OR (a.is_compliment = 0 AND a.compliment_total > 0))");
+						$data_post['tipe_sales'] = 'Compliment';
+						break;
+					
+					case 'sales_no_customer': 
+						$this->db->where("(a.customer_id = 0)");
+						$data_post['tipe_sales'] = 'Tanpa Customer/Member';
+						break;
+					
+					case 'sales_only_customer': 
+						$this->db->where("(a.customer_id > 0)");
+						$data_post['tipe_sales'] = 'Customer/Member';
+						break;
+					
+					case 'sales_no_marketing': 
+						$this->db->where("(a.sales_id = 0)");
+						$data_post['tipe_sales'] = 'Tanpa Marketing/Sales-Fee';
+						break;
+					
+					case 'sales_only_marketing': 
+						$this->db->where("(a.sales_id > 0)");
+						$data_post['tipe_sales'] = 'Marketing/Sales-Fee';
+						break;
+					
+					default: 
+						//nothing	
+						break;
+				}
+			}
 			
 			$get_dt = $this->db->get();
 			if($get_dt->num_rows() > 0){
@@ -673,6 +892,13 @@ class ReportSales extends MY_Controller {
 						}
 					}
 					
+					if(empty($display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']] = array();
+					}
+					if(!in_array($s['billing_id'], $display_discount_type[$s['diskon_sebelum_pajak_service']])){
+						$display_discount_type[$s['diskon_sebelum_pajak_service']][] = $s['billing_id'];
+					}
+					
 					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
 					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 					
@@ -681,76 +907,54 @@ class ReportSales extends MY_Controller {
 					}		
 					
 					$s['total_billing_awal'] = $s['total_billing'];
-
+					
+					//update-2001.002
 					//CHECK REAL TOTAL BILLING
 					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
-						
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
-								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
-								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-								$s['total_billing'] = $get_total_billing;
-							}else{
-								$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
-							}
-							
+							$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
 						}else{
 							if(!empty($s['include_tax'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
-									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
-									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-									$s['total_billing'] = $get_total_billing;
-								}else{
-									$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
-								}
+								$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
 							}
 							if(!empty($s['include_service'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
-									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
-									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-									$s['total_billing'] = $get_total_billing;
-								}else{
-									$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
-								}
+								$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
 							}
+						}
+						
+					}
+					
+					//update-2001.002
+					if(!empty($s['is_compliment']) OR !empty($s['compliment_total'])){
+						if($s['total_billing'] < $s['compliment_total'] OR $s['total_billing'] == $s['compliment_total']){
+							$s['service_total'] = 0;
+							$s['tax_total'] = 0;
 						}
 					}
 					
-					
-					
-					if(!empty($s['is_compliment'])){
-						$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
-						//if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-						//	$s['total_billing'] = $s['total_billing'];
-						//}
-						$s['service_total'] = 0;
-						$s['tax_total'] = 0;
-					}
-					
-					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
-					}else{
-						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+					//update-2001.002
+					if($s['diskon_sebelum_pajak_service'] == 1){
 						
 						if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-							//CHECKING BALANCE #1
-							if(empty($s['discount_total'])){
-								if($s['sub_total'] != $s['total_billing_awal']){
-									$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
-									$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
-								}
-							}else{
-								if(($s['sub_total'] + $s['total_pembulatan']) != $s['grand_total']){
-									$s['sub_total'] = ($s['grand_total']-$s['total_pembulatan'])+$s['compliment_total'];
-								}
-								
-								$cek_total_billing = $s['sub_total'] - ($s['tax_total'] + $s['service_total']) + $s['discount_total'];
-								if($s['total_billing'] != $cek_total_billing){
-									$s['total_billing'] = $cek_total_billing;
-								}
-							}
+							$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
 						}
+						
+						//update-2001.002
+						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'] - $s['discount_total'] - $s['compliment_total'];
+						$s['net_sales_total'] = $s['total_billing'] - $s['discount_total'] - $s['compliment_total'];
+						
+						$s['grand_total'] = $s['sub_total'];
+						
+					}else
+					{
+						//update-2001.002
+						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'] - $s['discount_total'] - $s['compliment_total'];
+						$s['net_sales_total'] = $s['total_billing'] - $s['discount_total'] - $s['compliment_total'];
+						
+						//GRANDTOTAL
+						$s['grand_total'] = $s['sub_total'];
+						//$s['grand_total'] -= $s['discount_total'];
+						//$s['grand_total'] -= $s['discount_billing_total'];
 						
 					}
 					
@@ -763,22 +967,12 @@ class ReportSales extends MY_Controller {
 						$s['discount_billing_total'] = 0;
 					}
 					
-					//if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-					//	$s['sub_total'] = $s['total_billing'];
-					//}
-					
-					$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
-					
-					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['grand_total'] -= $s['discount_total'];
-						$s['grand_total'] -= $s['discount_billing_total'];
-					}
+					$s['grand_total'] += $s['total_pembulatan'];
+					//$s['grand_total'] -= $s['compliment_total'];
 					
 					if($s['grand_total'] <= 0){
 						$s['grand_total'] = 0;
 					}
-					
 					
 					$s['total_pembulatan_show'] = priceFormat($s['total_pembulatan']);
 					
@@ -787,6 +981,7 @@ class ReportSales extends MY_Controller {
 					}
 					
 					$s['sub_total_show'] = priceFormat($s['sub_total']);
+					$s['net_sales_total_show'] = priceFormat($s['net_sales_total']);
 					$s['grand_total_show'] = priceFormat($s['grand_total']);
 					$s['total_billing_show'] = priceFormat($s['total_billing']);
 					$s['total_paid_show'] = priceFormat($s['total_paid']);
@@ -797,16 +992,7 @@ class ReportSales extends MY_Controller {
 					
 					//DP
 					$s['total_dp_show'] = priceFormat($s['total_dp']);
-					/*if($s['total_cash'] == 0){
-						if($s['total_credit'] > $s['total_dp']){
-							$s['total_credit'] -= $s['total_dp'];
-						}
-					}else{
-						if($s['total_cash'] > $s['total_dp']){
-							$s['total_cash'] -= $s['total_dp'];
-						}
-					}*/
-
+					
 					$s['total_hpp'] = 0;
 					$s['total_hpp_show'] = 0;
 					$s['total_profit'] = 0;
@@ -828,25 +1014,56 @@ class ReportSales extends MY_Controller {
 					
 					//NOTES
 					$s['payment_note'] = '';
-					
 					if(!empty($s['is_compliment']) OR !empty($s['compliment_total'])){
-						$s['payment_note'] = 'COMPLIMENT';
+						$s['payment_note'] .= 'COMPLIMENT ';
 						//$s['total_compliment'] = $s['grand_total'];
 						$s['total_compliment'] = $s['compliment_total'];
 						$s['total_compliment_show'] = priceFormat($s['total_compliment']);
-					}else{
+					}
 					
-						if(!empty($s['is_half_payment'])){
-							$s['payment_note'] = 'HALF PAYMENT';
+					//update-2001.002
+					if(!empty($s['is_half_payment'])){
+						if(!empty($s['payment_note'])){
+							$s['payment_note'] .= ', ';
 						}
-						
-						if(strtolower($s['payment_type_name']) != 'cash'){
-							$s['payment_note'] = strtoupper($s['bank_name']).' '.$card_no;
+						$s['payment_note'] .= 'HALF PAYMENT ';
+					}
+					
+					if(strtolower($s['payment_type_name']) != 'cash'){
+						if(!empty($s['payment_note'])){
+							$s['payment_note'] .= '<br/>';
 						}
+						$s['payment_note'] .= strtoupper($s['payment_type_name']).': '.strtoupper($s['bank_name']).' '.$card_no.' ';
+					}
+					
+					if(!empty($s['billing_notes'])){
+						if(!empty($s['payment_note'])){
+							$s['payment_note'] .= '<br/>';
+						}
+						$s['payment_note'] .= $s['billing_notes'];
+					}
+					
+					if(!empty($s['customer_id'])){
+						if(!empty($s['payment_note'])){
+							$s['payment_note'] .= '<br/>';
+						}
+						$s['payment_note'] .= 'Cust/Member: '.$s['customer_name'];
+					}
+					
+					if(!empty($s['sales_id'])){
+						if(!empty($s['payment_note'])){
+							$s['payment_note'] .= '<br/>';
+						}
+						$s['payment_note'] .= 'Marketing/Sales: '.$s['sales_name'];
 					}
 					
 					//REKAP TGL
-					$payment_date = date("d-m-Y",strtotime($s['payment_date']));
+					$get_bill_no = substr($s['billing_no'],0,6);
+					$get_payment_Y = substr($s['billing_no'],0,2);
+					$get_payment_m = substr($s['billing_no'],2,2);
+					$get_payment_d = substr($s['billing_no'],4,2);
+					$payment_date = $get_payment_d.'-'.$get_payment_m.'-'.($get_payment_Y+2000);
+					//$payment_date = date("d-m-Y",strtotime($s['payment_date']));
 					if(empty($all_group_date[$payment_date])){
 						$all_group_date[$payment_date] = array(
 							'id'		=> $no_id, 
@@ -869,6 +1086,8 @@ class ReportSales extends MY_Controller {
 							'grand_total_show'	=> 0,
 							'sub_total'		=> 0, 
 							'sub_total_show'	=> 0,
+							'net_sales_total'		=> 0, 
+							'net_sales_total_show'	=> 0,
 							'total_pembulatan'		=> 0, 
 							'total_pembulatan_show'	=> 0, 
 							'total_compliment'		=> 0, 
@@ -876,7 +1095,15 @@ class ReportSales extends MY_Controller {
 							'total_hpp'			=> 0, 
 							'total_hpp_show'	=> 0, 
 							'total_profit'		=> 0, 
-							'total_profit_show'=> 0
+							'total_profit_show'=> 0,
+							'discount_total_before'	=> 0,
+							'discount_total_before_show'	=> 0,
+							'discount_billing_total_before'	=> 0,
+							'discount_billing_total_before_show'	=> 0,
+							'discount_total_after'	=> 0,
+							'discount_total_after_show'	=> 0,
+							'discount_billing_total_after'	=> 0,
+							'discount_billing_total_after_show'	=> 0,
 						);
 						
 						foreach($payment_data as $key_id => $dtPay){
@@ -887,23 +1114,31 @@ class ReportSales extends MY_Controller {
 						$no_id++;
 					}
 					
-					
-					//update-0120.001
-					//if(!empty($sorting)){
+					//update-2001.002
+					if($sortingDesc == 'DESC'){
 						if(empty($recap_sort[$payment_date])){
 							$recap_sort[$payment_date] = 0;
 						}
-						if($sorting == 'tanggal'){
-							$recap_sort[$payment_date] = strtotime($s['payment_date']);
-						}
-						if($sorting == 'qty'){
-							$recap_sort[$payment_date] += 1;
+						if($sorting == 'qty_menu'){
+							$recap_sort[$payment_date] += $total_qty;
 						}
 						if($sorting == 'total_billing'){
 							$recap_sort[$payment_date] += $s['total_billing'];
 						}
+						if($sorting == 'all_discount_total'){
+							$recap_sort[$payment_date] +=  ($s['discount_total']+$s['discount_billing_total']);
+						}
 						if($sorting == 'discount_total'){
-							$recap_sort[$payment_date] += $s['discount_total'];
+							$recap_sort[$payment_date] +=  $s['discount_total'];
+						}
+						if($sorting == 'discount_perbilling'){
+							$recap_sort[$payment_date] += $s['discount_billing_total'];
+						}
+						if($sorting == 'compliment_total'){
+							$recap_sort[$payment_date] += $s['compliment_total'];
+						}
+						if($sorting == 'net_sales_total'){
+							$recap_sort[$payment_date] += $s['net_sales_total'];
 						}
 						if($sorting == 'tax_total'){
 							$recap_sort[$payment_date] += $s['tax_total'];
@@ -911,19 +1146,81 @@ class ReportSales extends MY_Controller {
 						if($sorting == 'service_total'){
 							$recap_sort[$payment_date] += $s['service_total']; 
 						}
+						if($sorting == 'total_pembulatan'){
+							$recap_sort[$payment_date] += $s['total_pembulatan'];
+						}
 						if($sorting == 'grand_total'){
 							$recap_sort[$payment_date] += $s['grand_total'];
 						}
-						if($sorting == 'pembulatan'){
-							$recap_sort[$payment_date] += $s['total_pembulatan'];
-						}
-						if($sorting == 'compliment'){
-							$recap_sort[$payment_date] += $s['compliment_total'];
-						}
-						if($sorting == 'dp'){
+						if($sorting == 'total_dp'){
 							$recap_sort[$payment_date] += $s['total_dp'];
 						}
-					//}
+						if($sorting == 'half_payment'){
+							if($s['is_half_payment'] == 1){
+								$recap_sort[$payment_date] += $s['grand_total'];
+							}
+						}
+						if($sorting == 'payment_cash'){
+							if($s['payment_id'] == 1){
+								$recap_sort[$payment_date] += $s['total_cash'];
+							}else{
+								if($s['is_half_payment'] == 1){
+									$recap_sort[$payment_date] += $s['total_cash'];
+								}
+							}
+						}
+						if($sorting == 'payment_debit'){
+							if($s['payment_id'] == 2){
+								if($s['is_half_payment'] == 1){
+									$recap_sort[$payment_date] += $s['total_credit'];
+								}else{
+									$recap_sort[$payment_date] += $s['grand_total'];
+								}
+							}
+						}
+						if($sorting == 'payment_credit'){
+							if($s['payment_id'] == 3){
+								if($s['is_half_payment'] == 1){
+									$recap_sort[$payment_date] += $s['total_credit'];
+								}else{
+									$recap_sort[$payment_date] += $s['grand_total'];
+								}
+							}
+						}
+						if($sorting == 'payment_ar'){
+							if($s['payment_id'] == 4){
+								if($s['is_half_payment'] == 1){
+									$recap_sort[$payment_date] += $s['total_credit'];
+								}else{
+									$recap_sort[$payment_date] += $s['grand_total'];
+								}
+							}
+						}
+						
+						if($sorting == 'total_profit'){
+							$recap_sort[$payment_date] += $s['net_sales_total'];
+						}
+					}else{
+						if($sorting == 'payment_date'){
+							$recap_sort[$payment_date] = strtotime($s['payment_date']);
+						}
+						if($sorting == 'billing_no'){
+							$recap_sort[$payment_date] = $s['billing_no'];
+						}
+						if($sorting == 'discount_notes'){
+							$recap_sort[$payment_date] = $s['discount_notes'];
+						}
+						if($sorting == 'discount_type'){
+							if(!empty($discount_billing_total)){
+								$recap_sort[$payment_date] = 2;
+							}else
+							if(!empty($discount_total)){
+								$recap_sort[$payment_date] = 1;
+							}else{
+								$recap_sort[$payment_date] = 0;
+							}
+						}
+					}
 					
 					$all_bil_id_date[$s['billing_id']] = $payment_date;
 					
@@ -935,108 +1232,84 @@ class ReportSales extends MY_Controller {
 					$all_group_date[$payment_date]['discount_billing_total'] += $s['discount_billing_total'];
 					$all_group_date[$payment_date]['total_dp'] += $s['total_dp'];
 					$all_group_date[$payment_date]['grand_total'] += $s['grand_total'];
-					$all_group_date[$payment_date]['grand_total'] -= $s['compliment_total'];
+					//$all_group_date[$payment_date]['grand_total'] -= $s['compliment_total'];
 					$all_group_date[$payment_date]['sub_total'] += $s['sub_total'];
+					$all_group_date[$payment_date]['net_sales_total'] += $s['net_sales_total'];
 					$all_group_date[$payment_date]['total_pembulatan'] += $s['total_pembulatan'];
 					$all_group_date[$payment_date]['total_compliment'] += $s['compliment_total'];
+					
+					if($s['diskon_sebelum_pajak_service'] == 1){
+						$all_group_date[$payment_date]['discount_total_before'] += $s['discount_total'];
+						$all_group_date[$payment_date]['discount_billing_total_before'] += $s['discount_billing_total'];
+					}else{
+						$all_group_date[$payment_date]['discount_total_after'] += $s['discount_total'];
+						$all_group_date[$payment_date]['discount_billing_total_after'] += $s['discount_billing_total'];
+					}
 					
 					/* if(!empty($s['discount_total'])){
 						echo '<pre>';
 						print_r($s);
 					} */
 					
+					//update-2001.002
 					if(!empty($s['is_compliment'])){
-						$all_group_date[$payment_date]['total_compliment'] += $s['grand_total'];
-					}else{
-					
-						/* if(!empty($s['is_half_payment'])){
-							$all_group_date[$payment_date]['total_cash'] += $s['total_cash'];
-							$all_group_date[$payment_date]['total_credit'] += $s['total_credit'];
-						}else{
-							if($s['payment_id'] == 1){
-								//cash
-								$all_group_date[$payment_date]['total_cash'] += $s['grand_total'];
-							}else{
-								$all_group_date[$payment_date]['total_credit'] += $s['grand_total'];
-							}
-						} */
-						
-						if(!empty($payment_data)){
-							foreach($payment_data as $key_id => $dtPay){
-						
-								$tot_payment = 0;
-								$tot_payment_show = 0;
-								if($s['payment_id'] == $key_id){
-									//$tot_payment = $s['grand_total'];
-									//$tot_payment_show = $s['grand_total_show'];
-									
-									if($key_id == 2 OR $key_id == 3 OR $key_id == 4){
-										$tot_payment = $s['total_credit'];	
-									}else{
-										$tot_payment = $s['total_cash'];	
-									}
-									
-									//FIX PEMBULATAN
-									/*if($tot_payment < $s['grand_total']){
-										$gap = ($s['grand_total'] - $s['total_dp']) - $tot_payment;
-										if($gap < 100){
-											$tot_payment += $s['total_pembulatan'];
-										}
-									}*/
-									
-									$tot_payment_show = priceFormat($tot_payment);
-									
-									//credit half payment
-									if(!empty($s['is_half_payment']) AND $key_id != 1){
-										$tot_payment = $s['total_credit'];
-										$tot_payment_show = priceFormat($s['total_credit']);
-									}else{
-										
-										/*if($tot_payment <= $s['grand_total']){
-											//$tot_payment_show .= '='.$tot_payment.'x'.$s['grand_total'];
-											$tot_payment = $s['grand_total'];
-											$tot_payment_show = priceFormat($tot_payment);
-												
-											if(!empty($s['discount_total'])){
-												$tot_payment = $tot_payment - $s['discount_total'];
-												$tot_payment_show = priceFormat($tot_payment);
-											}
-										}else{
-											$tot_payment_show .= '='.$tot_payment.'z'.$s['grand_total'];
-										}
-										*/
-										
-										$tot_payment_show = priceFormat($tot_payment);	
-									}
-										
-								}else{
-									//cash
-									if(!empty($s['is_half_payment']) AND $key_id == 1){
-										$tot_payment = $s['total_cash'];
-										$tot_payment_show = priceFormat($s['total_cash']);
-									}
-								}
-						
-								if(empty($grand_total_payment[$key_id])){
-									$grand_total_payment[$key_id] = 0;
-								}
-						
-								if(!empty($s['is_compliment'])){
-									$tot_payment = 0;
-									$tot_payment_show = 0;
-								}
-						
-								if(!empty($s['discount_total']) AND !empty($tot_payment)){
-									//$tot_payment = $tot_payment - $s['discount_total'];
-									//$tot_payment_show = priceFormat($tot_payment);
-								}
-						
-								//$grand_total_payment[$key_id] += $tot_payment;
-								$all_group_date[$payment_date]['total_payment_'.$key_id] += $tot_payment;
-																
-							}
+						if(empty($all_group_date[$payment_date]['total_compliment'])){
+							$all_group_date[$payment_date]['total_compliment'] += $s['grand_total'];
 						}
-						
+					}
+					
+					if(!empty($payment_data)){
+						foreach($payment_data as $key_id => $dtPay){
+					
+							$tot_payment = 0;
+							$tot_payment_show = 0;
+							if($s['payment_id'] == $key_id){
+								//$tot_payment = $s['grand_total'];
+								//$tot_payment_show = $s['grand_total_show'];
+								
+								if($key_id == 2 OR $key_id == 3 OR $key_id == 4){
+									$tot_payment = $s['total_credit'];	
+								}else{
+									$tot_payment = $s['total_cash'];	
+								}
+								
+								$tot_payment_show = priceFormat($tot_payment);
+								
+								//credit half payment
+								if(!empty($s['is_half_payment']) AND $key_id != 1){
+									$tot_payment = $s['total_credit'];
+									$tot_payment_show = priceFormat($s['total_credit']);
+								}else{
+									
+									$tot_payment_show = priceFormat($tot_payment);	
+								}
+									
+							}else{
+								//cash
+								if(!empty($s['is_half_payment']) AND $key_id == 1){
+									$tot_payment = $s['total_cash'];
+									$tot_payment_show = priceFormat($s['total_cash']);
+								}
+							}
+					
+							if(empty($grand_total_payment[$key_id])){
+								$grand_total_payment[$key_id] = 0;
+							}
+					
+							if(!empty($s['is_compliment'])){
+								//$tot_payment = 0;
+								//$tot_payment_show = 0;
+							}
+					
+							if(!empty($s['discount_total']) AND !empty($tot_payment)){
+								//$tot_payment = $tot_payment - $s['discount_total'];
+								//$tot_payment_show = priceFormat($tot_payment);
+							}
+					
+							//$grand_total_payment[$key_id] += $tot_payment;
+							$all_group_date[$payment_date]['total_payment_'.$key_id] += $tot_payment;
+															
+						}
 					}
 				
 					$newData[$s['id']] = $s;
@@ -1057,11 +1330,6 @@ class ReportSales extends MY_Controller {
 					foreach($get_detail->result() as $dtRow){
 			
 						$total_qty = $dtRow->order_qty;
-						/*
-						 $total_qty = $dtRow->order_qty - $dtRow->retur_qty;
-						if($total_qty < 0){
-						$total_qty = 0;
-						}*/
 						
 						if(!empty($all_bil_id_date[$dtRow->billing_id])){
 							$payment_date = $all_bil_id_date[$dtRow->billing_id];
@@ -1073,13 +1341,26 @@ class ReportSales extends MY_Controller {
 						}
 			
 						
+						if($sortingDesc == 'DESC'){
+							if(empty($recap_sort[$payment_date])){
+								$recap_sort[$payment_date] = 0;
+							}
+							if($sorting == 'total_hpp'){
+								$recap_sort[$payment_date] += ($dtRow->product_price_hpp * $total_qty);
+							}
+							if($sorting == 'total_profit'){
+								$recap_sort[$payment_date] -= ($dtRow->product_price_hpp * $total_qty);
+							}
+							
+						}
+						
 					}
 				}
 			}
 			
 			//update-0120.001
 			//sorting
-			if($sorting == 'tanggal'){
+			if($sortingDesc == 'ASC'){
 				asort($recap_sort);
 			}else{
 				arsort($recap_sort);
@@ -1090,12 +1371,13 @@ class ReportSales extends MY_Controller {
 				foreach($recap_sort as $key => $xvalue){
 					if(!empty($all_group_date[$key])){
 						$detail = $all_group_date[$key];
-					
+						
 						$detail['total_billing_show'] = priceFormat($detail['total_billing']);
 						$detail['tax_total_show'] = priceFormat($detail['tax_total']);
 						$detail['service_total_show'] = priceFormat($detail['service_total']);
 						$detail['grand_total_show'] = priceFormat($detail['grand_total']);
 						$detail['sub_total_show'] = priceFormat($detail['sub_total']);
+						$detail['net_sales_total_show'] = priceFormat($detail['net_sales_total']);
 						$detail['total_pembulatan_show'] = priceFormat($detail['total_pembulatan']);
 						
 						//$detail['total_cash_show'] = priceFormat($detail['total_cash']);
@@ -1110,21 +1392,27 @@ class ReportSales extends MY_Controller {
 						$detail['total_dp_show'] = priceFormat($detail['total_dp']);
 						$detail['total_compliment_show'] = priceFormat($detail['total_compliment']);
 						
+						$detail['discount_total_before_show'] = priceFormat($detail['discount_total_before']);
+						$detail['discount_billing_total_before_show'] = priceFormat($detail['discount_billing_total_before']);
+						$detail['discount_total_after_show'] = priceFormat($detail['discount_total_after']);
+						$detail['discount_billing_after_total_show'] = priceFormat($detail['discount_billing_total_after']);
+						
 						if(!empty($total_hpp[$key])){
 							$detail['total_hpp'] = $total_hpp[$key];
 						}
 						$detail['total_hpp_show'] = priceFormat($detail['total_hpp']);
 						
-						$detail['total_billing_profit'] = $detail['total_billing'];
-						$detail['total_billing_profit'] -= $detail['discount_total'];
-						$detail['total_billing_profit'] -= $detail['discount_billing_total'];
-						$detail['total_billing_profit'] -= $detail['total_compliment'];
-						$detail['total_billing_profit_show'] = priceFormat($detail['total_billing_profit']);
+						//$detail['total_billing_profit'] = $detail['total_billing'];
+						//$detail['total_billing_profit'] -= $detail['discount_total'];
+						//$detail['total_billing_profit'] -= $detail['discount_billing_total'];
+						//$detail['total_billing_profit'] -= $detail['total_compliment'];
+						//$detail['total_billing_profit_show'] = priceFormat($detail['total_billing_profit']);
 						
-						$detail['total_profit'] = $detail['total_billing_profit']-$detail['total_hpp'];
+						$detail['total_profit'] = $detail['net_sales_total']-$detail['total_hpp'];
 						$detail['total_profit_show'] = priceFormat($detail['total_profit']);
 						
 						$newData[$key] = $detail;
+						
 					}
 				}
 			}	
@@ -1173,817 +1461,6 @@ class ReportSales extends MY_Controller {
 		}
 		
 		$this->load->view('../../billing/views/'.$useview, $data_post);	
-	}
-	
-	public function print_reportSalesByCashier(){
-		
-		$this->table = $this->prefix.'billing';
-		$this->table2 = $this->prefix.'billing_detail';
-		
-		$session_user = $this->session->userdata('user_username');					
-		$user_fullname = $this->session->userdata('user_fullname');					
-		
-		if(empty($session_user)){
-			die('Sesi Login sudah habis, Silahkan Login ulang!');
-		}
-		
-		extract($_GET);
-
-		if(empty($date_from)){ $date_from = date('Y-m-d'); }
-		if(empty($date_till)){ $date_till = date('Y-m-d'); }
-		
-		if(empty($sorting)){
-			$sorting = 'payment_date';
-		}
-		
-		$data_post = array(
-			'do'	=> '',
-			'report_data'	=> array(),
-			'report_place_default'	=> '',
-			'report_name'	=> 'SALES REPORT BY CASHIER',
-			'date_from'	=> $date_from,
-			'date_till'	=> $date_till,
-			'cashier_name'	=> '',
-			'user_cashier'	=> $user_cashier,
-			'user_fullname'	=> $user_fullname,
-			'diskon_sebelum_pajak_service'	=> 0
-		);
-		
-		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
-		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report',
-		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
-		if(!empty($get_opt['report_place_default'])){
-			$data_post['report_place_default'] = $get_opt['report_place_default'];
-		}
-		if(!empty($get_opt['diskon_sebelum_pajak_service'])){
-			$data_post['diskon_sebelum_pajak_service'] = $get_opt['diskon_sebelum_pajak_service'];
-		}
-		if(empty($get_opt['cashier_max_pembulatan'])){
-			$get_opt['cashier_max_pembulatan'] = 0;
-		}
-		if(empty($get_opt['cashier_pembulatan_keatas'])){
-			$get_opt['cashier_pembulatan_keatas'] = 0;
-		}
-		
-		if(empty($date_from) OR empty($date_till)){
-			die('Billing Paid Not Found!');
-		}else{
-				
-			if(empty($date_from)){ $date_from = date('Y-m-d'); }
-			if(empty($date_till)){ $date_till = date('Y-m-d'); }
-			
-			$mktime_dari = strtotime($date_from);
-			$mktime_sampai = strtotime($date_till);
-				
-			$ret_dt = check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
-			
-			//$qdate_from = date("Y-m-d",strtotime($date_from));
-			//$qdate_till = date("Y-m-d",strtotime($date_till));
-			//$qdate_till_max = date("Y-m-d",strtotime($date_till)+ONE_DAY_UNIX);
-			//$add_where = "(a.payment_date >= '".$qdate_from." 07:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
-			
-			//laporan = jam_operasional
-			$qdate_from = $ret_dt['qdate_from'];
-			$qdate_till = $ret_dt['qdate_till'];
-			$qdate_till_max = $ret_dt['qdate_till_max'];
-			$add_where = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
-			
-			$this->db->select("a.*, a.id as billing_id, a.updated as billing_date, d.payment_type_name, e.user_firstname, e.user_lastname, f.bank_name");
-			$this->db->from($this->table." as a");
-			$this->db->join($this->prefix.'payment_type as d','d.id = a.payment_id','LEFT');
-			$this->db->join($this->prefix_apps.'users as e','e.user_username = a.updatedby','LEFT');
-			$this->db->join($this->prefix.'bank as f','f.id = a.bank_id','LEFT');
-			$this->db->where("a.billing_status", 'paid');
-			$this->db->where("a.is_deleted", 0);
-			$this->db->where($add_where);
-			
-
-
-
-
-
-
-			if(empty($sorting)){
-				$this->db->order_by("payment_date","ASC");
-			}else{
-				$this->db->order_by($sorting,"ASC");
-			}
-			
-			if(!empty($user_cashier) AND $user_cashier != 'All'){
-				$this->db->where('a.updatedby', $user_cashier);
-			}
-			$get_dt = $this->db->get();
-			if($get_dt->num_rows() > 0){
-				$data_post['report_data'] = $get_dt->result_array();
-				
-			}
-			
-			
-			//PAYMENT DATA
-			$dt_payment_name = array();
-			$this->db->select('*');
-			$this->db->from($this->prefix.'payment_type');
-			$get_dt_p = $this->db->get();
-			if($get_dt_p->num_rows() > 0){
-				foreach($get_dt_p->result_array() as $dtP){
-					$dt_payment_name[$dtP['id']] = strtoupper($dtP['payment_type_name']);
-				}
-			}
-			
-			$all_bil_id = array();
-			$newData = array();
-			if(!empty($data_post['report_data'])){
-				foreach ($data_post['report_data'] as $s){
-					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
-					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
-				
-					if(!in_array($s['id'], $all_bil_id)){
-						$all_bil_id[] = $s['id'];
-					}		
-					
-					$s['total_billing_awal'] = $s['total_billing'];
-
-					
-					//CHECK REAL TOTAL BILLING
-					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
-						
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
-								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
-								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-								$s['total_billing'] = $get_total_billing;
-							}else{
-								$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
-							}
-							
-						}else{
-							if(!empty($s['include_tax'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
-									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
-									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-									$s['total_billing'] = $get_total_billing;
-								}else{
-									$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
-								}
-							}
-							if(!empty($s['include_service'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
-									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
-									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-									$s['total_billing'] = $get_total_billing;
-								}else{
-									$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
-								}
-							}
-						}
-					}
-					
-					if(!empty($s['is_compliment'])){
-						$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
-						//if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-						//	$s['total_billing'] = $s['total_billing'];
-						//}
-						$s['service_total'] = 0;
-						$s['tax_total'] = 0;
-					}		
-					
-					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
-					}else{
-						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
-						
-						if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-							//CHECKING BALANCE #1
-							if(empty($s['discount_total'])){
-								if($s['sub_total'] != $s['total_billing_awal']){
-									$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
-									$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
-								}
-							}else{
-								if(($s['sub_total'] + $s['total_pembulatan']) != $s['grand_total']){
-									$s['sub_total'] = ($s['grand_total']-$s['total_pembulatan'])+$s['compliment_total'];
-								}
-								
-								$cek_total_billing = $s['sub_total'] - ($s['tax_total'] + $s['service_total']) + $s['discount_total'];
-								if($s['total_billing'] != $cek_total_billing){
-									$s['total_billing'] = $cek_total_billing;
-								}
-							}
-						}
-						
-						
-					}
-					
-					//SPLIT DISCOUNT TYPE
-					if(!empty($s['discount_total']) AND $s['discount_perbilling'] == 1){
-						$s['discount_billing_total'] = $s['discount_total'];
-						$s['discount_total'] = 0;
-					}else{
-						$s['discount_billing_total'] = 0;
-					}
-					
-					//if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-					//	$s['sub_total'] = $s['total_billing'];
-					//}
-					
-					$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
-					$s['grand_total'] -= $s['compliment_total'];
-					
-					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['grand_total'] -= $s['discount_total'];
-						$s['grand_total'] -= $s['discount_billing_total'];
-					}
-					
-					if($s['grand_total'] <= 0){
-						$s['grand_total'] = 0;
-					}
-					
-					
-					$s['total_pembulatan_show'] = priceFormat($s['total_pembulatan']);
-					
-					if($s['total_pembulatan'] < 0){
-						$s['total_pembulatan_show'] = "(".priceFormat($s['total_pembulatan']).")";
-					}
-					
-					$s['sub_total_show'] = priceFormat($s['sub_total']);
-					$s['total_billing_show'] = priceFormat($s['total_billing']);
-					$s['grand_total_show'] = priceFormat($s['grand_total']);
-					$s['total_paid_show'] = priceFormat($s['total_paid']);
-					$s['tax_total_show'] = priceFormat($s['tax_total']);
-					$s['service_total_show'] = priceFormat($s['service_total']);
-					$s['discount_total_show'] = priceFormat($s['discount_total']);
-					$s['discount_billing_total_show'] = priceFormat($s['discount_billing_total']);
-					$s['user_fullname'] = $s['user_firstname'].' '.$s['user_lastname'];
-					
-					//DP
-					$s['total_dp_show'] = priceFormat($s['total_dp']);
-					/*if($s['total_cash'] == 0){
-						if($s['total_credit'] > $s['total_dp']){
-							$s['total_credit'] -= $s['total_dp'];
-						}
-					}else{
-						if($s['total_cash'] > $s['total_dp']){
-							$s['total_cash'] -= $s['total_dp'];
-						}
-					}*/
-					
-					$s['total_compliment'] = 0;
-					$s['total_compliment_show'] = 0;
-					
-					$s['total_hpp'] = 0;
-					$s['total_hpp_show'] = 0;
-					$s['total_profit'] = 0;
-					$s['total_profit_show'] = 0;
-					
-					//CARD NO 
-					$card_no = '';
-					if(strlen($s['card_no']) > 30){
-						$card_no = $s['card_no'];
-						$card_no = str_replace(";","",$card_no);
-						$card_no = str_replace("?","",$card_no);
-						$card_no_exp = explode("=", $card_no);
-						if(!empty($card_no_exp[0])){
-							$card_no = trim($card_no_exp[0]);
-						}
-					}else{
-						$card_no = trim($s['card_no']);
-					}
-					
-					//NOTES
-					$s['payment_note'] = '';
-					if(!empty($s['is_compliment']) OR !empty($s['compliment_total'])){
-						$s['payment_note'] = 'COMPLIMENT';
-						//$s['total_compliment'] = $s['grand_total'];
-						$s['total_compliment'] = $s['compliment_total'];
-						$s['total_compliment_show'] = priceFormat($s['total_compliment']);
-					}else{
-					
-						if(!empty($s['is_half_payment'])){
-							$s['payment_note'] = 'HALF PAYMENT';
-						}
-						
-						if(strtolower($s['payment_type_name']) != 'cash'){
-							$s['payment_note'] = strtoupper($s['bank_name']).' '.$card_no;
-						}
-					}
-					
-					if(!empty($s['billing_notes'])){
-						if(!empty($s['payment_note'])){
-							$s['payment_note'] .= '<br/>'.$s['billing_notes'];
-						}else{
-							$s['payment_note'] .= $s['billing_notes'];
-						}
-					}
-												
-					$newData[$s['id']] = $s;
-					//array_push($newData, $s);
-					
-				}
-			}
-			
-			//calc detail
-			$total_hpp = array();
-			if(!empty($all_bil_id)){
-				$all_bil_id_txt = implode(",",$all_bil_id);
-				$this->db->from($this->table2);
-				$this->db->where('billing_id IN ('.$all_bil_id_txt.')');
-				$this->db->where('is_deleted', 0);
-				$get_detail = $this->db->get();
-				if($get_detail->num_rows() > 0){
-					foreach($get_detail->result() as $dtRow){
-			
-						$total_qty = $dtRow->order_qty;
-						/*
-						 $total_qty = $dtRow->order_qty - $dtRow->retur_qty;
-						if($total_qty < 0){
-						$total_qty = 0;
-						}*/
-			
-						if(empty($total_hpp[$dtRow->billing_id])){
-							$total_hpp[$dtRow->billing_id] = 0;
-						}
-			
-						$total_hpp[$dtRow->billing_id] += $dtRow->product_price_hpp * $total_qty;
-			
-			
-					}
-				}
-			}
-			
-			$newData_switch = $newData;
-			$newData = array();
-			if(!empty($newData_switch)){
-				foreach($newData_switch as $dt){
-					
-					if(!empty($total_hpp[$dt['billing_id']])){
-						$dt['total_hpp'] = $total_hpp[$dt['billing_id']];
-					}
-					
-					$dt['total_profit'] = $dt['total_billing']-$dt['total_hpp'];
-					$dt['total_hpp_show'] = priceFormat($dt['total_hpp']);
-					$dt['total_profit_show'] = priceFormat($dt['total_profit']);
-					
-					$newData[] = $dt;
-				}
-			}
-	
-			$data_post['report_data'] = $newData;
-			$data_post['payment_data'] = $dt_payment_name;
-			
-			if(!empty($user_cashier) && $user_cashier != 'null'){
-				$this->db->select("user_firstname, user_lastname");
-				$this->db->from($this->prefix_apps.'users');
-				$this->db->where('user_username', $user_cashier);			
-				$get_cashier = $this->db->get();
-				if($get_cashier->num_rows() > 0){
-					$dt_cashier = $get_cashier->row_array();
-					$data_post['cashier_name'] = $dt_cashier['user_firstname'].' '.$dt_cashier['user_lastname'];
-				}
-			}
-						
-		}
-		
-		
-		//DO-PRINT
-		if(!empty($do)){
-			$data_post['do'] = $do;
-		}else{
-			$do = '';
-		}
-
-		if(empty($useview)){
-			$useview = 'print_reportSalesByCashier';
-			$data_post['report_name'] = 'SALES REPORT BY CASHIER';
-			
-			if($do == 'excel'){
-				$useview = 'excel_reportSalesByCashier';
-			}
-			
-		}else{
-			$useview = 'print_reportProfitSalesByCashier';
-			$data_post['report_name'] = 'SALES PROFIT REPORT BY CASHIER';
-			
-			if($do == 'excel'){
-				$useview = 'excel_reportProfitSalesByCashier';
-			}
-			
-		}
-		
-		$this->load->view('../../billing/views/'.$useview, $data_post);
-		
-	}
-	
-	public function print_reportSalesByShift(){
-		
-		$this->table = $this->prefix.'billing';
-		$this->table2 = $this->prefix.'billing_detail';
-		
-		$session_user = $this->session->userdata('user_username');					
-		$user_fullname = $this->session->userdata('user_fullname');					
-		
-		if(empty($session_user)){
-			die('Sesi Login sudah habis, Silahkan Login ulang!');
-		}
-		
-		extract($_GET);
-
-		if(empty($date_from)){ $date_from = date('Y-m-d'); }
-		if(empty($date_till)){ $date_till = date('Y-m-d'); }
-		
-		if(empty($sorting)){
-			$sorting = 'payment_date';
-		}
-		
-		$data_post = array(
-			'do'	=> '',
-			'report_data'	=> array(),
-			'report_place_default'	=> '',
-			'report_name'	=> 'SALES REPORT BY SHIFT',
-			'date_from'	=> $date_from,
-			'user_shift'	=> 'All Shift',
-			'diskon_sebelum_pajak_service'	=> 0
-			//'user_cashier'	=> $user_cashier,
-			//'user_fullname'	=> $user_fullname
-		);
-		
-		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
-		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report',
-		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
-		if(!empty($get_opt['report_place_default'])){
-			$data_post['report_place_default'] = $get_opt['report_place_default'];
-		}
-		if(!empty($get_opt['diskon_sebelum_pajak_service'])){
-			$data_post['diskon_sebelum_pajak_service'] = $get_opt['diskon_sebelum_pajak_service'];
-		}
-		if(empty($get_opt['cashier_max_pembulatan'])){
-			$get_opt['cashier_max_pembulatan'] = 0;
-		}
-		if(empty($get_opt['cashier_pembulatan_keatas'])){
-			$get_opt['cashier_pembulatan_keatas'] = 0;
-		}
-		
-		if(empty($date_from)){
-			die('Billing Paid Not Found!');
-		}else{
-				
-			if(empty($date_from)){ $date_from = date('Y-m-d'); }
-			
-			$qdate_from_plus1 = date("Y-m-d",strtotime($date_from)+ONE_DAY_UNIX);
-			
-			//jam_operasional
-			$mktime_dari = strtotime($date_from);
-			$mktime_sampai = strtotime($date_from);
-			$ret_dt = check_report_jam_operasional($get_opt, $mktime_dari, $mktime_sampai);
-			$qdate_from = $ret_dt['qdate_from'];
-			$qdate_from_plus1_max = $ret_dt['qdate_till_max'];
-			
-			$qdate_from = $ret_dt['qdate_from'];
-			$qdate_till_max = $ret_dt['qdate_till_max'];
-			$where_shift_billing = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
-				
-			//update-1912-001
-			if(!empty($shift_billing)){
-				$where_shift_billing = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."') AND a.shift = ".$shift_billing;
-				$data_post['user_shift'] = '';
-			}
-			
-			$this->db->select("a.*, a.id as billing_id, a.updated as billing_date, d.payment_type_name, e.user_firstname, e.user_lastname, f.bank_name");
-			$this->db->from($this->table." as a");
-			$this->db->join($this->prefix.'payment_type as d','d.id = a.payment_id','LEFT');
-			$this->db->join($this->prefix_apps.'users as e','e.user_username = a.updatedby','LEFT');
-			$this->db->join($this->prefix.'bank as f','f.id = a.bank_id','LEFT');
-			$this->db->where("a.billing_status", 'paid');
-			$this->db->where("a.is_deleted", 0);
-			
-			if(!empty($where_shift_billing)){
-				$this->db->where($where_shift_billing);
-			}
-			
-
-			if(empty($sorting)){
-				$this->db->order_by("payment_date","ASC");
-			}else{
-				$this->db->order_by($sorting,"ASC");
-			}
-			
-			if(!empty($add_where)){
-				$this->db->where($add_where);
-			}
-						
-			$get_dt = $this->db->get();
-			if($get_dt->num_rows() > 0){
-				$data_post['report_data'] = $get_dt->result_array();
-				
-			}
-			$this->db->last_query();
-			
-			//PAYMENT DATA
-			$dt_payment_name = array();
-			$this->db->select('*');
-			$this->db->from($this->prefix.'payment_type');
-			$get_dt_p = $this->db->get();
-			if($get_dt_p->num_rows() > 0){
-				foreach($get_dt_p->result_array() as $dtP){
-					$dt_payment_name[$dtP['id']] = strtoupper($dtP['payment_type_name']);
-				}
-			}
-			
-			$all_bil_id = array();
-			$newData = array();
-			if(!empty($data_post['report_data'])){
-				foreach ($data_post['report_data'] as $s){
-					
-					//update-1912-001
-					if(!empty($shift_billing) AND empty($data_post['user_shift'])){
-						if(!empty($s['nama_shift'])){
-							$data_post['user_shift'] = $s['nama_shift'];
-						}
-					}
-					
-					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
-					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
-				
-					if(!in_array($s['id'], $all_bil_id)){
-						$all_bil_id[] = $s['id'];
-					}		
-					
-					$s['total_billing_awal'] = $s['total_billing'];
-
-					
-					//CHECK REAL TOTAL BILLING
-					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
-						
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
-								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
-								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-								$s['total_billing'] = $get_total_billing;
-							}else{
-								$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
-							}
-							
-						}else{
-							if(!empty($s['include_tax'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
-									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
-									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-									$s['total_billing'] = $get_total_billing;
-								}else{
-									$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
-								}
-							}
-							if(!empty($s['include_service'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
-									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
-									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-									$s['total_billing'] = $get_total_billing;
-								}else{
-									$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
-								}
-							}
-						}
-					}
-					
-					if(!empty($s['is_compliment'])){
-						$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
-						//if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-						//	$s['total_billing'] = $s['total_billing'];
-						//}
-						$s['service_total'] = 0;
-						$s['tax_total'] = 0;
-					}		
-					
-					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
-					}else{
-						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
-						
-						
-						if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-							//CHECKING BALANCE #1
-							if(empty($s['discount_total'])){
-								if($s['sub_total'] != $s['total_billing_awal']){
-									$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
-									$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
-								}
-							}else{
-								if(($s['sub_total'] + $s['total_pembulatan']) != $s['grand_total']){
-									$s['sub_total'] = ($s['grand_total']-$s['total_pembulatan'])+$s['compliment_total'];
-								}
-								
-								$cek_total_billing = $s['sub_total'] - ($s['tax_total'] + $s['service_total']) + $s['discount_total'];
-								if($s['total_billing'] != $cek_total_billing){
-									$s['total_billing'] = $cek_total_billing;
-								}
-							}
-						}
-						
-						
-					}
-					
-					//SPLIT DISCOUNT TYPE
-					if(!empty($s['discount_total']) AND $s['discount_perbilling'] == 1){
-						$s['discount_billing_total'] = $s['discount_total'];
-						$s['discount_total'] = 0;
-					}else{
-						$s['discount_billing_total'] = 0;
-					}
-					
-					//if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-					//	$s['sub_total'] = $s['total_billing'];
-					//}
-					
-					$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
-					$s['grand_total'] -= $s['compliment_total'];
-					
-					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['grand_total'] -= $s['discount_total'];
-						$s['grand_total'] -= $s['discount_billing_total'];
-					}
-					
-					if($s['grand_total'] <= 0){
-						$s['grand_total'] = 0;
-					}
-					
-					
-					$s['total_pembulatan_show'] = priceFormat($s['total_pembulatan']);
-					
-					if($s['total_pembulatan'] < 0){
-						$s['total_pembulatan_show'] = "(".priceFormat($s['total_pembulatan']).")";
-					}
-					
-					$s['sub_total_show'] = priceFormat($s['sub_total']);
-					$s['total_billing_show'] = priceFormat($s['total_billing']);
-					$s['grand_total_show'] = priceFormat($s['grand_total']);
-					$s['total_paid_show'] = priceFormat($s['total_paid']);
-					$s['tax_total_show'] = priceFormat($s['tax_total']);
-					$s['service_total_show'] = priceFormat($s['service_total']);
-					$s['discount_total_show'] = priceFormat($s['discount_total']);
-					$s['discount_billing_total_show'] = priceFormat($s['discount_billing_total']);
-					$s['user_fullname'] = $s['user_firstname'].' '.$s['user_lastname'];
-					
-					//DP
-					$s['total_dp_show'] = priceFormat($s['total_dp']);
-					/*if($s['total_cash'] == 0){
-						if($s['total_credit'] > $s['total_dp']){
-							$s['total_credit'] -= $s['total_dp'];
-						}
-					}else{
-						if($s['total_cash'] > $s['total_dp']){
-							$s['total_cash'] -= $s['total_dp'];
-						}
-					}*/
-					
-					$s['total_compliment'] = 0;
-					$s['total_compliment_show'] = 0;
-					
-					$s['total_hpp'] = 0;
-					$s['total_hpp_show'] = 0;
-					$s['total_profit'] = 0;
-					$s['total_profit_show'] = 0;
-					
-					//CARD NO 
-					$card_no = '';
-					if(strlen($s['card_no']) > 30){
-						$card_no = $s['card_no'];
-						$card_no = str_replace(";","",$card_no);
-						$card_no = str_replace("?","",$card_no);
-						$card_no_exp = explode("=", $card_no);
-						if(!empty($card_no_exp[0])){
-							$card_no = trim($card_no_exp[0]);
-						}
-					}else{
-						$card_no = trim($s['card_no']);
-					}
-					
-					//NOTES
-					$s['payment_note'] = '';
-					if(!empty($s['is_compliment']) OR !empty($s['compliment_total'])){
-						$s['payment_note'] = 'COMPLIMENT';
-						//$s['total_compliment'] = $s['grand_total'];
-						$s['total_compliment'] = $s['compliment_total'];
-						$s['total_compliment_show'] = priceFormat($s['total_compliment']);
-					}else{
-					
-						if(!empty($s['is_half_payment'])){
-							$s['payment_note'] = 'HALF PAYMENT';
-						}
-						
-						if(strtolower($s['payment_type_name']) != 'cash'){
-							$s['payment_note'] = strtoupper($s['bank_name']).' '.$card_no;
-						}
-					}
-					
-					if(!empty($s['billing_notes'])){
-						if(!empty($s['payment_note'])){
-							$s['payment_note'] .= '<br/>'.$s['billing_notes'];
-						}else{
-							$s['payment_note'] .= $s['billing_notes'];
-						}
-					}
-					
-					$newData[$s['id']] = $s;
-					//array_push($newData, $s);
-					
-				}
-			}
-			
-			//calc detail
-			$total_hpp = array();
-			if(!empty($all_bil_id)){
-				$all_bil_id_txt = implode(",",$all_bil_id);
-				$this->db->from($this->table2);
-				$this->db->where('billing_id IN ('.$all_bil_id_txt.')');
-				$this->db->where('is_deleted', 0);
-				$get_detail = $this->db->get();
-				if($get_detail->num_rows() > 0){
-					foreach($get_detail->result() as $dtRow){
-							
-						$total_qty = $dtRow->order_qty;
-						/*
-						 $total_qty = $dtRow->order_qty - $dtRow->retur_qty;
-						if($total_qty < 0){
-						$total_qty = 0;
-						}*/
-							
-						if(empty($total_hpp[$dtRow->billing_id])){
-							$total_hpp[$dtRow->billing_id] = 0;
-						}
-							
-						$total_hpp[$dtRow->billing_id] += $dtRow->product_price_hpp * $total_qty;
-							
-							
-					}
-				}
-			}
-				
-			$newData_switch = $newData;
-			$newData = array();
-			if(!empty($newData_switch)){
-				foreach($newData_switch as $dt){
-						
-					if(!empty($total_hpp[$dt['billing_id']])){
-						$dt['total_hpp'] = $total_hpp[$dt['billing_id']];
-					}
-						
-					$dt['total_profit'] = $dt['total_billing']-$dt['total_hpp'];
-					$dt['total_hpp_show'] = priceFormat($dt['total_hpp']);
-					$dt['total_profit_show'] = priceFormat($dt['total_profit']);
-						
-					$newData[] = $dt;
-				}
-			}
-	
-			$data_post['report_data'] = $newData;
-			$data_post['payment_data'] = $dt_payment_name;
-			
-			if(!empty($user_cashier) && $user_cashier != 'null'){
-				$this->db->select("user_firstname, user_lastname");
-				$this->db->from($this->prefix_apps.'users');
-				$this->db->where('user_username', $user_cashier);			
-				$get_cashier = $this->db->get();
-				if($get_cashier->num_rows() > 0){
-					$dt_cashier = $get_cashier->row_array();
-					$data_post['cashier_name'] = $dt_cashier['user_firstname'].' '.$dt_cashier['user_lastname'];
-				}
-			}
-						
-		}
-		
-		//echo '<pre>';
-		//print_r($data_post['report_data']);
-		//die();
-		
-		//DO-PRINT
-		if(!empty($do)){
-			$data_post['do'] = $do;
-		}else{
-			$do = '';
-		}
-
-		if(empty($useview)){
-			$useview = 'print_reportSalesByShift';
-			$data_post['report_name'] = 'SALES REPORT BY SHIFT';
-			
-			if($do == 'excel'){
-				$useview = 'excel_reportSalesByShift';
-			}
-			
-		}else{
-			$useview = 'print_reportProfitSalesByShift';
-			$data_post['report_name'] = 'SALES PROFIT REPORT BY SHIFT';
-			
-			if($do == 'excel'){
-				$useview = 'excel_reportProfitSalesByShift';
-			}
-		}
-		
-		$this->load->view('../../billing/views/'.$useview, $data_post);
-		
 	}
 	
 	public function print_reportSalesFoodCost(){
@@ -2048,7 +1525,7 @@ class ReportSales extends MY_Controller {
 			
 			$mktime_dari = strtotime($date_from);
 			$mktime_sampai = strtotime($date_till);
-					
+						
 			$ret_dt = check_maxview_cashierReport($get_opt, $mktime_dari, $mktime_sampai);
 			
 			//$qdate_from = date("Y-m-d",strtotime($date_from));
@@ -2326,74 +1803,53 @@ class ReportSales extends MY_Controller {
 					}		
 					
 					$s['total_billing_awal'] = $s['total_billing'];
-
 					
+					//update-2001.002
 					//CHECK REAL TOTAL BILLING
 					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
-						
-							if($data_post['diskon_sebelum_pajak_service'] == 1){
-								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
-								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-								$s['total_billing'] = $get_total_billing;
-							}else{
-								$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
-							}
-							
+							$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
 						}else{
 							if(!empty($s['include_tax'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
-									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
-									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-									$s['total_billing'] = $get_total_billing;
-								}else{
-									$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
-								}
+								$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
 							}
 							if(!empty($s['include_service'])){
-								if($data_post['diskon_sebelum_pajak_service'] == 1){
-									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
-									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-									$s['total_billing'] = $get_total_billing;
-								}else{
-									$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
-								}
+								$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
 							}
 						}
 					}
 					
 					if(!empty($s['is_compliment'])){
-						$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
-						$s['service_total'] = 0;
-						$s['tax_total'] = 0;
+						//$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
+						if($s['total_billing'] < $s['compliment_total'] OR $s['total_billing'] == $s['compliment_total']){
+							$s['service_total'] = 0;
+							$s['tax_total'] = 0;
+						}
 					}	
 					
-					//diskon_sebelum_pajak_service
-					if($data_post['diskon_sebelum_pajak_service'] == 0){
-						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
-					}else{
-						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
+					//SUBTOTAL : diskon_sebelum_pajak_service
+					if($s['diskon_sebelum_pajak_service'] == 1){
 						
-						
+						//update-2001.002
 						if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-							//CHECKING BALANCE #1
-							if(empty($s['discount_total'])){
-								if($s['sub_total'] != $s['total_billing_awal']){
-									$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
-									$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
-								}
-							}else{
-								if(($s['sub_total'] + $s['total_pembulatan']) != $s['grand_total']){
-									$s['sub_total'] = ($s['grand_total']-$s['total_pembulatan'])+$s['compliment_total'];
-								}
-								
-								$cek_total_billing = $s['sub_total'] - ($s['tax_total'] + $s['service_total']) + $s['discount_total'];
-								if($s['total_billing'] != $cek_total_billing){
-									$s['total_billing'] = $cek_total_billing;
-								}
-							}
+							$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
 						}
 						
+						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'] - $s['discount_total'] - $s['compliment_total'];
+						$s['net_sales_total'] = $s['total_billing'] - $s['discount_total'] - $s['compliment_total'];
+						
+						$s['grand_total'] = $s['sub_total'];
+						
+					}else{
+						
+						//update-2001.002
+						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'] - $s['discount_total'] - $s['compliment_total'];
+						$s['net_sales_total'] = $s['total_billing'] - $s['discount_total'] - $s['compliment_total'];
+						
+						//GRANDTOTAL
+						$s['grand_total'] = $s['sub_total'];
+						//$s['grand_total'] -= $s['discount_total'];
+						//$s['grand_total'] -= $s['discount_billing_total'];
 						
 					}
 					
@@ -2409,7 +1865,21 @@ class ReportSales extends MY_Controller {
 						$s['billing_notes'] = 'Merge Billing: '.$s['merge_no'];
 					}
 					
-					$s['grand_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
+					//$s['grand_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
+					$s['grand_total'] += $s['total_pembulatan'];
+					//$s['grand_total'] -= $s['compliment_total'];
+					
+					//diskon_sebelum_pajak_service
+					if($s['diskon_sebelum_pajak_service'] == 0){
+						//$s['grand_total'] -= $s['discount_total'];
+						//$s['grand_total'] -= $s['discount_billing_total'];
+					}
+					
+					if($s['grand_total'] <= 0){
+						$s['grand_total'] = 0;
+					}
+					
+					
 					$s['grand_total_show'] = priceFormat($s['grand_total']);
 					$s['total_billing_show'] = priceFormat($s['total_billing']);
 					$s['total_paid_show'] = priceFormat($s['total_paid']);
@@ -2446,27 +1916,31 @@ class ReportSales extends MY_Controller {
 					//NOTES
 					$s['payment_note'] = '';
 					if(!empty($s['is_compliment']) OR !empty($s['compliment_total'])){
-						$s['payment_note'] = 'COMPLIMENT';
+						$s['payment_note'] .= 'COMPLIMENT ';
 						//$s['total_compliment'] = $s['grand_total'];
 						$s['total_compliment'] = $s['compliment_total'];
 						$s['total_compliment_show'] = priceFormat($s['total_compliment']);
-					}else{
+					}
 					
-						if(!empty($s['is_half_payment'])){
-							$s['payment_note'] = 'HALF PAYMENT';
+					if(!empty($s['is_half_payment'])){
+						if(!empty($s['payment_note'])){
+							$s['payment_note'] .= ', ';
 						}
-						
-						if(strtolower($s['payment_type_name']) != 'cash'){
-							$s['payment_note'] = strtoupper($s['bank_name']).' '.$card_no;
+						$s['payment_note'] .= 'HALF PAYMENT ';
+					}
+					
+					if(strtolower($s['payment_type_name']) != 'cash'){
+						if(!empty($s['payment_note'])){
+							$s['payment_note'] .= '<br/>';
 						}
+						$s['payment_note'] .= strtoupper($s['payment_type_name']).': '.strtoupper($s['bank_name']).' '.$card_no.' ';
 					}
 					
 					if(!empty($s['cancel_notes'])){
 						if(!empty($s['payment_note'])){
-							$s['payment_note'] .= '<br/>'.$s['cancel_notes'];
-						}else{
-							$s['payment_note'] .= $s['cancel_notes'];
+							$s['payment_note'] .= '<br/>';
 						}
+						$s['payment_note'] .= $s['cancel_notes'];
 					}
 										
 					$newData[$s['id']] = $s;

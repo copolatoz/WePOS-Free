@@ -35,12 +35,13 @@ class MasterFloorplan extends MY_Controller {
 		$is_dropdown = $this->input->post('is_dropdown');
 		$searching = $this->input->post('query');
 		$keywords = $this->input->post('keywords');
+		$purpose = $this->input->post('purpose');
 		
 		if(!empty($keywords)){
 			$searching = $keywords;
 		}
-		if(!empty($is_dropdown)){
-			$params['order'] = array('floorplan_desc' => 'ASC');
+		if(!empty($is_dropdown) OR $purpose == 'floorplanList'){
+			$params['order'] = array('list_no' => 'ASC');
 		}
 		if(!empty($searching)){
 			$params['where'][] = "(floorplan_name LIKE '%".$searching."%' OR floorplan_desc LIKE '%".$searching."%')";
@@ -48,11 +49,26 @@ class MasterFloorplan extends MY_Controller {
 		
 		//get data -> data, totalCount
 		$get_data = $this->m->find_all($params);
-		  		
+		
   		$newData = array();
+		
+		if($purpose == 'floorplanList'){
+			$floorplan_info = '<div style="font-size:12px; margin:5px">Floorplan/lantai:</div>';
+			$floorplan_info .= '<div style="font-size:16px; margin:5px 0px 15px;"><b>Semua Lantai/Floorplan</b></div>';
+			$floorplan_info .= '<div style="font-size:10px;">Klik u/ lihat Table</div>';
+			$dt = array('id' => '0', 'floorplan_name' => 'Semua Floorplan/Lantai', 'floorplan_info' => $floorplan_info);
+			array_push($newData, $dt);
+		}
+		
 		if(!empty($get_data['data'])){
 			foreach ($get_data['data'] as $s){
 				$s['is_active_text'] = ($s['is_active'] == '1') ? '<span style="color:green;">Active</span>':'<span style="color:red;">Inactive</span>';
+				
+				if($purpose == 'floorplanList'){
+					$s['floorplan_info'] = '<div style="font-size:12px; margin:5px">Floorplan/lantai:</div>';
+					$s['floorplan_info'] .= '<div style="font-size:18px; margin:5px 0px 15px;"><b>'.$s['floorplan_name'].'</b></div>';
+					$s['floorplan_info'] .= '<div style="font-size:10px;">Klik u/ lihat Table</div>';
+				}
 				
 				array_push($newData, $s);
 			}

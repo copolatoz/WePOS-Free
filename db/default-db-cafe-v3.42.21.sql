@@ -1,4 +1,4 @@
-/*WePOS.Cafe : v.3.42.21 (Januari 2020)MySQL - 5.6.24 : DatabaseUpdated: 07-01-2020 01:00
+/*WePOS.Cafe : v.3.42.21 (Februari 2020)MySQL - 5.6.24 : DatabaseUpdated: 07-02-2020 23:00
 *********************************************************************
 */
 
@@ -1687,7 +1687,7 @@ CREATE TABLE `pos_floorplan` (
   `updatedby` varchar(50) DEFAULT NULL,
   `updated` timestamp NULL DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT '1',
-  `is_deleted` tinyint(1) DEFAULT '0',
+  `is_deleted` tinyint(1) DEFAULT '0',  `list_no` TINYINT(4) NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
 
@@ -2068,7 +2068,7 @@ CREATE TABLE `pos_product` (
   `supplier_id` int(11) DEFAULT '0',
   `product_code` varchar(100) DEFAULT NULL,
   `product_no` smallint(6) DEFAULT '0',
-  `unit_id` int(11) DEFAULT '0',
+  `unit_id` int(11) DEFAULT '0',  `product_bg_color` CHAR(6) DEFAULT '000000',  `product_text_color` CHAR(6) DEFAULT 'FFFFFF',
   PRIMARY KEY (`id`),
   UNIQUE KEY `item_product_idx` (`product_code`)
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=latin1;
@@ -2093,7 +2093,7 @@ CREATE TABLE `pos_product_category` (
   `is_active` tinyint(1) DEFAULT '1',
   `is_deleted` tinyint(1) DEFAULT '0',
   `product_category_code` char(6) DEFAULT NULL,
-  `list_no` int(11) DEFAULT '0',
+  `list_no` int(11) DEFAULT '0',  `product_category_bg_color` CHAR(6) DEFAULT '000000',  `product_category_text_color` CHAR(6) DEFAULT 'FFFFFF',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;
 
@@ -2854,7 +2854,7 @@ CREATE TABLE `pos_table_inventory` (
   `updated` datetime DEFAULT NULL,
   `updatedby` varchar(50) DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT '0',
-  `is_deleted` tinyint(1) DEFAULT '0',
+  `is_deleted` tinyint(1) DEFAULT '0',  `total_billing` TINYINT(4) NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=latin1;
 

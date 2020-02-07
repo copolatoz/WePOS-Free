@@ -10,6 +10,7 @@
 	<?php
 		$set_width = 980;
 		$total_cols = 9;
+		
 		//update-0120.001
 		if(!empty($filter_column)){
 			extract($filter_column);
@@ -34,34 +35,31 @@
 							</div>
 										
 							<div class="title_report"><?php echo $report_name; ?></div>
+							<div class="subtitle_report" style="margin-bottom:5px;">
 							<?php
 							if($date_from == $date_till){
-								?>
-								<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from; ?></div>		
-								<?php
+								echo 'Tanggal : '.$date_from;
 							}else{
-								?>
-								<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from.' s/d '.$date_till; ?></div>		
-								<?php
+								echo 'Tanggal : '.$date_from.' s/d '.$date_till; 
 							}
 							
 							if(!empty($user_shift)){ 
-								?>
-								<div class="subtitle_report"><?php echo 'Shift: '.$user_shift; ?></div>		
-								<?php 				
+								echo ' &nbsp; | &nbsp; Shift: '.$user_shift; 
 							}else{
-								?>
-								<div class="subtitle_report"><?php echo 'Shift: All Shift'; ?></div>		
-								<?php 
-								//$total_cols++;
+								echo ' &nbsp; | &nbsp; Shift: Semua Shift';
 							}
-							if(!empty($user_kasir)){ 
-								?>
-								<div class="subtitle_report"><?php echo 'Kasir: '.$user_kasir; ?></div>		
-								<?php 				
-							}
-							?>	
 							
+							if(!empty($user_kasir)){ 
+								echo ' &nbsp; | &nbsp; Kasir: '.$user_kasir;
+							}else{
+								echo ' &nbsp; | &nbsp; Kasir: Semua Kasir';
+							}
+							
+							if(!empty($tipe_sales)){ 
+								echo ' &nbsp; | &nbsp; Tipe Sales: '.$tipe_sales; 
+							}
+							?>			
+							</div>
 						</div>
 					</td>
 				</tr>
@@ -69,6 +67,7 @@
 					<td class="first xcenter" width="50">NO</td>
 					<td class="xcenter" width="130">DATE</td>
 					<td class="xcenter" width="80">QTY BILLING</td>
+					<td class="xcenter" width="120">TOTAL HPP</td>
 					<td class="xcenter" width="120">TOTAL BILLING</td>
 					<td class="xcenter" width="120">DISCOUNT</td>
 					<?php
@@ -79,7 +78,6 @@
 					}
 					?>
 					<td class="xcenter" width="120">NET SALES</td>
-					<td class="xcenter" width="120">TOTAL HPP</td>
 					<td class="xcenter" width="120">TOTAL PROFIT</td>
 				</tr>
 			</thead>
@@ -98,6 +96,7 @@
 					//$grand_total_cash = 0;
 					//$grand_total_credit = 0;	
 					$grand_sub_total = 0;
+					$grand_net_sales_total = 0;
 					$grand_total_pembulatan = 0;			
 					$grand_total_payment = array();
 					$grand_discount_total = 0;
@@ -112,6 +111,7 @@
 							<td class="first xcenter"><?php echo $no; ?></td>
 							<td class="xcenter"><?php echo $det['date']; ?></td>
 							<td class="xcenter"><?php echo $det['qty_billing']; ?></td>
+							<td class="xright"><?php echo $det['total_hpp_show']; ?></td>
 							<td class="xright"><?php echo $det['total_billing_show']; ?></td>
 							<td class="xright"><?php echo priceFormat($discount_total); ?></td>
 							<?php
@@ -121,8 +121,7 @@
 							<?php
 							}
 							?>
-							<td class="xright"><?php echo $det['total_billing_profit_show']; ?></td>
-							<td class="xright"><?php echo $det['total_hpp_show']; ?></td>
+							<td class="xright"><?php echo $det['net_sales_total_show']; ?></td>
 							<td class="xright"><?php echo $det['total_profit_show']; ?></td>
 						</tr>
 						<?php	
@@ -131,10 +130,11 @@
 						$total_billing +=  $det['total_billing'];
 						$total_tax +=  $det['tax_total'];
 						$total_service +=  $det['service_total'];
-						$grand_total +=  $det['total_billing_profit'];
+						//$grand_total +=  $det['total_billing_profit'];
 						//$grand_total_cash +=  $det['total_cash'];
 						//$grand_total_credit +=  $det['total_credit'];
 						$grand_sub_total += $det['sub_total'];
+						$grand_net_sales_total += $det['net_sales_total'];
 						$grand_total_pembulatan += $det['total_pembulatan'];
 						$grand_discount_total += $det['discount_total'];
 						$grand_discount_billing_total += $det['discount_billing_total'];
@@ -150,6 +150,7 @@
 					<tr class="tbl-total">
 						<td class="first xright xbold" colspan="2">TOTAL</td>
 						<td class="xcenter xbold"><?php echo $total_qty; ?></td>
+						<td class="xright xbold"><?php echo priceFormat($total_hpp); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($total_billing); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($discount_total); ?></td>
 						<?php
@@ -159,8 +160,7 @@
 						<?php
 						}
 						?>
-						<td class="xright xbold"><?php echo priceFormat($grand_total); ?></td>
-						<td class="xright xbold"><?php echo priceFormat($total_hpp); ?></td>
+						<td class="xright xbold"><?php echo priceFormat($grand_net_sales_total); ?></td>
 						<td class="xright xbold"><?php echo priceFormat($total_profit); ?></td>
 					</tr>
 					<?php
@@ -173,25 +173,24 @@
 				}
 				?>
 				
-				<tr class="tbl-sign">
-					<td colspan="<?php echo $total_cols; ?>" class="first xleft">
+				<tr>
+					<td colspan="<?php echo $total_cols-4; ?>" class="first xleft">
 						<br/>
 						<br/>
-						<div class="fleft" style="width:200px;">
-							<br/><br/><br/><br/>
-							Printed: <?php echo date("d-m-Y H:i:s");?>
-						</div>
-						<div class="fright" style="width:200px;">
-							Prepared by:<br/><br/><br/><br/>
-							----------------------------
-						</div>
-						<div class="fright" style="width:200px;">
-							Approved by:<br/><br/><br/><br/>
-							----------------------------
-						</div>
-						
-						<div class="fclear"></div>
 						<br/>
+						<br/>
+						Printed: <?php echo date("d-m-Y H:i:s"); ?>
+						<br/>
+					</td>
+					<td colspan="2" class="xcenter">
+						<br/>
+						Prepared by:<br/><br/><br/><br/>
+						----------------------------
+					</td>
+					<td colspan="2" class="xcenter">
+						<br/>
+						Approved by:<br/><br/><br/><br/>
+						----------------------------
 					</td>
 				</tr>
 			</tbody>			

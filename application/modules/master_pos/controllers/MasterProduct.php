@@ -28,9 +28,30 @@ class MasterProduct extends MY_Controller {
 			'has_varian_text' => 'a.has_varian'
 		);		
 		
+		//update-2001.002
+		$get_opt = get_option_value(array('hide_compliment_order','display_kode_menu_dipencarian','cashier_menu_bg_text_color','cashier_display_menu_image'));
+  		$hide_compliment_order = 0;
+		if(!empty($get_opt['hide_compliment_order'])){
+			$hide_compliment_order = 1;
+		}
+		
+		//update-1912-001
+		$display_kode_menu_dipencarian = 0;
+		if(!empty($get_opt['display_kode_menu_dipencarian'])){
+			$display_kode_menu_dipencarian = 1;
+		}
+		
+		//update-2001.002
+		$cashier_display_menu_image = 0;
+		if(!empty($get_opt['cashier_display_menu_image'])){
+			$cashier_display_menu_image = 1;
+		}
+		
+		$sql_fields_select = 'a.*, b.product_category_name, b.product_category_code, b.product_category_bg_color, b.product_category_text_color, c.id as item_id, c.item_code, d.unit_name, d.unit_code';
+		
 		// Default Parameter
 		$params = array(
-			'fields'		=> 'a.*, b.product_category_name,  b.product_category_code, c.id as item_id, c.item_code, d.unit_name, d.unit_code',
+			'fields'		=> $sql_fields_select,
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table.' as a',
 			'join'			=> array(
@@ -92,20 +113,6 @@ class MasterProduct extends MY_Controller {
 		
 		//get data -> data, totalCount
 		$get_data = $this->m->find_all($params);
-		
-		
-		//cek opt
-		$get_opt = get_option_value(array('hide_compliment_order','display_kode_menu_dipencarian'));
-  		$hide_compliment_order = 0;
-		if(!empty($get_opt['hide_compliment_order'])){
-			$hide_compliment_order = 1;
-		}
-		
-		//update-1912-001
-		$display_kode_menu_dipencarian = 0;
-		if(!empty($get_opt['display_kode_menu_dipencarian'])){
-			$display_kode_menu_dipencarian = 1;
-		}
 		
 		//GET PROMO
 		$dt_promo = array();
@@ -361,10 +368,37 @@ class MasterProduct extends MY_Controller {
 				$s['product_name_show'] = $s['product_name'];
 				$s['product_name_code'] = $s['product_name'];
 				
+				//update-2001.002
+				if(empty($s['product_bg_color'])){
+					$s['product_bg_color'] = '000000';
+				}
+				
+				if($s['product_bg_color'] == '000000'){
+					if(!empty($s['product_category_bg_color']) AND $s['product_category_bg_color'] != '000000'){
+						$s['product_bg_color'] = $s['product_category_bg_color'];
+					}
+				}
+				
+				if(empty($s['product_text_color'])){
+					$s['product_text_color'] = 'FFFFFF';
+				}
+				
+				if($s['product_text_color'] == 'FFFFFF'){
+					if(!empty($s['product_category_text_color']) AND $s['product_category_text_color'] != 'FFFFFF'){
+						$s['product_text_color'] = $s['product_category_text_color'];
+					}
+				}
+				
+				$s['product_color'] = '<div style="border:1px solid #ccc; background-color:#'.$s['product_bg_color'].'; color:#'.$s['product_text_color'].'; padding:4px 4px; text-align:center;"><b>Text</b></div>';
+				
 				//update-1912-001
 				if(!empty($display_kode_menu_dipencarian)){
-					$s['product_name_code'] =  $s['product_code'].' '.$s['product_name'];
-					$s['product_name_show'] =  $s['product_code'].' '.$s['product_name'];
+					$s['product_name_code'] =  $s['product_code'].'<div>'.$s['product_name'].'</div>';
+					$s['product_name_show'] =  $s['product_code'].'<div>'.$s['product_name'].'</div>';
+					if(!empty($cashier_display_menu_image)){
+						$s['product_name_code'] =  $s['product_code'].'<div style="margin:2px 0px;">'.$s['product_name'].'</div>';
+						$s['product_name_show'] =  $s['product_code'].'<div style="margin:2px 0px;">'.$s['product_name'].'</div>';
+					}
 				}
 				
 				$s['product_id'] = $s['id'];
@@ -758,6 +792,16 @@ class MasterProduct extends MY_Controller {
 		//$use_service = $this->input->post('use_service');
 		$tipe = $this->input->post('tipe');
 		
+		//update-2001.002
+		$product_bg_color = $this->input->post('product_bg_color');
+		$product_text_color = $this->input->post('product_text_color');
+		if(empty($product_bg_color)){
+			$product_bg_color = '000000';
+		}
+		if(empty($product_text_color)){
+			$product_text_color = 'FFFFFF';
+		}
+		
 		/*CONTENT IMAGE UPLOAD SIZE*/		
 		$this->product_img_url = RESOURCES_URL.'product/';		
 		$this->product_img_path_big = RESOURCES_PATH.'product/big/';
@@ -798,7 +842,6 @@ class MasterProduct extends MY_Controller {
 		if(!empty($get_opt['tiny_size_height'])){
 			$tiny_size_height = $get_opt['tiny_size_height'];
 		}
-		
 		
 		$is_upload_file = false;		
 		if(!empty($_FILES['upload_image']['name'])){
@@ -918,7 +961,9 @@ class MasterProduct extends MY_Controller {
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,
-					'is_active'	=>	$is_active
+					'is_active'		=>	$is_active,
+					'product_bg_color'		=>	$product_bg_color,
+					'product_text_color'	=>	$product_text_color,
 				),
 				'table'		=>  $this->table
 			);				
@@ -1016,7 +1061,9 @@ class MasterProduct extends MY_Controller {
 					'unit_id'		=>	$unit_id,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,
-					'is_active'		=>	$is_active
+					'is_active'		=>	$is_active,
+					'product_bg_color'		=>	$product_bg_color,
+					'product_text_color'	=>	$product_text_color
 				),
 				'table'			=>  $this->table,
 				'primary_key'	=>  'id'

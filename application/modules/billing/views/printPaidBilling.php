@@ -8,7 +8,7 @@
 </head>
 <body>
 	<?php
-		$set_width = 450;
+		$set_width = 550;
 	?>
 	<div class="report_area" style="width:<?php echo $set_width.'px'; ?>;">
 		<div class="fleft" style="width:200px; margin-right:10px;">
@@ -39,17 +39,19 @@
 		<table width="<?php echo $set_width; ?>">
 			<!-- HEADER -->
 			<tr class="tbl-header">
-				<td class="first xleft" width="300">ITEM ORDER</td>
+				<td class="first xleft" width="200">ITEM ORDER</td>
 				<td class="xcenter" width="50">QTY</td>
 				<td class="xcenter" width="50">T/A</td>
 				<td class="xcenter" width="50">COMP</td>
-				<td class="xright" width="100">TOTAL</td>
+				<td class="xcenter" width="100">TOTAL</td>
+				<td class="xcenter" width="100">DISC</td>
 			</tr>
 			
 			<?php
 			if(!empty($billing_detail)){
 			
 				$no = 1;
+				$total_qty = 0;
 				foreach($billing_detail as $det){
 					?>
 					<tr class="tbl-data">
@@ -58,8 +60,10 @@
 						<td class="xcenter"><?php echo $det['is_takeaway_text']; ?></td>
 						<td class="xcenter"><?php echo $det['is_compliment_text']; ?></td>
 						<td class="xright"><?php echo $det['order_total_show']; ?></td>
+						<td class="xright"><?php echo $det['discount_total_show']; ?></td>
 					</tr>
 					<?php
+					$total_qty += $det['order_qty'];
 				}
 				
 				$sub_total_incl = '';
@@ -81,56 +85,73 @@
 				}
 				
 				?>
-				<tr class="tbl-total">
+				<tr class="tbl-data">
+					<td class="first xright"> &nbsp; </td>
+					<td class="xcenter"><?php echo priceFormat($total_qty); ?></td>
+					<td class="xcenter">&nbsp;</td>
+					<td class="xcenter">&nbsp;</td>
+					<td class="xright"><?php echo 'Rp. '.priceFormat($curr_billing_total); ?></td>
+					<td class="xright"><?php echo 'Rp. '.priceFormat($curr_discount_total); ?></td>
+				</tr>
+				
+				<tr class="tbl-data">
 					<td class="first xright" colspan="4"> SUB TOTAL <?php echo $sub_total_incl; ?> </td>
 					<td class="xright"><?php echo 'Rp. '.priceFormat($curr_billing_total); ?></td>
+					<td class="xcenter">&nbsp;</td>
 				</tr>
 				<?php
 				if(!empty($curr_discount_total)){
 					?>
-					<tr class="tbl-total">
+					<tr class="tbl-data">
 						<td class="first xright" colspan="4"> DISCOUNT </td>
 						<td class="xright"><?php echo 'Rp. '.priceFormat($curr_discount_total); ?></td>
+						<td class="xcenter">&nbsp;</td>
 					</tr>
 					<?php
 				}
-				?>
-				<tr class="tbl-total">
-					<td class="first xright" colspan="4"> TAX <?php echo $tax_incl; ?></td>
-					<td class="xright"><?php echo 'Rp. '.priceFormat($curr_tax_total); ?></td>
-				</tr>
-				<tr class="tbl-total">
-					<td class="first xright" colspan="4"> SERVICE <?php echo $service_incl; ?></td>
-					<td class="xright"><?php echo 'Rp. '.priceFormat($curr_service_total); ?></td>
-				</tr>
-				<?php
+				
 				if(!empty($curr_compliment_total)){
 					?>
-					<tr class="tbl-total">
+					<tr class="tbl-data">
 						<td class="first xright" colspan="4"> COMPLIMENT </td>
 						<td class="xright"><?php echo 'Rp. '.priceFormat($curr_compliment_total); ?></td>
+					<td class="xcenter">&nbsp;</td>
 					</tr>
 					<?php
 				}
-				
+				?>
+				<tr class="tbl-data">
+					<td class="first xright" colspan="4"> TAX <?php echo $tax_incl; ?></td>
+					<td class="xright"><?php echo 'Rp. '.priceFormat($curr_tax_total); ?></td>
+					<td class="xcenter">&nbsp;</td>
+				</tr>
+				<tr class="tbl-data">
+					<td class="first xright" colspan="4"> SERVICE <?php echo $service_incl; ?></td>
+					<td class="xright"><?php echo 'Rp. '.priceFormat($curr_service_total); ?></td>
+					<td class="xcenter">&nbsp;</td>
+				</tr>
+				<?php
 				if(!empty($curr_dp_total)){
 					?>
-					<tr class="tbl-total">
+					<tr class="tbl-data">
 						<td class="first xright" colspan="4"> DP </td>
 						<td class="xright"><?php echo 'Rp. '.priceFormat($curr_dp_total); ?></td>
+					<td class="xcenter">&nbsp;</td>
 					</tr>
 					<?php
 				}
 				?>
 				
-				<tr class="tbl-total">
+				<tr class="tbl-data">
 					<td class="first xright" colspan="4"> PEMBULATAN </td>
 					<td class="xright"><?php echo 'Rp. '.priceFormat($curr_pembulatan); ?></td>
+					<td class="xcenter">&nbsp;</td>
 				</tr>
 				
 				<tr class="tbl-total">
 					<td class="first xright" colspan="4"> GRAND TOTAL </td>
 					<td class="xright"><?php echo 'Rp. '.priceFormat($curr_grand_total); ?></td>
+					<td class="xcenter">&nbsp;</td>
 				</tr>
 				<?php	
 			}

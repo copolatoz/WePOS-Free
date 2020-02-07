@@ -1,0 +1,99 @@
+/*ICON*/
+.icon-posting{
+    background-image:url( ../../../assets/desktop/icons/fam/report_go.png ) !important;
+}
+.btn-users {
+    background-image:url( ../../../assets/desktop/icons/fam/users.png ) !important;
+}
+.btn-lock {
+    background-image:url( ../../../assets/desktop/icons/fam/lock.png ) !important;
+}
+.btn-lock-open {
+    background-image:url( ../../../assets/desktop/icons/fam/lock-unlock.png ) !important;
+}
+.btn-generate {
+	background-image:url(../../../assets/desktop/icons/general/posting.png) !important;
+}
+.btn-play {
+	background-image:url(../../../assets/desktop/icons/fam/control_play_blue.png) !important;
+}
+.btn-stop {
+	background-image:url(../../../assets/desktop/icons/fam/control_stop_blue.png) !important;
+}
+.btn-gear {
+	background-image:url(../../../assets/desktop/icons/fam/table_gear.png) !important;
+}
+.btn-tick {
+    background-image:url( ../../../assets/desktop/icons/fam/tick.png ) !important;
+}
+.btn-switch {
+    background-image:url( ../../../assets/desktop/icons/fam/arrow_switch.png ) !important;
+}
+.icon-org {
+    background-image:url( ../../../assets/desktop/icons/fam/chart_organisation.png ) !important;
+}
+.icon-sync {
+    background-image:url( ../../../assets/desktop/icons/fam/database_refresh.png ) !important;
+}
+.icon-house {
+    background-image:url( ../../../assets/desktop/icons/fam/house.png ) !important;
+}
+.icon-backup {
+    background-image:url( ../../../assets/desktop/icons/fam/database_save.png ) !important;
+}
+.icon-aplikasi {
+    background-image:url( ../../../assets/desktop/icons/fam/aplikasi.png ) !important;
+}
+.icon-generate {
+    background-image:url( ../../../assets/desktop/icons/fam/table_refresh.png ) !important;
+}
+.icon-cog {
+	background-image:url(../../../assets/desktop/icons/fam/cog.png) !important;
+}
+.icon-home {
+	background-image:url(../../../assets/desktop/icons/fam/application_home.png) !important;
+}
+.icon-notes {
+	background-image:url(../../../assets/desktop/icons/fam/note.png) !important;
+}
+.icon-grid-search {
+	background-image:url(../../../assets/desktop/icons/fam/application_form_magnify.png) !important;
+}
+.icon-receipt {
+	background-image:url(../../../assets/desktop/icons/fam/page_white_text.png) !important;
+}
+.icon-list-order {
+	background-image:url(../../../assets/desktop/icons/fam/table_edit.png) !important;
+}
+.btn-warning {
+	background-image:url(../../../assets/desktop/icons/fam/bullet_error.png) !important;
+}
+.icon-keyboard {
+	background-image:url(../../../assets/desktop/icons/fam/keyboard.png) !important;
+}
+
+/*BUTTON*/
+.button-size16 .x-btn-inner {
+    font-size:16px;
+	font-family: Calibri, Arial, Helvetica, sans-serif;
+}
+.button-size18 .x-btn-inner {
+    font-size:18px;
+	font-family: Calibri, Arial, Helvetica, sans-serif;
+}
+.button-size20 .x-btn-inner {
+    font-size:20px;
+	font-family: Calibri, Arial, Helvetica, sans-serif;
+}
+.button-size22 .x-btn-inner {
+    font-size:22px;
+	font-family: Calibri, Arial, Helvetica, sans-serif;
+}
+.button-size24 .x-btn-inner {
+    font-size:24px;
+	font-family: Calibri, Arial, Helvetica, sans-serif;
+}
+.button-numlock .x-btn-inner {
+    font-size:24px;
+	font-family: Calibri, Arial, Helvetica, sans-serif;
+}

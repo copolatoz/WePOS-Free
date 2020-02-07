@@ -1,8 +1,11 @@
 <?php
+$date_title = $date_from;
+if($date_from != $date_till){
+	$date_title = $date_from.' to '.$date_till;
+}
+
 header("Content-Type:   application/excel; charset=utf-8");
-//header("Content-Type:   application/vnd.ms-excel; charset=utf-8");
-//header("Content-type:   application/x-msexcel; charset=utf-8");
-header("Content-Disposition: attachment; filename=".url_title($report_name.' '.$date_from.' to '.$date_till).".xls"); 
+header("Content-Disposition: attachment; filename=".url_title($report_name.' '.$tipe_sales.' '.$date_title).".xls"); 
 header("Expires: 0");
 header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
 header("Cache-Control: private",false);
@@ -35,33 +38,28 @@ if($show_compliment == false){
 				<td colspan="<?php echo $total_cols ?>">
 					
 					<div class="title_report"><?php echo $report_name; ?></div>
+					<div class="subtitle_report" style="margin-bottom:5px;">
 					<?php
 					if($date_from == $date_till){
-						?>
-						<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from; ?></div>		
-						<?php
+						echo 'Tanggal : '.$date_from;
 					}else{
-						?>
-						<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from.' s/d '.$date_till; ?></div>		
-						<?php
+						echo 'Tanggal : '.$date_from.' s/d '.$date_till;
 					}
-					
 					if(!empty($user_shift)){ 
-						?>
-						<div class="subtitle_report"><?php echo 'Shift: '.$user_shift; ?></div>		
-						<?php 				
+						echo ' &nbsp; | &nbsp; Shift: '.$user_shift;
 					}else{
-						?>
-						<div class="subtitle_report"><?php echo 'Shift: All Shift'; ?></div>		
-						<?php 
-						//$total_cols++;
+						echo ' &nbsp; | &nbsp; Shift: Semua Shift';
 					}
 					if(!empty($user_kasir)){ 
-						?>
-						<div class="subtitle_report"><?php echo 'Kasir: '.$user_kasir; ?></div>		
-						<?php 				
+						echo ' &nbsp; | &nbsp; Kasir: '.$user_kasir;
+					}else{
+						echo ' &nbsp; | &nbsp; Kasir: Semua Kasir';
 					}
-					?>	
+					if(!empty($tipe_sales)){ 
+						echo ' &nbsp; | &nbsp; Tipe Sales: '.$tipe_sales;
+					}
+					?>
+					</div>
 				</td>
 			</tr>
 			<tr>
@@ -69,6 +67,7 @@ if($show_compliment == false){
 				<td class="tbl_head_td_xcenter" width="100">CODE</td>
 				<td class="tbl_head_td_xcenter" width="260">PRODUCT / MENU</td>
 				<td class="tbl_head_td_xcenter" width="60">TOTAL QTY</td>
+				<td class="tbl_head_td_xcenter" width="90">TOTAL HPP</td>
 				<td class="tbl_head_td_xcenter" width="110">TOTAL BILLING</td>
 				<td class="tbl_head_td_xcenter" width="110">DISCOUNT</td>
 				<?php
@@ -79,7 +78,6 @@ if($show_compliment == false){
 				}
 				?>
 				<td class="tbl_head_td_xcenter" width="110">NET SALES</td>
-				<td class="tbl_head_td_xcenter" width="90">TOTAL HPP</td>
 				<td class="tbl_head_td_xcenter" width="110">TOTAL PROFIT</td>
 			</tr>
 		</thead>
@@ -97,9 +95,11 @@ if($show_compliment == false){
 			$grand_total = 0;
 			$grand_total_dp = 0;
 			$grand_sub_total = 0;
+			$grand_net_sales_total = 0;
 			$grand_total_pembulatan = 0;
 			$grand_discount_total = 0;
 			$grand_discount_billing_total = 0;
+			$grand_all_discount_total = 0;
 			$grand_total_compliment = 0;
 			$grand_total_payment = array();
 			foreach($report_data as $det){
@@ -122,16 +122,22 @@ if($show_compliment == false){
 					<?php
 					if($format_nominal == true){
 						$det['total_billing_show'] = 'Rp. '.$det['total_billing_show'];
-						$discount_total = 'Rp. '.priceFormat($discount_total);
+						$det['all_discount_total_show'] = 'Rp. '.$det['all_discount_total_show'];
+						//$discount_total = 'Rp. '.priceFormat($discount_total);
 						$det['total_billing_profit_show'] = 'Rp. '.$det['total_billing_profit_show'];
+						$det['net_sales_total_show'] = 'Rp. '.$det['net_sales_total_show'];
 						$det['total_hpp_show'] = 'Rp. '.$det['total_hpp_show'];
 						$det['total_profit_show'] = 'Rp. '.$det['total_profit_show'];
 						$det['total_compliment_show'] = 'Rp. '.$det['total_compliment_show'];
 					}else{
 						$det['total_billing_show'] = str_replace(".","",$det['total_billing_show']);
 						$det['total_billing_show'] = str_replace(",",".",$det['total_billing_show']);
+						$det['all_discount_total_show'] = str_replace(".","",$det['all_discount_total_show']);
+						$det['all_discount_total_show'] = str_replace(",",".",$det['all_discount_total_show']);
 						$det['total_billing_profit_show'] = str_replace(".","",$det['total_billing_profit_show']);
 						$det['total_billing_profit_show'] = str_replace(",",".",$det['total_billing_profit_show']);
+						$det['net_sales_total_show'] = str_replace(".","",$det['net_sales_total_show']);
+						$det['net_sales_total_show'] = str_replace(",",".",$det['net_sales_total_show']);
 						$det['total_hpp_show'] = str_replace(".","",$det['total_hpp_show']);
 						$det['total_hpp_show'] = str_replace(",",".",$det['total_hpp_show']);
 						$det['total_profit_show'] = str_replace(".","",$det['total_profit_show']);
@@ -140,6 +146,7 @@ if($show_compliment == false){
 						$det['total_compliment_show'] = str_replace(",",".",$det['total_compliment_show']);
 					}
 					?>
+					<td class="tbl_data_td_xright"><?php echo $det['total_hpp_show']; ?></td>
 					<td class="tbl_data_td_xright"><?php echo $det['total_billing_show']; ?></td>
 					<td class="tbl_data_td_xright"><?php echo $discount_total; ?></td>
 					<?php
@@ -149,8 +156,7 @@ if($show_compliment == false){
 					<?php
 					}
 					?>
-					<td class="tbl_data_td_xright"><?php echo $det['total_billing_profit_show']; ?></td>
-					<td class="tbl_data_td_xright"><?php echo $det['total_hpp_show']; ?></td>
+					<td class="tbl_data_td_xright"><?php echo $det['net_sales_total_show']; ?></td>
 					<td class="tbl_data_td_xright"><?php echo $det['total_profit_show']; ?></td>
 				</tr>
 				<?php	
@@ -162,9 +168,11 @@ if($show_compliment == false){
 				$grand_total +=  $det['total_billing_profit'];
 				$grand_total_compliment += $det['total_compliment'];
 				$grand_sub_total += $det['sub_total'];
+				$grand_net_sales_total += $det['net_sales_total'];
 				$grand_total_pembulatan += $det['total_pembulatan'];
 				$grand_discount_total += $det['discount_total'];
 				$grand_discount_billing_total += $det['discount_billing_total'];
+				$grand_all_discount_total += $det['all_discount_total'];
 				$grand_total_dp += $det['total_dp'];
 				$total_hpp +=  $det['total_hpp'];
 				$total_profit +=  $det['total_profit'];
@@ -172,14 +180,16 @@ if($show_compliment == false){
 				$no++;
 			}
 			
-			$discount_total = $grand_discount_total+$grand_discount_billing_total;
+			//$discount_total = $grand_discount_total+$grand_discount_billing_total;
 			
 			if($format_nominal == true){ 
 				$total_qty =  priceFormat($total_qty);
-				$discount_total = 'Rp. '.priceFormat($discount_total);
+				//$discount_total = 'Rp. '.priceFormat($discount_total);
+				$grand_all_discount_total = 'Rp. '.priceFormat($grand_all_discount_total);
 				$total_billing = 'Rp. '.priceFormat($total_billing);
 				$grand_total_compliment = 'Rp. '.priceFormat($grand_total_compliment);
 				$grand_total = 'Rp. '.priceFormat($grand_total);
+				$grand_net_sales_total = 'Rp. '.priceFormat($grand_net_sales_total);
 				
 				$total_hpp = 'Rp. '.priceFormat($total_hpp);
 				$total_profit = 'Rp. '.priceFormat($total_profit);
@@ -189,7 +199,7 @@ if($show_compliment == false){
 				<td class="tbl_summary_td_first_xright" colspan="3">TOTAL</td>
 				<td class="tbl_summary_td_xcenter"><?php echo $total_qty; ?></td>
 				<td class="tbl_summary_td_xright"><?php echo $total_billing; ?></td>
-				<td class="tbl_summary_td_xright"><?php echo $discount_total; ?></td>
+				<td class="tbl_summary_td_xright"><?php echo $grand_all_discount_total; ?></td>
 				<?php
 				if($show_compliment == true){
 				?>
@@ -197,7 +207,7 @@ if($show_compliment == false){
 				<?php
 				}
 				?>
-				<td class="tbl_summary_td_xright"><?php echo $grand_total; ?></td>
+				<td class="tbl_summary_td_xright"><?php echo $grand_net_sales_total; ?></td>
 				<td class="tbl_summary_td_xright"><?php echo $total_hpp; ?></td>
 				<td class="tbl_summary_td_xright"><?php echo $total_profit; ?></td>
 			</tr>

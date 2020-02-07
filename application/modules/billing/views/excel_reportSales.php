@@ -1,13 +1,17 @@
 <?php
-header("Content-Type:   application/vnd.ms-excel; charset=utf-8");
-header("Content-type:   application/x-msexcel; charset=utf-8");
-header("Content-Disposition: attachment; filename=".url_title($report_name.' '.$date_from.' to '.$date_till).".xls"); 
+$date_title = $date_from;
+if($date_from != $date_till){
+	$date_title = $date_from.' to '.$date_till;
+}
+
+header("Content-Type:   application/excel; charset=utf-8");
+header("Content-Disposition: attachment; filename=".url_title($report_name.' '.$tipe_sales.' '.$date_title).".xls"); 
 header("Expires: 0");
 header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
 header("Cache-Control: private",false);
 
-$set_width = 1700;
-$total_cols = 15;
+$set_width = 1640;
+$total_cols = 14;
 
 //update-0120.001
 if(!empty($filter_column)){
@@ -53,7 +57,7 @@ if($show_dp == false){
 	$total_cols -= 1;
 }
 if($show_note == false){
-	$set_width -= 200;
+	$set_width -= 2300;
 	$total_cols -= 1;
 }
 if($show_shift_kasir == false){
@@ -76,34 +80,28 @@ if($show_shift_kasir == false){
 					<div>
 						
 						<div class="title_report"><?php echo $report_name; ?></div>
+						<div class="subtitle_report" style="margin-bottom:5px;">
 						<?php
 						if($date_from == $date_till){
-							?>
-							<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from; ?></div>		
-							<?php
+							echo 'Tanggal : '.$date_from;
 						}else{
-							?>
-							<div class="subtitle_report"><?php echo 'Tanggal : '.$date_from.' s/d '.$date_till; ?></div>		
-							<?php
+							echo 'Tanggal : '.$date_from.' s/d '.$date_till;
 						}
-						
 						if(!empty($user_shift)){ 
-							?>
-							<div class="subtitle_report"><?php echo 'Shift: '.$user_shift; ?></div>		
-							<?php 				
+							echo ' &nbsp; | &nbsp; Shift: '.$user_shift;
 						}else{
-							?>
-							<div class="subtitle_report"><?php echo 'Shift: All Shift'; ?></div>		
-							<?php 
-							//$total_cols++;
+							echo ' &nbsp; | &nbsp; Shift: Semua Shift';
 						}
 						if(!empty($user_kasir)){ 
-							?>
-							<div class="subtitle_report"><?php echo 'Kasir: '.$user_kasir; ?></div>		
-							<?php 				
+							echo ' &nbsp; | &nbsp; Kasir: '.$user_kasir;
+						}else{
+							echo ' &nbsp; | &nbsp; Kasir: Semua Kasir';
+						}
+						if(!empty($tipe_sales)){ 
+							echo ' &nbsp; | &nbsp; Tipe Sales: '.$tipe_sales;
 						}
 						?>
-						
+						</div>
 					</div>
 				</td>
 			</tr>
@@ -113,11 +111,41 @@ if($show_shift_kasir == false){
 				<td class="tbl_head_td_xcenter" width="80" rowspan="2">BILLING NO.</td>
 				<td class="tbl_head_td_xcenter" width="120" rowspan="2">TOTAL BILLING</td>
 				<?php
-				if($diskon_sebelum_pajak_service == 1){
+				if($diskon_sebelum_pajak_service == 1 OR count($display_discount_type) > 1){
+					if(count($display_discount_type) > 1){
+						?>
+						<td class="tbl_head_td_xcenter" width="220" colspan="2">DISCOUNT BEFORE TAX-SERVICE</td>	
+						<?php
+					}else{
+						?>
+						<td class="tbl_head_td_xcenter" width="220" colspan="2">DISCOUNT</td>	
+						<?php
+					}
+					
+				}
+				
+				if($diskon_sebelum_pajak_service == 0 OR count($display_discount_type) > 1){
+					if(count($display_discount_type) > 1){
+						?>
+						<td class="tbl_head_td_xcenter" width="220" colspan="2">DISCOUNT AFTER TAX-SERVICE</td>	
+						<?php
+					}else{
+						?>
+						<td class="tbl_head_td_xcenter" width="220" colspan="2">DISCOUNT AFTER TAX-SERVICE</td>
+						<?php
+					}
+					
+				}
+						
+				//update-2001.002
+				if($show_compliment == true){
 					?>
-					<td class="tbl_head_td_xcenter" width="220" colspan="2">DISCOUNT</td>	
+					<td class="tbl_head_td_xcenter" width="100" rowspan="2">COMPLIMENT</td>
 					<?php
 				}
+				?>
+				<td class="tbl_head_td_xcenter" width="100" rowspan="2">NET SALES</td>
+				<?php
 				
 				if($show_tax == true){
 				?>
@@ -129,23 +157,10 @@ if($show_shift_kasir == false){
 				<td class="tbl_head_td_xcenter" width="100" rowspan="2">SERVICE</td>
 				<?php
 				}
-				?>
-				<td class="tbl_head_td_xcenter" width="100" rowspan="2">SUB TOTAL</td>
-				<?php
-				if($diskon_sebelum_pajak_service == 0){
-					?>
-					<td class="tbl_head_td_xcenter" width="220" colspan="2">DISCOUNT</td>	
-					<?php
-				}
 				
 				if($show_pembulatan == true){
 					?>
 					<td class="tbl_head_td_xcenter" width="100" rowspan="2">PEMBULATAN</td>
-					<?php
-				}
-				if($show_compliment == true){
-					?>
-					<td class="tbl_head_td_xcenter" width="100" rowspan="2">COMPLIMENT</td>
 					<?php
 				}
 				?>
@@ -165,7 +180,7 @@ if($show_shift_kasir == false){
 				
 				if($show_note == true){
 				?>
-				<td class="tbl_head_td_xcenter" width="200" rowspan="2">NOTE</td>
+				<td class="tbl_head_td_xcenter" width="300" rowspan="2">NOTE</td>
 				<?php
 				}
 				
@@ -179,14 +194,14 @@ if($show_shift_kasir == false){
 			<tr>
 				
 				<?php
-				if($diskon_sebelum_pajak_service == 1){
+				if($diskon_sebelum_pajak_service == 1 OR count($display_discount_type) > 1){
 					?>
 					<td class="tbl_head_td_xcenter" width="110">ITEM</td>
 					<td class="tbl_head_td_xcenter" width="110">BILLING</td>
 					<?php
 				}
 				
-				if($diskon_sebelum_pajak_service == 0){
+				if($diskon_sebelum_pajak_service == 0 OR count($display_discount_type) > 1){
 					?>
 					<td class="tbl_head_td_xcenter" width="110">ITEM</td>
 					<td class="tbl_head_td_xcenter" width="110">BILLING</td>
@@ -213,6 +228,7 @@ if($show_shift_kasir == false){
 				$grand_total = 0;
 				$grand_total_dp = 0;
 				$grand_sub_total = 0;
+				$grand_net_sales_total = 0;
 				$grand_total_pembulatan = 0;
 				$grand_discount_total = 0;
 				$grand_discount_billing_total = 0;
@@ -226,9 +242,9 @@ if($show_shift_kasir == false){
 					
 				foreach($report_data as $det){
 						
-						if(!empty($only_txmark)){
-							$det['billing_no'] = $det['txmark_no'];
-						}
+					if(!empty($only_txmark)){
+						$det['billing_no'] = $det['txmark_no'];
+					}
 					?>
 					<tr>
 						<td class="tbl_data_td_first_xcenter"><?php echo $no; ?></td>
@@ -240,9 +256,11 @@ if($show_shift_kasir == false){
 							$det['tax_total_show'] = 'Rp. '.$det['tax_total_show'];
 							$det['service_total_show'] = 'Rp. '.$det['service_total_show'];
 							$det['sub_total_show'] = 'Rp. '.$det['sub_total_show'];
+							$det['net_sales_total_show'] = 'Rp. '.$det['net_sales_total_show'];
 							$det['total_pembulatan_show'] = 'Rp. '.$det['total_pembulatan_show'];
 							$det['grand_total_show'] = 'Rp. '.$det['grand_total_show'];
 							$det['total_compliment_show'] = 'Rp. '.$det['total_compliment_show'];
+							$det['total_dp_show'] = 'Rp. '.$det['total_dp_show'];
 						}else{
 							$det['total_billing_show'] = str_replace(".","",$det['total_billing_show']);
 							$det['total_billing_show'] = str_replace(",",".",$det['total_billing_show']);
@@ -251,18 +269,22 @@ if($show_shift_kasir == false){
 							$det['service_total_show'] = str_replace(".","",$det['service_total_show']);
 							$det['service_total_show'] = str_replace(",",".",$det['service_total_show']);
 							$det['sub_total_show'] = str_replace(".","",$det['sub_total_show']);
-							$det['sub_total_show'] = str_replace(",",".",$det['sub_total_show']);
+							$det['sub_total_show'] = str_replace(",","",$det['sub_total_show']);
+							$det['net_sales_total_show'] = str_replace(".","",$det['net_sales_total_show']);
+							$det['net_sales_total_show'] = str_replace(",",".",$det['net_sales_total_show']);
 							$det['total_pembulatan_show'] = str_replace(".","",$det['total_pembulatan_show']);
 							$det['total_pembulatan_show'] = str_replace(",",".",$det['total_pembulatan_show']);
 							$det['grand_total_show'] = str_replace(".","",$det['grand_total_show']);
 							$det['grand_total_show'] = str_replace(",",".",$det['grand_total_show']);
 							$det['total_compliment_show'] = str_replace(".","",$det['total_compliment_show']);
 							$det['total_compliment_show'] = str_replace(",",".",$det['total_compliment_show']);
+							$det['total_dp_show'] = str_replace(".","",$det['total_dp_show']);
+							$det['total_dp_show'] = str_replace(",",".",$det['total_dp_show']);
 						}
 						?>
 						<td class="tbl_data_td_xright"><?php echo $det['total_billing_show']; ?></td>
 						<?php
-						if($diskon_sebelum_pajak_service == 1){
+						if($diskon_sebelum_pajak_service == 1 OR count($display_discount_type) > 1){
 							if($format_nominal == true){
 								$det['discount_total_show'] = 'Rp. '.$det['discount_total_show'];
 								$det['discount_billing_total_show'] = 'Rp. '.$det['discount_billing_total_show'];
@@ -272,11 +294,65 @@ if($show_shift_kasir == false){
 								$det['discount_billing_total_show'] = str_replace(".","",$det['discount_billing_total_show']);
 								$det['discount_billing_total_show'] = str_replace(",",".",$det['discount_billing_total_show']);
 							}
-							?>
-							<td class="tbl_data_td_xright"><?php echo $det['discount_total_show']; ?></td>
-							<td class="tbl_data_td_xright"><?php echo $det['discount_billing_total_show']; ?></td>
-							<?php
+							
+							if(count($display_discount_type) > 1){
+								if(count($display_discount_type) > 1 AND $det['diskon_sebelum_pajak_service'] == 1){
+									?>
+									<td class="tbl_data_td_xright"><?php echo $det['discount_total_show']; ?></td>
+									<td class="tbl_data_td_xright"><?php echo $det['discount_billing_total_show']; ?></td>
+									<?php
+								}else{
+									?>
+									<td class="tbl_data_td_xright">0</td>
+									<td class="tbl_data_td_xright">0</td>
+									<?php
+								}
+							}else{
+								?>
+								<td class="tbl_data_td_xright"><?php echo $det['discount_total_show']; ?></td>
+								<td class="tbl_data_td_xright"><?php echo $det['discount_billing_total_show']; ?></td>
+								<?php
+							}
 						}
+						
+						if($diskon_sebelum_pajak_service == 0 OR count($display_discount_type) > 1){
+							if($format_nominal == true){
+								$det['discount_total_show'] = 'Rp. '.$det['discount_total_show'];
+								$det['discount_billing_total_show'] = 'Rp. '.$det['discount_billing_total_show'];
+							}else{
+								$det['discount_total_show'] = str_replace(".","",$det['discount_total_show']);
+								$det['discount_total_show'] = str_replace(",",".",$det['discount_total_show']);
+								$det['discount_billing_total_show'] = str_replace(".","",$det['discount_billing_total_show']);
+								$det['discount_billing_total_show'] = str_replace(",",".",$det['discount_billing_total_show']);
+							}
+							if(count($display_discount_type) > 1){
+								if(count($display_discount_type) > 1 AND $det['diskon_sebelum_pajak_service'] == 0){
+									?>
+									<td class="tbl_data_td_xright"><?php echo $det['discount_total_show']; ?></td>
+									<td class="tbl_data_td_xright"><?php echo $det['discount_billing_total_show']; ?></td>
+									<?php
+								}else{
+									?>
+									<td class="tbl_data_td_xright">0</td>
+									<td class="tbl_data_td_xright">0</td>
+									<?php
+								}
+							}else{
+								?>
+								<td class="tbl_data_td_xright"><?php echo $det['discount_total_show']; ?></td>
+								<td class="tbl_data_td_xright"><?php echo $det['discount_billing_total_show']; ?></td>
+								<?php
+							}
+						}
+						
+						if($show_compliment == true){
+						?>
+						<td class="tbl_data_td_xright"><?php echo $det['total_compliment_show']; ?></td>
+						<?php
+						}
+						?>
+						<td class="tbl_data_td_xright"><?php echo $det['net_sales_total_show']; ?></td>
+						<?php
 							
 						if($show_tax == true){
 						?>
@@ -288,34 +364,10 @@ if($show_shift_kasir == false){
 						<td class="tbl_data_td_xright"><?php echo $det['service_total_show']; ?></td>
 						<?php
 						}
-						?>
-						<td class="tbl_data_td_xright"><?php echo $det['sub_total_show']; ?></td>
-						<?php
-						if($diskon_sebelum_pajak_service == 0){
-							if($format_nominal == true){
-								$det['discount_total_show'] = 'Rp. '.$det['discount_total_show'];
-								$det['discount_billing_total_show'] = 'Rp. '.$det['discount_billing_total_show'];
-							}else{
-								$det['discount_total_show'] = str_replace(".","",$det['discount_total_show']);
-								$det['discount_total_show'] = str_replace(",",".",$det['discount_total_show']);
-								$det['discount_billing_total_show'] = str_replace(".","",$det['discount_billing_total_show']);
-								$det['discount_billing_total_show'] = str_replace(",",".",$det['discount_billing_total_show']);
-							}
-							?>
-							<td class="tbl_data_td_xright"><?php echo $det['discount_total_show']; ?></td>
-							<td class="tbl_data_td_xright"><?php echo $det['discount_billing_total_show']; ?></td>
-							<?php
-						}
 						
 						if($show_pembulatan == true){
 						?>
 						<td class="tbl_data_td_xright"><?php echo $det['total_pembulatan_show']; ?></td>
-						<?php
-						}
-						
-						if($show_compliment == true){
-						?>
-						<td class="tbl_data_td_xright"><?php echo $det['total_compliment_show']; ?></td>
 						<?php
 						}
 						?>
@@ -363,26 +415,6 @@ if($show_shift_kasir == false){
 											$tot_payment = $det['total_credit'];
 											$tot_payment_show = priceFormat($tot_payment);
 										}else{
-											
-											/*
-											if($tot_payment <= $det['grand_total']){
-												//$tot_payment_show .= '='.$tot_payment.'x'.$det['grand_total'];
-												$tot_payment = $det['grand_total'];
-												$tot_payment_show = priceFormat($tot_payment);
-												
-												if(!empty($det['discount_total'])){
-													$tot_payment = $tot_payment - $det['discount_total'];
-													$tot_payment_show = priceFormat($tot_payment);
-												}
-												if(!empty($det['total_dp'])){
-													$tot_payment = $tot_payment - $det['total_dp'];
-													$tot_payment_show = priceFormat($tot_payment);
-												}
-											}else{
-												//$tot_payment = $det['grand_total'];
-												$tot_payment_show = priceFormat($tot_payment);								
-											}
-											*/
 											
 											$tot_payment_show = priceFormat($tot_payment);	
 										}
@@ -446,10 +478,31 @@ if($show_shift_kasir == false){
 					$grand_total +=  $det['grand_total'];
 					$grand_total_compliment += $det['total_compliment'];
 					$grand_sub_total += $det['sub_total'];
+					$grand_net_sales_total += $det['net_sales_total'];
 					$grand_total_pembulatan += $det['total_pembulatan'];
-					$grand_discount_total += $det['discount_total'];
-					$grand_discount_billing_total += $det['discount_billing_total'];
 					$grand_total_dp += $det['total_dp'];
+					
+					if($diskon_sebelum_pajak_service == 1 OR count($display_discount_type) > 1){
+						if(count($display_discount_type) > 1 AND $det['diskon_sebelum_pajak_service'] == 1){
+							$grand_discount_total_before += $det['discount_total'];
+							$grand_discount_billing_total_before += $det['discount_billing_total'];
+						}else{
+							$grand_discount_total += $det['discount_total'];
+							$grand_discount_billing_total += $det['discount_billing_total'];
+						}
+					}
+				
+					if($diskon_sebelum_pajak_service == 0 OR count($display_discount_type) > 1){
+						if(count($display_discount_type) > 1 AND $det['diskon_sebelum_pajak_service'] == 0){
+							$grand_discount_total_after += $det['discount_total'];
+							$grand_discount_billing_total_after += $det['discount_billing_total'];
+						}else{
+							$grand_discount_total += $det['discount_total'];
+							$grand_discount_billing_total += $det['discount_billing_total'];
+						}
+					}
+				
+				
 					$no++;
 				}
 				
@@ -461,22 +514,59 @@ if($show_shift_kasir == false){
 					$grand_total = 'Rp. '.priceFormat($grand_total);
 					$grand_total_compliment = 'Rp. '.priceFormat($grand_total_compliment);
 					$grand_sub_total = 'Rp. '.priceFormat($grand_sub_total);
+					$grand_net_sales_total = 'Rp. '.priceFormat($grand_net_sales_total);
 					$grand_total_pembulatan = 'Rp. '.priceFormat($grand_total_pembulatan);
 					$grand_discount_total = 'Rp. '.priceFormat($grand_discount_total);
 					$grand_discount_billing_total = 'Rp. '.priceFormat($grand_discount_billing_total);
 					$grand_total_dp = 'Rp. '.priceFormat($grand_total_dp);
+					
+					$grand_discount_total_before = 'Rp. '.priceFormat($grand_discount_total_before);
+					$grand_discount_billing_total_before = 'Rp. '.priceFormat($grand_discount_billing_total_before);
+					$grand_discount_total_after = 'Rp. '.priceFormat($grand_discount_total_after);
+					$grand_discount_billing_total_after = 'Rp. '.priceFormat($grand_discount_billing_total_after);
 				}
 				?>
 				<tr>
 					<td class="tbl_summary_td_first_xright" colspan="<?php echo 3; ?>">TOTAL</td>
 					<td class="tbl_summary_td_xright"><?php echo $total_billing; ?></td>
 					<?php
-					if($diskon_sebelum_pajak_service == 1){
-						?>
-						<td class="tbl_summary_td_xright"><?php echo $grand_discount_total; ?></td>
-						<td class="tbl_summary_td_xright"><?php echo $grand_discount_billing_total; ?></td>
-						<?php
+					if($diskon_sebelum_pajak_service == 1 OR count($display_discount_type) > 1){
+						if(count($display_discount_type) > 1){
+							?>
+							<td class="tbl_summary_td_xright"><?php echo $grand_discount_total_before; ?></td>
+							<td class="tbl_summary_td_xright"><?php echo $grand_discount_billing_total_before; ?></td>
+							<?php
+						}else{
+							?>
+							<td class="tbl_summary_td_xright"><?php echo $grand_discount_total; ?></td>
+							<td class="tbl_summary_td_xright"><?php echo $grand_discount_billing_total; ?></td>
+							<?php
+						}
 					}
+					
+					if($diskon_sebelum_pajak_service == 0 OR count($display_discount_type) > 1){
+						if(count($display_discount_type) > 1){
+							?>
+							<td class="tbl_summary_td_xright"><?php echo $grand_discount_total_after; ?></td>
+							<td class="tbl_summary_td_xright"><?php echo $grand_discount_billing_total_after; ?></td>
+							<?php
+						}else{
+							?>
+							<td class="tbl_summary_td_xright"><?php echo $grand_discount_total; ?></td>
+							<td class="tbl_summary_td_xright"><?php echo $grand_discount_billing_total; ?></td>
+							<?php
+						}
+					}
+					
+					if($show_compliment == true){
+					?>
+					<td class="tbl_summary_td_xright"><?php echo $grand_total_compliment; ?></td>
+					<?php
+					}
+					
+					?>
+					<td class="tbl_summary_td_xright"><?php echo $grand_net_sales_total; ?></td>
+					<?php
 					
 					if($show_tax == true){
 					?>
@@ -489,25 +579,10 @@ if($show_shift_kasir == false){
 					<td class="tbl_summary_td_xright"><?php echo $total_service; ?></td>
 					<?php
 					}
-					?>
-					<td class="tbl_summary_td_xright"><?php echo $grand_sub_total; ?></td>
-					<?php
-					if($diskon_sebelum_pajak_service == 0){
-						?>
-						<td class="tbl_summary_td_xright"><?php echo $grand_discount_total; ?></td>
-						<td class="tbl_summary_td_xright"><?php echo $grand_discount_billing_total; ?></td>
-						<?php
-					}
-					
+						
 					if($show_pembulatan == true){
 					?>
 					<td class="tbl_summary_td_xright"><?php echo $grand_total_pembulatan; ?></td>
-					<?php
-					}
-					
-					if($show_compliment == true){
-					?>
-					<td class="tbl_summary_td_xright"><?php echo $grand_total_compliment; ?></td>
 					<?php
 					}
 					?>
@@ -537,19 +612,20 @@ if($show_shift_kasir == false){
 							}
 						}
 					}
-					
+						
 					if($show_note == true){
 					?>
-					<td class="tbl_summary_td">&nbsp;</td>
+					<td class="tbl_summary_td_xright">&nbsp;</td>
 					<?php
 					}
 					
 					if($show_shift_kasir == true){
 					?>
-					<td class="tbl_summary_td">&nbsp;</td>
+					<td class="tbl_summary_td_xright">&nbsp;</td>
 					<?php
 					}
 					?>
+					
 				</tr>
 				<?php
 			}else{
@@ -562,22 +638,22 @@ if($show_shift_kasir == false){
 			
 		?>	
 		
-		<tr>
-			<td colspan="<?php echo $total_cols; ?>">&nbsp;</td>
-		</tr>
-		<tr>
-			<td colspan="3">Printed: <?php echo date("d-m-Y H:i:s");?></td>
-			<td colspan="<?php echo $total_cols-7; ?>" class="xcenter">&nbsp;</td>
-			<td colspan="2" class="xcenter">
-					Prepared by:<br/><br/><br/><br/>
-					----------------------------
-			</td>
-			<td colspan="2" class="xcenter">
-				
-					Approved by:<br/><br/><br/><br/>
-					----------------------------
-			</td>
-		</tr>
+			<tr>
+				<td colspan="<?php echo $total_cols; ?>">&nbsp;</td>
+			</tr>
+			<tr>
+				<td colspan="3">Printed: <?php echo date("d-m-Y H:i:s");?></td>
+				<td colspan="<?php echo $total_cols-7; ?>" class="xcenter">&nbsp;</td>
+				<td colspan="2" class="xcenter">
+						Prepared by:<br/><br/><br/><br/>
+						----------------------------
+				</td>
+				<td colspan="2" class="xcenter">
+					
+						Approved by:<br/><br/><br/><br/>
+						----------------------------
+				</td>
+			</tr>
 		</tbody>
 	</table>
 </div>
