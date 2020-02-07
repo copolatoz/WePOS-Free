@@ -298,3 +298,7 @@
 .logo img {
 	padding-right: 10px;
 }
+@font-face {
+  font-family: UbuntuMono;
+  src: url(UbuntuMono-Regular.ttf);
+}
