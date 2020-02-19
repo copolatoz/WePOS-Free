@@ -4765,12 +4765,22 @@ class BillingCashier extends MY_Controller {
 			'custom_print_APS',
 			'display_kode_menu_dibilling',
 			'theme_print_billing',
-			'print_sebaris_product_name'
+			'print_sebaris_product_name',
+			'print_preview_billing'
 			
 		);
 		$get_opt = get_option_value($opt_value);
 		
-		//update-1912-001
+		//update-2002.003
+		$print_preview_billing = 0;
+		if(!empty($get_opt['print_preview_billing'])){
+			$print_preview_billing = $get_opt['print_preview_billing'];
+		}
+		
+		if(!empty($order_apps)){
+			$print_preview_billing = 0;
+		}
+		
 		$custom_print_APS = 0;
 		if(!empty($get_opt['custom_print_APS'])){
 			$custom_print_APS = $get_opt['custom_print_APS'];
@@ -6158,7 +6168,9 @@ class BillingCashier extends MY_Controller {
 				$cashierReceipt_layout .= $cashierReceipt_layout_footer;
 				
 				if(!empty($get_opt['produk_nama']) AND !empty($get_opt['produk_expired'])){
-					if($get_opt['produk_nama'] == 'Gratis / Free' AND $get_opt['produk_expired'] == 'unlimited'){
+					$produk_nama_spell = array('G','r','a','t','i','s',' / ','F','r','e','e');
+					$produk_nama_spell_imp = implode("",$produk_nama_spell);
+					if($get_opt['produk_nama'] == $produk_nama_spell_imp AND $get_opt['produk_expired'] == 'unlimited'){
 						$str1 = 'U3VwcG9y'; $str2 = 'dGVkIEJ5IF'; $str3 = 'dlUE9TLmlk';
 						$extra_watermark = "\n[align=1]".base64_decode($str1.$str2.$str3);
 						$cashierReceipt_layout .= $extra_watermark;
@@ -6235,8 +6247,12 @@ class BillingCashier extends MY_Controller {
 						
 						if($is_print_error){					
 							$r['info'] .= 'Komunikasi dengan Printer Kasir Gagal!<br/>';
-							//echo $r['info'];
-							printing_process_error($r['info']);
+							$r['success'] = false;
+							if($print_preview_billing == 0){
+								echo json_encode($r);
+							}else{
+								printing_process_error($r['info']);
+							}
 							die();
 						}
 					}
@@ -6251,25 +6267,36 @@ class BillingCashier extends MY_Controller {
 						$custom_print_data = 'APS';
 					}
 					
-					if(!empty($bill_preview)){
-						printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt,'noprint', $custom_print_data);
+					//update-2002.003
+					if(!empty($print_preview_billing)){
+						if(!empty($bill_preview)){
+							printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt,'noprint', $custom_print_data);
+						}else{
+							//printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt, 'print', 1);
+							printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt, 'print', $custom_print_data);
+						}
 					}else{
-						//printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt, 'print', 1);
-						printing_process($data_printer[$printer_id_cashierReceipt], $print_content_cashierReceipt, 'print', $custom_print_data);
+						echo json_encode($r);
 					}
 					
 					die();
 				}
+				
+				//update-2002.003
+				//over-ruled, QC-other
+				$print_preview_billing = 0;
 				
 				if($print_type == 2 OR $print_type == -234){
 					
 					//if(empty($print_qcReceipt) AND $printMonitoring_qc == 0){
 					if(empty($print_qcReceipt)){
 						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print QC ke '.$printer_ip_qcReceipt;
-						//echo json_encode($r);
-						//die();
-						//echo $r['info'];
-						printing_process_error($r['info']);
+						
+						if($print_preview_billing == 0){
+							echo json_encode($r);
+						}else{
+							printing_process_error($r['info']);
+						}
 						die();
 					}
 					
@@ -6367,10 +6394,12 @@ class BillingCashier extends MY_Controller {
 								);
 								$this->db->insert($this->table_print_monitoring, $data_printMonitoring);
 								
-								if(!empty($order_apps)){
+								//update-2002.003
+								//if(!empty($order_apps)){
+								if(empty($print_preview_billing)){
 									echo json_encode($r);
-									die();
 								}
+								die();
 								
 							}else{
 								
@@ -6414,28 +6443,41 @@ class BillingCashier extends MY_Controller {
 									
 									if($is_print_error){					
 										$r['info'] .= 'Komunikasi dengan Printer QC Gagal!<br/>';
-										
+										$r['success'] = false;
 										if($is_void_order == 0){
-											//echo $r['info'];
-											printing_process_error($r['info']);
+											if($print_preview_billing == 0){
+												echo json_encode($r);
+											}else{
+												printing_process_error($r['info']);
+											}
 											die();
 										}
 									}
 								}
-									
-								printing_process($data_printer[$printer_id_qcReceipt], $print_content_qcReceipt, 'print');
+								
+								//update-2002.003
+								if(!empty($print_preview_billing)){
+									printing_process($data_printer[$printer_id_qcReceipt], $print_content_qcReceipt, 'print');
+								}else{
+									echo json_encode($r);
+									die();
+								}
 								
 								if($is_void_order == 0){
-									die();
+									//die();
 								}
 								
 							}
 							
 							if($is_print_error){					
 								$r['info'] .= 'Komunikasi dengan Printer QC Gagal!<br/>';
+								$r['success'] = false;
 								if($is_void_order == 0){
-									//echo $r['info'];
-									printing_process_error($r['info']);
+									if($print_preview_billing == 0){
+										echo json_encode($r);
+									}else{
+										printing_process_error($r['info']);
+									}
 									die();
 								}
 							}
@@ -6444,8 +6486,12 @@ class BillingCashier extends MY_Controller {
 							
 							if($is_void_order == 0){
 								$r['info'] .= 'Semua Order Kitchen dan Bar utk QC Sudah diPrint<br/>';
-								//echo $r['info'];
-								printing_process_error($r['info']);
+								$r['success'] = true;
+								if($print_preview_billing == 0){
+									echo json_encode($r);
+								}else{
+									printing_process_error($r['info']);
+								}
 								die();
 							}
 						}
@@ -6454,15 +6500,13 @@ class BillingCashier extends MY_Controller {
 						
 						if($is_void_order == 0){
 							$r['info'] .= 'Belum ada order';
-							if(!empty($order_apps)){
-								$r['success'] = false;
-								echo json_encode($r); die();
+							$r['success'] = true;
+							if($print_preview_billing == 0){
+								echo json_encode($r); 
 							}else{
 								printing_process_error('');
+								
 							}
-							
-							$r['success'] = true;
-							echo json_encode($r);
 							die();
 						}
 					}
@@ -6474,9 +6518,12 @@ class BillingCashier extends MY_Controller {
 					//if(empty($print_kitchenReceipt) AND $printMonitoring_kitchen == 0){
 					if(empty($print_kitchenReceipt)){
 						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print Kitchen ke '.$printer_ip_kitchenReceipt;
-						//echo json_encode($r);
-						//echo $r['info'];
-						printing_process_error($r['info']);
+						$r['success'] = false;
+						if($print_preview_billing == 0){
+							echo json_encode($r);
+						}else{
+							printing_process_error($r['info']);
+						}
 						die();
 					}
 					
@@ -6490,7 +6537,12 @@ class BillingCashier extends MY_Controller {
 						
 						if(!empty($get_opt['print_order_peritem_kitchen']) AND $printMonitoring_kitchen == 0){
 							$r['info'] = 'Print Order Kitchen Per-Item Hanya Bisa Berjalan pada Fitur Print Monitoring (Print to DB)';
-							printing_process_error($r['info']);
+							
+							if($print_preview_billing == 0){
+								echo json_encode($r);
+							}else{
+								printing_process_error($r['info']);
+							}
 							die();
 						}
 						
@@ -6657,10 +6709,12 @@ class BillingCashier extends MY_Controller {
 							$r['success'] = true;
 							$this->db->insert_batch($this->table_print_monitoring, $data_printMonitoring);
 							
-							if(!empty($order_apps)){
+							//update-2002.003
+							//if(!empty($order_apps)){
+							if(empty($print_preview_billing)){
 								echo json_encode($r);
-								die();
 							}
+							die();
 							
 						}else{
 							
@@ -6849,7 +6903,13 @@ class BillingCashier extends MY_Controller {
 								
 							}
 							
-							printing_process($data_printer[$printer_id_kitchenReceipt], $data_print_kitchen_peritem_html, 'print');
+							//update-2002.003
+							if(!empty($print_preview_billing)){
+								printing_process($data_printer[$printer_id_kitchenReceipt], $data_print_kitchen_peritem_html, 'print');
+							}else{
+								echo json_encode($r);
+								die();
+							}
 							
 							if($is_void_order == 0){
 								//die();
@@ -6859,8 +6919,13 @@ class BillingCashier extends MY_Controller {
 						
 						if($is_print_error){					
 							$r['info'] .= 'Komunikasi dengan Printer Kitchen Gagal!<br/>';
+							$r['success'] = false;
 							if($is_void_order == 0){
-								printing_process_error($r['info']);
+								if($print_preview_billing == 0){
+									echo json_encode($r);
+								}else{
+									printing_process_error($r['info']);
+								}
 								die();
 							}
 						}
@@ -6871,23 +6936,24 @@ class BillingCashier extends MY_Controller {
 							
 							if($is_void_order == 0){
 								$r['info'] .= 'Semua Order Kitchen Sudah diPrint<br/>';
-								printing_process_error($r['info']);
+								$r['success'] = true;
+								if($print_preview_billing == 0){
+									echo json_encode($r);
+								}else{
+									printing_process_error($r['info']);
+								}
 								die();
 							}
 						}else{
 							
-							//printing_process_error($r['info']);
 							if($is_void_order == 0){
 								$r['info'] .= 'Belum ada order Kitchen';
-								if(!empty($order_apps)){
-									$r['success'] = false;
-									echo json_encode($r); die();
+								$r['success'] = true;
+								if($print_preview_billing == 0){
+									echo json_encode($r);
 								}else{
 									printing_process_error('');
 								}
-								
-								$r['success'] = true;
-								echo json_encode($r);
 								die();
 							}
 						}
@@ -6903,8 +6969,12 @@ class BillingCashier extends MY_Controller {
 					//if(empty($print_barReceipt) AND $printMonitoring_bar == 0){
 					if(empty($print_barReceipt)){
 						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print Bar ke '.$printer_ip_barReceipt;
-						//echo json_encode($r);
-						printing_process_error($r['info']);
+						$r['success'] = false;
+						if($print_preview_billing == 0){
+							echo json_encode($r);
+						}else{
+							printing_process_error($r['info']);
+						}
 						die();
 					}
 					
@@ -6916,7 +6986,11 @@ class BillingCashier extends MY_Controller {
 						
 						if(!empty($get_opt['print_order_peritem_bar']) AND $printMonitoring_bar == 0){
 							$r['info'] = 'Print Order Bar Per-Item Hanya Bisa Berjalan pada Fitur Print Monitoring (Print to DB)';
-							printing_process_error($r['info']);
+							if($print_preview_billing == 0){
+								echo json_encode($r);
+							}else{
+								printing_process_error($r['info']);
+							}
 							die();
 						}
 						
@@ -7082,9 +7156,12 @@ class BillingCashier extends MY_Controller {
 							$r['success'] = true;
 							$this->db->insert_batch($this->table_print_monitoring, $data_printMonitoring);
 							
-							if(!empty($order_apps)){
-								echo json_encode($r); die();
+							//update-2002.003
+							//if(!empty($order_apps)){
+							if(empty($print_preview_billing)){
+								echo json_encode($r); 
 							}
+							die();
 							
 						}else{
 							
@@ -7270,7 +7347,13 @@ class BillingCashier extends MY_Controller {
 								
 							}
 							
-							printing_process($data_printer[$printer_id_barReceipt], $data_print_bar_peritem_html, 'print');
+							//update-2002.003
+							if(!empty($print_preview_billing)){
+								printing_process($data_printer[$printer_id_barReceipt], $data_print_bar_peritem_html, 'print');
+							}else{
+								echo json_encode($r);
+								die();
+							}
 							
 							if($is_void_order == 0){
 								//die();
@@ -7281,9 +7364,13 @@ class BillingCashier extends MY_Controller {
 						
 						if($is_print_error){					
 							$r['info'] .= 'Komunikasi dengan Printer Bar Gagal!<br/>';
-							
+							$r['success'] = false;
 							if($is_void_order == 0){
-								printing_process_error($r['info']);
+								if($print_preview_billing == 0){
+									echo json_encode($r);
+								}else{
+									printing_process_error($r['info']);
+								}
 								die();
 							}
 						}
@@ -7294,24 +7381,26 @@ class BillingCashier extends MY_Controller {
 							
 							if($is_void_order == 0){
 								$r['info'] .= 'Semua Order Bar Sudah diPrint<br/>';
-								printing_process_error($r['info']);
+								$r['success'] = true;
+								if($print_preview_billing == 0){
+									echo json_encode($r);
+								}else{
+									printing_process_error($r['info']);
+								}
 								die();
 							}
 						}else{
 							
-							//printing_process_error($r['info']);
 							if($is_void_order == 0){
 								$r['info'] .= 'Belum ada order Bar';
-								if(!empty($order_apps)){
-									$r['success'] = false;
-									echo json_encode($r); die();
+								$r['success'] = true;
+								if($print_preview_billing == 0){
+									echo json_encode($r);
 								}else{
 									printing_process_error('');
 								}
-								
-								$r['success'] = true;
-								echo json_encode($r);
 								die();
+								
 							}
 						}
 					}
@@ -7323,8 +7412,11 @@ class BillingCashier extends MY_Controller {
 					//if(empty($print_otherReceipt) AND $printMonitoring_other == 0){
 					if(empty($print_otherReceipt)){
 						$r['info'] = 'IP: '.$ip_addr.' tidak dapat melakukan print Other ke '.$printer_ip_otherReceipt;
-						//echo json_encode($r);
-						printing_process_error($r['info']);
+						if($print_preview_billing == 0){
+							echo json_encode($r);
+						}else{
+							printing_process_error($r['info']);
+						}
 						die();
 					}
 					
@@ -7336,7 +7428,11 @@ class BillingCashier extends MY_Controller {
 						
 						if(!empty($get_opt['print_order_peritem_other']) AND $printMonitoring_other == 0){
 							$r['info'] = 'Print Order Other/Lainnya Per-Item Hanya Bisa Berjalan pada Fitur Print Monitoring (Print to DB)';
-							printing_process_error($r['info']);
+							if($print_preview_billing == 0){
+								echo json_encode($r);
+							}else{
+								printing_process_error($r['info']);
+							}
 							die();
 						}
 						
@@ -7505,9 +7601,12 @@ class BillingCashier extends MY_Controller {
 							$r['success'] = true;
 							$this->db->insert_batch($this->table_print_monitoring, $data_printMonitoring);
 							
-							if(!empty($order_apps)){
-								echo json_encode($r);die();
+							//update-2002.003
+							//if(!empty($order_apps)){
+							if(empty($print_preview_billing)){
+								echo json_encode($r);
 							}
+							die();
 						
 						}else{
 								
@@ -7693,7 +7792,13 @@ class BillingCashier extends MY_Controller {
 								
 							}
 							
-							printing_process($data_printer[$printer_id_otherReceipt], $data_print_other_peritem_html, 'print');
+							//update-2002.003
+							if(!empty($print_preview_billing)){
+								printing_process($data_printer[$printer_id_otherReceipt], $data_print_other_peritem_html, 'print');
+							}else{
+								echo json_encode($r);
+								die();
+							}
 							
 							if($is_void_order == 0){
 								//die();
@@ -7704,12 +7809,15 @@ class BillingCashier extends MY_Controller {
 						
 						if($is_print_error){					
 							$r['info'] .= 'Komunikasi dengan Printer Other (Lainnya) Gagal!<br/>';
-							
+							$r['success'] = false;
 							if($is_void_order == 0){
-								printing_process_error($r['info']);
+								if($print_preview_billing == 0){
+									echo json_encode($r);
+								}else{
+									printing_process_error($r['info']);
+								}
 								die();
 							}
-							
 						}	
 					
 					}else{
@@ -7719,25 +7827,25 @@ class BillingCashier extends MY_Controller {
 							
 							if($is_void_order == 0){
 								$r['info'] .= 'Semua Order Other Sudah diPrint<br/>';
-								//update-2001.002
-								printing_process_error('');
+								$r['success'] = true;
+								if($print_preview_billing == 0){
+									echo json_encode($r);
+								}else{
+									printing_process_error($r['info']);
+								}
 								die();
 							}
 							
 						}else{
 							
-							//printing_process_error($r['info']);
 							if($is_void_order == 0){
 								$r['info'] .= 'Belum ada order Other';
-								if(!empty($order_apps)){
-									$r['success'] = false;
-									echo json_encode($r); die();
+								$r['success'] = true;
+								if($print_preview_billing == 0){
+									echo json_encode($r);
 								}else{
 									printing_process_error('');
 								}
-								
-								$r['success'] = true;
-								echo json_encode($r);
 								die();
 							}
 						}
@@ -7894,8 +8002,14 @@ class BillingCashier extends MY_Controller {
 		
 		$get_opt = get_option_value(array(
 			'printer_id_'.$printSetting.'_default',
-			'printer_id_'.$printSetting.'_'.$ip_addr
+			'printer_id_'.$printSetting.'_'.$ip_addr,
+			'print_preview_billing'
 		));
+		
+		$print_preview_billing = 0;
+		if(!empty($get_opt['print_preview_billing'])){
+			$print_preview_billing = $get_opt['print_preview_billing'];
+		}
 		
 		//ID Printer ----------------------
 		$printer_id_test = $get_opt['printer_id_'.$printSetting.'_default'];
@@ -7957,14 +8071,27 @@ class BillingCashier extends MY_Controller {
 			}
 			
 			$data_printer['escpos_pass'] = 1;
+			$r['success'] = true;
+			$r['info'] = '';
 			
 			if($is_print_error){					
 				$r['info'] .= 'Komunikasi dengan Printer Gagal!<br/>';
-				printing_process_error($r['info']);
+				$r['success'] = false;
+				if(empty($print_preview_billing)){
+					echo json_encode($r);
+				}else{
+					printing_process_error($r['info']);
+				}
 				die();
 			}
+			
 		}
 		
+		//update-2002.003
+		if(empty($print_preview_billing)){
+			echo json_encode($r);
+			die();
+		}
 				
 		printing_process($data_printer, $print_content, 'print');
 		
@@ -12300,9 +12427,15 @@ class BillingCashier extends MY_Controller {
 			'printer_pin_cashierReceipt_default',
 			'printer_tipe_cashierReceipt_default',
 			'printer_id_cashierReceipt_default',
-			'printer_id_cashierReceipt_'.$ip_addr
+			'printer_id_cashierReceipt_'.$ip_addr,
+			'print_preview_billing'
 		);
 		$get_opt = get_option_value($opt_value);
+		
+		$print_preview_billing = 0;
+		if(!empty($get_opt['print_preview_billing'])){
+			$print_preview_billing = 1;
+		}
 		
 		//ID Printer ----------------------
 		$printer_id_cashierReceipt = $get_opt['printer_id_cashierReceipt_default'];
@@ -13559,16 +13692,24 @@ class BillingCashier extends MY_Controller {
 				printer_end_doc($ph);
 				printer_close($ph);
 				$r['success'] = true;
+				$r['print'] = $print_content;
 				
 			}else{
 				$is_print_error = true;
 			}
 			
 			$data_printer['escpos_pass'] = 1;
-			
+			$r['success'] = true;
+			$r['info'] = '';
+				
 			if($is_print_error){					
 				$r['info'] = 'Komunikasi dengan Printer Gagal!<br/>';
-				printing_process_error($r['info']);
+				$r['success'] = false;
+				if($print_preview_billing == 0){
+					echo json_encode($r);
+				}else{
+					printing_process_error($r['info']);
+				}
 				die();
 			}
 		}
@@ -13578,9 +13719,14 @@ class BillingCashier extends MY_Controller {
 			echo json_encode($r);
 			die();
 		}
-				
-		printing_process($data_printer, $print_content_cashierReceipt, 'print');
 		
+		//update-2002.003
+		if(empty($print_preview_billing)){
+			echo json_encode($r);
+			die();
+		}else{
+			printing_process($data_printer, $print_content_cashierReceipt, 'print');
+		}
 
 	}
 	

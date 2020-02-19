@@ -130,8 +130,59 @@ class reportSalesCustomer extends MY_Controller {
 				}
 			}
 			
-			$customer_name_report = '';
+			//update-2002.003
 			$all_bil_id = array();
+			if(!empty($data_post['report_data'])){
+				foreach ($data_post['report_data'] as $s){
+					
+					if(!in_array($s['id'], $all_bil_id)){
+						$all_bil_id[] = $s['id'];
+					}		
+					
+				}
+			}
+			
+			//calc detail
+			$total_hpp = array();
+			$discount_item = array();
+			$total_billing = array();
+			if(!empty($all_bil_id)){
+				$all_bil_id_txt = implode(",",$all_bil_id);
+				$this->db->from($this->table2);
+				$this->db->where('billing_id IN ('.$all_bil_id_txt.')');
+				$this->db->where('is_deleted', 0);
+				$get_detail = $this->db->get();
+				if($get_detail->num_rows() > 0){
+					foreach($get_detail->result() as $dtRow){
+						
+						$total_qty = $dtRow->order_qty;
+						/*
+						$total_qty = $dtRow->order_qty - $dtRow->retur_qty;
+						if($total_qty < 0){
+							$total_qty = 0;
+						}*/
+						
+						if(empty($total_hpp[$dtRow->billing_id])){
+							$total_hpp[$dtRow->billing_id] = 0;
+						}
+						
+						$total_hpp[$dtRow->billing_id] += $dtRow->product_price_hpp * $total_qty;
+
+						//update-2002.003
+						if((!empty($dtRow->include_tax) AND empty($dtRow->include_service)) OR (empty($dtRow->include_tax) AND !empty($dtRow->include_service))){
+							if($dtRow->product_price != ($dtRow->product_price_real+$dtRow->tax_total+$dtRow->service_total)){
+								$all_percentage = 100 + $dtRow->tax_percentage + $dtRow->service_percentage;
+								$dtRow->product_price_real = priceFormat(($dtRow->product_price/($all_percentage/100)), 0, ".", "");
+							}
+						}
+						$total_billing[$dtRow->billing_id] += $dtRow->product_price_real * $total_qty;
+						
+					}
+				}
+			}
+			
+			
+			$customer_name_report = '';
 			$newData = array();
 			$dt_payment = array();
 			if(!empty($data_post['report_data'])){
@@ -146,9 +197,9 @@ class reportSalesCustomer extends MY_Controller {
 					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
 					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 					
-					if(!in_array($s['id'], $all_bil_id)){
-						$all_bil_id[] = $s['id'];
-					}		
+					//if(!in_array($s['id'], $all_bil_id)){
+					//	$all_bil_id[] = $s['id'];
+					//}		
 					
 					if(!empty($customer_id)){
 						$customer_name_report = $s['customer_name'].' - '.$s['customer_contact_person'];
@@ -156,38 +207,23 @@ class reportSalesCustomer extends MY_Controller {
 					
 					$s['total_billing_awal'] = $s['total_billing'];
 					
+					//update-2002.003
 					//CHECK REAL TOTAL BILLING
 					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
+						//update-2002.003
+						$s['total_billing'] = $total_billing[$s['id']];
+						$s['total_billing_awal'] = $s['total_billing'];
 						
-							if($s['diskon_sebelum_pajak_service'] == 1){
-								$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+$s['service_percentage']+100)/100);
-								$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-								$s['total_billing'] = $get_total_billing;
-							}else{
-								$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
-							}
-							
+						/*if(!empty($s['include_tax']) AND !empty($s['include_service'])){
+							$s['total_billing'] = $s['total_billing'] - ($s['tax_total'] + $s['service_total']);
 						}else{
 							if(!empty($s['include_tax'])){
-								if($s['diskon_sebelum_pajak_service'] == 1){
-									$get_total_billing = $s['total_billing'] / (($s['tax_percentage']+100)/100);
-									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-									$s['total_billing'] = $get_total_billing;
-								}else{
-									$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
-								}
+								$s['total_billing'] = $s['total_billing'] - ($s['tax_total']);
 							}
 							if(!empty($s['include_service'])){
-								if($s['diskon_sebelum_pajak_service'] == 1){
-									$get_total_billing = $s['total_billing'] / (($s['service_percentage']+100)/100);
-									$get_total_billing = priceFormat($get_total_billing, 0, ".", "");
-									$s['total_billing'] = $get_total_billing;
-								}else{
-									$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
-								}
+								$s['total_billing'] = $s['total_billing'] - ($s['service_total']);
 							}
-						}
+						}*/
 					}
 					
 					//COMPLIMENT
@@ -197,45 +233,31 @@ class reportSalesCustomer extends MY_Controller {
 						$s['tax_total'] = 0;
 					}
 					
-					//diskon_sebelum_pajak_service
-					if($s['diskon_sebelum_pajak_service'] == 0){
-						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
+					//SUBTOTAL : diskon_sebelum_pajak_service
+					if($s['diskon_sebelum_pajak_service'] == 1){
+						
+						//update-2002.003
+						//if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+						//	$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
+						//}
+						
+						//update-2001.002
+						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'] - $s['discount_total'] - $s['compliment_total'];
+						$s['net_sales_total'] = $s['total_billing'] - $s['discount_total'] - $s['compliment_total'];
 						
 						//GRAND TOTAL
 						$s['grand_total'] = $s['sub_total'];
-						$s['grand_total'] -= $s['discount_total'];
-						$s['grand_total'] -= $s['discount_billing_total'];
 						
 					}else{
 						
-						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
-						
-						if(!empty($s['include_tax']) OR !empty($s['include_service'])){
-							//CHECKING BALANCE #1
-							if(empty($s['discount_total'])){
-								
-								if($s['sub_total'] != $s['total_billing_awal']){
-									$s['total_billing'] = ($s['total_billing_awal'] - ($s['tax_total'] + $s['service_total']));
-									$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'];
-								}
-								
-							}else{
-								
-								if(($s['sub_total'] + $s['total_pembulatan']) != $s['grand_total']){
-									$s['sub_total'] = ($s['grand_total']-$s['total_pembulatan'])+$s['compliment_total'];
-								}
-								
-								$cek_total_billing = $s['sub_total'] - ($s['tax_total'] + $s['service_total']) + $s['discount_total'];
-								if($s['total_billing'] != $cek_total_billing){
-									$s['total_billing'] = $cek_total_billing;
-								}
-								
-							}
-							
-						}
+						//update-2001.002
+						$s['sub_total'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'] - $s['discount_total'] - $s['compliment_total'];	
+						$s['net_sales_total'] = $s['total_billing'] - $s['discount_total'] - $s['compliment_total'];
 						
 						//GRAND TOTAL
 						$s['grand_total'] = $s['sub_total'];
+						//$s['grand_total'] -= $s['discount_total'];
+						//$s['grand_total'] -= $s['discount_billing_total'];
 						
 					}
 					
@@ -253,13 +275,8 @@ class reportSalesCustomer extends MY_Controller {
 					
 					//$s['grand_total'] = $s['sub_total'] + $s['total_pembulatan'];
 					$s['grand_total'] += $s['total_pembulatan'];
-					$s['grand_total'] -= $s['compliment_total'];
+					//$s['grand_total'] -= $s['compliment_total'];
 					
-					//diskon_sebelum_pajak_service
-					//if($s['diskon_sebelum_pajak_service'] == 0){
-					//	$s['grand_total'] -= $s['discount_total'];
-					//	$s['grand_total'] -= $s['discount_billing_total'];
-					//}
 					
 					if($s['grand_total'] <= 0){
 						$s['grand_total'] = 0;
@@ -361,35 +378,6 @@ class reportSalesCustomer extends MY_Controller {
 				}
 			}
 			
-			//calc detail
-			$total_hpp = array();
-			$discount_item = array();
-			if(!empty($all_bil_id)){
-				$all_bil_id_txt = implode(",",$all_bil_id);
-				$this->db->from($this->table2);
-				$this->db->where('billing_id IN ('.$all_bil_id_txt.')');
-				$this->db->where('is_deleted', 0);
-				$get_detail = $this->db->get();
-				if($get_detail->num_rows() > 0){
-					foreach($get_detail->result() as $dtRow){
-						
-						$total_qty = $dtRow->order_qty;
-						/*
-						$total_qty = $dtRow->order_qty - $dtRow->retur_qty;
-						if($total_qty < 0){
-							$total_qty = 0;
-						}*/
-						
-						if(empty($total_hpp[$dtRow->billing_id])){
-							$total_hpp[$dtRow->billing_id] = 0;
-						}
-						
-						$total_hpp[$dtRow->billing_id] += $dtRow->product_price_hpp * $total_qty;
-
-						
-					}
-				}
-			}
 			
 			$newData_switch = $newData;
 			$newData = array();

@@ -2452,6 +2452,7 @@ class DataBilling extends MY_Controller {
 								),
 			'where'			=> array("a.order_qty > 0", 'a.is_deleted' => 0, 'a.billing_id' => $id),
 			'order'			=> array('a.id' => 'ASC'),
+			'limit'			=> 9999,
 			'sort_alias'	=> $sortAlias,
 			'single'		=> false,
 			'output'		=> 'array' //array, object, json
