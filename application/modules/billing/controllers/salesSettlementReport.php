@@ -220,12 +220,13 @@ class SalesSettlementReport extends MY_Controller {
 						$s['billing_date'] = date("d/m/Y",$datemin1);
 					}
 					
-					//update-2001.002
-					$get_bill_no = substr($s['billing_no'],0,6);
-					$get_payment_Y = substr($s['billing_no'],0,2);
-					$get_payment_m = substr($s['billing_no'],2,2);
-					$get_payment_d = substr($s['billing_no'],4,2);
-					$s['billing_date'] = $get_payment_d.'/'.$get_payment_m.'/'.($get_payment_Y+2000);
+					//REKAP TGL
+					$payment_date_exp = explode(" ",$s['payment_date']);
+					$payment_date_min = str_replace("-","",$payment_date_exp[0]);
+					$get_payment_Y = substr($payment_date_min,0,4);
+					$get_payment_m = substr($payment_date_min,4,2);
+					$get_payment_d = substr($payment_date_min,6,2);
+					$s['billing_date'] = $get_payment_d.'/'.$get_payment_m.'/'.($get_payment_Y);
 					
 					if(empty($total_qty_billing[$s['billing_date']])){
 						$total_qty_billing[$s['billing_date']] = array();
@@ -384,7 +385,7 @@ class SalesSettlementReport extends MY_Controller {
 							$sub_total += $s['service_total'];
 							
 							$grand_total_order = $sub_total;
-							//$sub_total -= $s['discount_total'];
+							$sub_total -= $s['discount_total'];
 							$is_balanced = true;
 							
 						}

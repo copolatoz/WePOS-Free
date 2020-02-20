@@ -907,11 +907,12 @@ class ReportSales extends MY_Controller {
 					}		
 					
 					//REKAP TGL
-					$get_bill_no = substr($s['billing_no'],0,6);
-					$get_payment_Y = substr($s['billing_no'],0,2);
-					$get_payment_m = substr($s['billing_no'],2,2);
-					$get_payment_d = substr($s['billing_no'],4,2);
-					$payment_date = $get_payment_d.'-'.$get_payment_m.'-'.($get_payment_Y+2000);
+					$payment_date_exp = explode(" ",$s['payment_date']);
+					$payment_date_min = str_replace("-","",$payment_date_exp[0]);
+					$get_payment_Y = substr($payment_date_min,0,4);
+					$get_payment_m = substr($payment_date_min,4,2);
+					$get_payment_d = substr($payment_date_min,6,2);
+					$payment_date = $get_payment_d.'-'.$get_payment_m.'-'.($get_payment_Y);
 					$all_bil_id_date[$s['billing_id']] = $payment_date;
 					
 				}
@@ -995,7 +996,7 @@ class ReportSales extends MY_Controller {
 					}
 					
 					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
-					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
+					//$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 					
 					//if(!in_array($s['id'], $all_bil_id)){
 					//	$all_bil_id[] = $s['id'];
@@ -1157,12 +1158,16 @@ class ReportSales extends MY_Controller {
 					}
 					
 					//REKAP TGL
-					$get_bill_no = substr($s['billing_no'],0,6);
-					$get_payment_Y = substr($s['billing_no'],0,2);
-					$get_payment_m = substr($s['billing_no'],2,2);
-					$get_payment_d = substr($s['billing_no'],4,2);
-					$payment_date = $get_payment_d.'-'.$get_payment_m.'-'.($get_payment_Y+2000);
+					$payment_date_exp = explode(" ",$s['payment_date']);
+					$payment_date_min = str_replace("-","",$payment_date_exp[0]);
+					$get_payment_Y = substr($payment_date_min,0,4);
+					$get_payment_m = substr($payment_date_min,4,2);
+					$get_payment_d = substr($payment_date_min,6,2);
+					$payment_date = $get_payment_d.'-'.$get_payment_m.'-'.($get_payment_Y);
 					//$payment_date = date("d-m-Y",strtotime($s['payment_date']));
+					
+					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
+					
 					if(empty($all_group_date[$payment_date])){
 						$all_group_date[$payment_date] = array(
 							'id'		=> $no_id, 

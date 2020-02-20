@@ -280,6 +280,9 @@ class DataBilling extends MY_Controller {
 				$qdate_till = $ret_dt['qdate_till'];
 				$qdate_till_max = $ret_dt['qdate_till_max'];
 				
+				//update-2002.003
+				$qdate_from_mk = strtotime($qdate_from);
+				
 				if(!empty($use_payment_date)){
 					//07:00:00
 					//$params['where'][] = "(a.payment_date >= '".$qdate_from." 00:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
@@ -315,10 +318,10 @@ class DataBilling extends MY_Controller {
 					
 				}
 				
-				//update-2002.001
+				//update-2002.003
 				if(empty($searching)){
 					if(!empty($hide_hold_bill_yesterday)){
-						$lastest_billing_no = date("ymd",strtotime($qdate_from)).'0000';
+						$lastest_billing_no = date("ymd", $qdate_from_mk).'0000';
 						$params['where'][] = "(a.billing_no >= '".$lastest_billing_no."')";
 					}
 				}

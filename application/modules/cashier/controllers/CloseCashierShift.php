@@ -1080,8 +1080,45 @@ class CloseCashierShift extends MY_Controller {
 				}
 			}
 			
-			
+			//update-2002.003
 			$all_bil_id = array();
+			if(!empty($data_post['report_data'])){
+				foreach ($data_post['report_data'] as $s){
+					
+					if(!in_array($s['id'], $all_bil_id)){
+						$all_bil_id[] = $s['id'];
+					}		
+					
+				}
+			}
+			
+			//update-2002.003
+			$total_billing = array();
+			if(!empty($all_bil_id)){
+				$all_bil_id_txt = implode(",",$all_bil_id);
+				$this->db->from($this->table_billing_detail);
+				$this->db->where('billing_id IN ('.$all_bil_id_txt.')');
+				$this->db->where('is_deleted', 0);
+				$get_detail = $this->db->get();
+				if($get_detail->num_rows() > 0){
+					foreach($get_detail->result() as $dtRow){
+						
+						$total_qty = $dtRow->order_qty;
+						
+						//update-2002.003
+						if((!empty($dtRow->include_tax) AND empty($dtRow->include_service)) OR (empty($dtRow->include_tax) AND !empty($dtRow->include_service))){
+							if($dtRow->product_price != ($dtRow->product_price_real+$dtRow->tax_total+$dtRow->service_total)){
+								$all_percentage = 100 + $dtRow->tax_percentage + $dtRow->service_percentage;
+								$dtRow->product_price_real = priceFormat(($dtRow->product_price/($all_percentage/100)), 0, ".", "");
+							}
+						}
+						$total_billing[$dtRow->billing_id] += $dtRow->product_price_real * $total_qty;
+						
+					}
+				}
+			}
+			
+			//$all_bil_id = array();
 			$all_discount_id = array();
 			$summary_payment = array();
 			$konversi_pembulatan_billing = array();
@@ -1116,14 +1153,22 @@ class CloseCashierShift extends MY_Controller {
 					$s['billing_date'] = date("d-m-Y H:i",strtotime($s['created']));					
 					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 					
-					if(!in_array($s['id'], $all_bil_id)){
-						$all_bil_id[] = $s['id'];
-					}		
+					//if(!in_array($s['id'], $all_bil_id)){
+					//	$all_bil_id[] = $s['id'];
+					//}		
 					
 					$s['total_billing_awal'] = $s['total_billing'];
-						
+					
+					//update-2002.003
 					//CHECK REAL TOTAL BILLING
 					if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+						//update-2002.003
+						$s['total_billing'] = $total_billing[$s['id']];
+						$s['total_billing_awal'] = $s['total_billing'];
+					}
+							
+					//CHECK REAL TOTAL BILLING
+					/*if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 						if(!empty($s['include_tax']) AND !empty($s['include_service'])){
 						
 							if($data_post['diskon_sebelum_pajak_service'] == 1){
@@ -1154,11 +1199,11 @@ class CloseCashierShift extends MY_Controller {
 								}
 							}
 						}
-					}
+					}*/
 					
 					if(!empty($s['is_compliment'])){
 						//$s['total_billing'] = $s['total_billing'] + $s['tax_total'] + $s['service_total'];
-						if($s['total_billing'] < $s['compliment_total'] OR $s['total_billing'] == $s['compliment_total']){
+						if($s['total_billing'] <= $s['compliment_total']){
 							$s['service_total'] = 0;
 							$s['tax_total'] = 0;
 						}
@@ -1169,7 +1214,7 @@ class CloseCashierShift extends MY_Controller {
 						$s['sub_total'] = $s['total_billing'] - $s['discount_total'] + $s['tax_total'] + $s['service_total'] - $s['compliment_total'];
 						$s['net_sales'] = $s['total_billing'] - $s['discount_total'] - $s['compliment_total'];
 						
-						if(!empty($s['include_tax']) OR !empty($s['include_service'])){
+						/*if(!empty($s['include_tax']) OR !empty($s['include_service'])){
 							//CHECKING BALANCE #1
 							if(empty($s['discount_total'])){
 								if($s['sub_total'] != $s['total_billing_awal']){
@@ -1186,7 +1231,7 @@ class CloseCashierShift extends MY_Controller {
 									$s['total_billing'] = $cek_total_billing;
 								}
 							}
-						}
+						}*/
 						
 						//GRAND TOTAL
 						$s['grand_total'] = $s['sub_total'];
