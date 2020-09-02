@@ -125,6 +125,7 @@ class UserData extends MY_Controller {
 		$change_pin = $this->input->post('change_pin');		
 
 		//password
+		$edit_by_admin = $this->input->post('edit_by_admin');
 		$old_pass = $this->input->post('old_pass');
 		$new_pass = $this->input->post('new_pass');
 		$pass_confirm = $this->input->post('pass_confirm');
@@ -276,18 +277,20 @@ class UserData extends MY_Controller {
 				$var['fields']['client_structure_id'] = 1;
 			}
 			
-			if(!empty($old_pass)){
+			if(!empty($old_pass) OR !empty($edit_by_admin)){
 				if(!empty($new_pass)){
 					$var['fields']['user_password'] = md5($new_pass);
 			
-					//check if valid old-pass
-					$this->db->from($this->table);
-					$this->db->where('user_password', md5($old_pass));
-					$this->db->where('id',$id);
-					$getvalidPass = $this->db->get();
-					if($getvalidPass->num_rows() == 0){
-						$r = array('success' => false, 'info' => 'Wrong Old Password!');
-						die(json_encode($r));
+					if(!empty($old_pass)){
+						//check if valid old-pass
+						$this->db->from($this->table);
+						$this->db->where('user_password', md5($old_pass));
+						$this->db->where('id',$id);
+						$getvalidPass = $this->db->get();
+						if($getvalidPass->num_rows() == 0){
+							$r = array('success' => false, 'info' => 'Wrong Old Password!');
+							die(json_encode($r));
+						}
 					}
 				}
 			}
@@ -406,7 +409,6 @@ class UserData extends MY_Controller {
 			
 		}
 		
-		$user_shortcuts = array();
 		if(!empty($id_user) AND $type_check == 'desktopShortcuts'){
 			$userQuickStartShortcuts =	$this->m->userDesktopShortcuts($id_user);
 			if(!empty($userQuickStartShortcuts)){

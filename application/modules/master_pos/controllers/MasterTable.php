@@ -30,7 +30,8 @@ class MasterTable extends MY_Controller {
 		
 		//is_active_text
 		$sortAlias = array(
-			'is_active_text' => 'is_active'
+			'is_active_text' => 'a.is_active',
+			'table_tipe_text' => 'a.table_tipe'
 		);		
 		
 		// Default Parameter

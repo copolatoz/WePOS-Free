@@ -73,6 +73,7 @@ class MasterUnit extends MY_Controller {
 		
 		$unit_name = $this->input->post('unit_name');
 		$unit_code = $this->input->post('unit_code');
+		$form_type_masterUnit = $this->input->post('form_type_masterUnit', true);
 		
 		if(empty($unit_name)){
 			$r = array('success' => false);
@@ -83,9 +84,30 @@ class MasterUnit extends MY_Controller {
 		if(empty($is_active)){
 			$is_active = 0;
 		}
+		
+		$id = $this->input->post('id', true);
+			
+		$from_deleted = 0;
+		if($form_type_masterUnit == 'add'){
+			$this->db->from($this->table);
+			$this->db->where("unit_code = '".$unit_code."'");
+			$get_data = $this->db->get();
+			if($get_data->num_rows() > 0){
+				$dt_unit = $get_data->row();
+				if($dt_unit->is_deleted == 1){
+					$from_deleted = 1;
+				}else{
+					$r = array('success' => false, 'info' => 'Kode Unit sudah digunakan, silahkan pilih kode lain!');
+					die(json_encode(($r==null or $r=='')? array('success'=>false) : $r));
+				}
+				
+				$id = $dt_unit->id;
+				$form_type_masterUnit = 'edit';
+			}
+		}
 			
 		$r = '';
-		if($this->input->post('form_type_masterUnit', true) == 'add')
+		if($form_type_masterUnit == 'add')
 		{
 			$var = array(
 				'fields'	=>	array(
@@ -116,7 +138,7 @@ class MasterUnit extends MY_Controller {
 			}
       		
 		}else
-		if($this->input->post('form_type_masterUnit', true) == 'edit'){
+		if($form_type_masterUnit == 'edit'){
 			$var = array('fields'	=>	array(
 				    'unit_name'  	=> 	$unit_name,
 				    'unit_code'  	=> 	$unit_code,
@@ -128,8 +150,11 @@ class MasterUnit extends MY_Controller {
 				'primary_key'	=>  'id'
 			);
 			
+			if(!empty($from_deleted)){
+				$var['fields']['is_deleted'] = 0;
+			}
+			
 			//UPDATE
-			$id = $this->input->post('id', true);
 			$this->lib_trans->begin();
 				$update = $this->m->save($var, $id);
 			$this->lib_trans->commit();

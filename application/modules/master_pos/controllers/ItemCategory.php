@@ -16,7 +16,8 @@ class itemCategory extends MY_Controller {
 		
 		//is_active_text
 		$sortAlias = array(
-			'is_active_text' => 'is_active'
+			'is_active_text' => 'is_active',
+			'as_product_category_text' => 'as_product_category'
 		);		
 		
 		// Default Parameter
@@ -25,7 +26,7 @@ class itemCategory extends MY_Controller {
 			'primary_key'	=> 'id',
 			'table'			=> $this->table,
 			'where'			=> array('is_deleted' => 0),
-			'order'			=> array('id' => 'ASC'),
+			'order'			=> array('id' => 'DESC'),
 			'sort_alias'	=> $sortAlias,
 			'single'		=> false,
 			'output'		=> 'array' //array, object, json
@@ -42,7 +43,7 @@ class itemCategory extends MY_Controller {
 			$searching = $keywords;
 		}
 		if(!empty($is_dropdown)){
-			$params['order'] = array('item_category_desc' => 'ASC');
+			$params['order'] = array('item_category_name' => 'ASC');
 			//$params['where'] = array('parent_id != 0');
 		}
 		if(!empty($searching)){
@@ -66,7 +67,11 @@ class itemCategory extends MY_Controller {
 		
 		if(!empty($get_data['data'])){
 			foreach ($get_data['data'] as $s){
+				$s['item_category_code'] = strtoupper($s['item_category_code']);
+				
 				$s['is_active_text'] = ($s['is_active'] == '1') ? '<span style="color:green;">Active</span>':'<span style="color:red;">Inactive</span>';
+				$s['as_product_category_text'] = ($s['as_product_category'] == '1') ? '<span style="color:green;">Ya</span>':'<span style="color:red;">Tidak</span>';
+				$s['as_product_category_old'] = $s['as_product_category'];
 				$s['item_category_code_name'] = $s['item_category_code'].' - '.$s['item_category_name'];
 				
 				if(empty($s['item_category_code'])){
@@ -87,6 +92,7 @@ class itemCategory extends MY_Controller {
 	public function save()
 	{
 		$this->table = $this->prefix.'item_category';				
+		$this->table_product_category = $this->prefix.'product_category';				
 		$session_user = $this->session->userdata('user_username');
 		
 		$item_category_name = $this->input->post('item_category_name');
@@ -101,6 +107,13 @@ class itemCategory extends MY_Controller {
 		$is_active = $this->input->post('is_active');
 		if(empty($is_active)){
 			$is_active = 0;
+		}
+		
+		$add_product_category = false;
+		$as_product_category_old = $this->input->post('as_product_category_old');
+		$as_product_category = $this->input->post('as_product_category');
+		if(empty($as_product_category)){
+			$as_product_category = 0;
 		}
 		
 		//CHECK CODE
@@ -131,11 +144,12 @@ class itemCategory extends MY_Controller {
 				    'item_category_name'  	=> 	$item_category_name,
 				    'item_category_code'  	=> 	$item_category_code,
 					'item_category_desc'	=>	$item_category_desc,
+					'as_product_category'	=>	$as_product_category,
 					'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,
-					'is_active'	=>	$is_active
+					'is_active'		=>	$is_active
 				),
 				'table'		=>  $this->table
 			);	
@@ -148,7 +162,12 @@ class itemCategory extends MY_Controller {
 			$this->lib_trans->commit();			
 			if($q)
 			{  
-				$r = array('success' => true, 'id' => $insert_id); 				
+				$r = array('success' => true, 'id' => $insert_id); 	
+
+				if($as_product_category == 1){
+					$add_product_category = true;
+					$id = $insert_id;
+				}
 			}  
 			else
 			{  
@@ -161,6 +180,7 @@ class itemCategory extends MY_Controller {
 				    'item_category_name'  	=> 	$item_category_name,
 				    'item_category_code'  	=> 	$item_category_code,
 					'item_category_desc'	=>	$item_category_desc,
+					'as_product_category'	=>	$as_product_category,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,
 					'is_active'		=>	$is_active
@@ -178,11 +198,66 @@ class itemCategory extends MY_Controller {
 			if($update)
 			{  
 				$r = array('success' => true, 'id' => $id);
+				
+				if($as_product_category == 1 AND $as_product_category_old == 0){
+					$add_product_category = true;
+				}
+				
+				if($as_product_category == 0 AND $as_product_category_old == 1){
+					$update_prodcat = array(
+						'updated'			=>	date('Y-m-d H:i:s'),
+						'updatedby'			=>	$session_user,
+						'is_active'			=>	0,
+						'is_deleted'		=>	1
+					);
+					$this->db->update($this->table_product_category, $update_prodcat, "from_item_category = ".$id);	
+				}
+				
+				if($as_product_category == 1 AND $as_product_category_old == 1){
+					$update_prodcat = array(
+						'updated'			=>	date('Y-m-d H:i:s'),
+						'updatedby'			=>	$session_user,
+						'is_active'			=>	$is_active
+					);
+					$this->db->update($this->table_product_category, $update_prodcat, "from_item_category = ".$id);	
+				}
+				
 			}  
 			else
 			{  
 				$r = array('success' => false);
 			}
+		}
+		
+		//add product category
+		if(!empty($id) AND $add_product_category == true){
+			$this->db->from($this->table_product_category);
+			$this->db->where("from_item_category = ".$id);
+			$cek_prodcat = $this->db->get();
+			if($cek_prodcat->num_rows() > 0){
+				$update_prodcat = array(
+					'updated'			=>	date('Y-m-d H:i:s'),
+					'updatedby'			=>	$session_user,
+					'is_active'			=>	1,
+					'is_deleted'		=>	0
+				);
+				$this->db->update($this->table_product_category, $update_prodcat, "from_item_category = ".$id);	
+			}else{
+				$insert_prodcat = array(
+					'product_category_name'	=> 	$item_category_name,
+					'product_category_code'	=> 	$item_category_code,
+					'product_category_desc'	=>	$item_category_desc,
+					'from_item_category'	=>	$id,
+					'created'		=>	date('Y-m-d H:i:s'),
+					'createdby'		=>	$session_user,
+					'updated'		=>	date('Y-m-d H:i:s'),
+					'updatedby'		=>	$session_user,
+					'is_active'		=>	$is_active
+				);
+					
+				$this->db->insert($this->table_product_category, $insert_prodcat);	
+			}
+			
 		}
 		
 		die(json_encode(($r==null or $r=='')? array('success'=>false) : $r));
@@ -191,6 +266,8 @@ class itemCategory extends MY_Controller {
 	public function delete()
 	{
 		$this->table = $this->prefix.'item_category';
+		$this->table_product_category = $this->prefix.'product_category';			
+		$session_user = $this->session->userdata('user_username');
 		
 		$get_id = $this->input->post('id', true);		
 		$id = json_decode($get_id, true);
@@ -211,6 +288,14 @@ class itemCategory extends MY_Controller {
 		if($q)  
         {  
             $r = array('success' => true); 
+			$update_prodcat = array(
+				'updated'			=>	date('Y-m-d H:i:s'),
+				'updatedby'			=>	$session_user,
+				'is_active'			=>	0,
+				'is_deleted'		=>	1
+			);
+			$this->db->update($this->table_product_category, $update_prodcat, "from_item_category IN (".$sql_Id.")");	
+			
         }  
         else
         {  

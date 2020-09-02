@@ -34,7 +34,7 @@ class MasterSupplierItem extends MY_Controller {
 		if(!empty($from_supplier_item)){
 			// Default Parameter
 			$params = array(
-				'fields'		=> "a.*, a.id as supplier_item_id, b.item_code, b.item_name, c.unit_name, d.supplier_name, d.supplier_address, 1 as from_supplier_item",
+				'fields'		=> "a.*, a.id as supplier_item_id, b.item_code, b.item_name, b.use_stok_kode_unik, c.unit_name, c.unit_code, d.supplier_name, d.supplier_address, 1 as from_supplier_item",
 				'primary_key'	=> 'a.id',
 				'table'			=> $this->table.' as a',
 				'join'			=> array(
@@ -74,7 +74,7 @@ class MasterSupplierItem extends MY_Controller {
 				//dari validasi RO
 				// Default Parameter
 				$params = array(
-					'fields'		=> "a.*, a.id as supplier_item_id, b.item_code, b.item_name, c.unit_name, d.supplier_name, d.supplier_address, 0 as from_supplier_item",
+					'fields'		=> "a.*, a.id as supplier_item_id, b.item_code, b.item_name, b.use_stok_kode_unik, c.unit_name, c.unit_code, d.supplier_name, d.supplier_address, 0 as from_supplier_item",
 					'primary_key'	=> 'a.id',
 					'table'			=> $this->table.' as a',
 					'join'			=> array(
@@ -95,6 +95,10 @@ class MasterSupplierItem extends MY_Controller {
 				}
 				
 				$params['where'][] = "a.id = ".$item_id."";
+				$params['where'][] = "b.is_active = 1";
+				$params['where'][] = "b.is_deleted = 0";
+				$params['where'][] = "a.is_deleted = 0";
+				
 				
 				if(!empty($searching)){
 					$params['where'][] = "(b.item_name LIKE '%".$searching."%')";
@@ -105,7 +109,7 @@ class MasterSupplierItem extends MY_Controller {
 				// Default Parameter
 				// Default Parameter
 				$params = array(
-					'fields'		=> "a.*, a.id as item_id, b.unit_name, '' as supplier_item_id, '' as supplier_name, '' as supplier_address, 0 as from_supplier_item",
+					'fields'		=> "a.*, a.id as item_id, b.unit_name, b.unit_code, '' as supplier_item_id, '' as supplier_name, '' as supplier_address, 0 as from_supplier_item",
 					'primary_key'	=> 'a.id',
 					'table'			=> $this->prefix.'items as a',
 					'join'			=> array(
@@ -122,6 +126,10 @@ class MasterSupplierItem extends MY_Controller {
 				if(!empty($is_dropdown)){
 					$params['order'] = array('a.item_name' => 'ASC');
 				}
+				
+				$params['where'][] = "b.is_active = 1";
+				$params['where'][] = "b.is_deleted = 0";
+				$params['where'][] = "a.is_deleted = 0";
 				
 				if(!empty($searching)){
 					$params['where'][] = "(a.item_name LIKE '%".$searching."%')";
@@ -155,6 +163,13 @@ class MasterSupplierItem extends MY_Controller {
 					if(empty($s['supplier_item_id'])){
 						$no++;
 						$s['supplier_item_id'] = 'x'.$no;
+					}
+					
+					$s['item_code_name'] = $s['item_code'].' / '.$s['item_name'];
+					
+					$s['use_stok_kode_unik_text'] = '<font color="red">Tidak</font>';
+					if(!empty($s['use_stok_kode_unik'])){
+						$s['use_stok_kode_unik_text'] = '<font color="green">Ya</font>';
 					}
 					
 					array_push($newData, $s);

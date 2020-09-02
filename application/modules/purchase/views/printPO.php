@@ -117,6 +117,9 @@
 			</tr>
 			
 			<?php
+			$total_qty = 0;
+			$total_subtotal = 0;
+			$total_potongan = 0;
 			if(!empty($po_detail)){
 			
 				$no = 1;
@@ -149,10 +152,35 @@
 						?>
 					</tr>
 					<?php	
-
+					$total_qty += $det['po_detail_qty'];
+					$total_subtotal += $det['po_detail_total'];
+					$total_potongan += $det['po_detail_potongan'];
 					$no++;
 				}
-			
+				?>
+				<tr class="tbl-total">
+					<?php
+					if($qty_print == 1){
+						?>
+						<td class="first xright" colspan="2">TOTAL</td>
+						<td class="xcenter"><?php echo priceFormat($total_qty); ?></td>
+						<td class="xcenter" colspan="2">&nbsp;</td>
+						<td class="xright">&nbsp;</td>
+						<td class="xright">&nbsp;</td>
+						<?php
+					}else
+					{
+						?>
+						<td class="first xright" colspan="3">TOTAL</td>
+						<td class="xcenter"><?php echo priceFormat($total_qty); ?></td>
+						<td class="xcenter" colspan="2">&nbsp;</td>
+						<td class="xright"><?php echo priceFormat($total_subtotal); ?></td>
+						<td class="xright"><?php echo priceFormat($total_potongan); ?></td>
+						<?php
+					}
+					?>
+				</tr>
+				<?php
 			}
 			?>
 						

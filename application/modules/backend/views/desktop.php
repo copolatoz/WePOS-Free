@@ -19,9 +19,13 @@
 	?>
 	<title><?php echo $this->session->userdata('client_name').' / '.$get_opt['merchant_key'].' / Cafe.'.$get_opt['produk_nama']; ?></title> 
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="viewport" content="width=device-width, initial-scale=0.68, minimum-scale=0.68, maximum-scale=1, viewport-fit=cover" />
 	<meta http-equiv="X-UA-Compatible" content="chrome=1">
 
-    <link rel="shortcut icon" href="<?php echo base_url(); ?>assets/themes/frontend/images/favicon.ico" />
+    <link rel="shortcut icon" href="<?php echo base_url(); ?>apps.min/helper/login/favicon.ico" />
+	<link rel="apple-touch-icon" sizes="180x180" href="<?php echo base_url(); ?>apps.min/helper/login/icon-180x180.png">
 	<link rel="stylesheet" href="<?php echo base_url().'assets/desktop/css/loading.css'; ?>" />
 	<script src="<?php echo base_url().'backend/config?v='.time(); ?>" type="text/javascript" charset="utf-8"></script>
 	

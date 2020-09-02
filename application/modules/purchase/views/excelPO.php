@@ -118,6 +118,9 @@ $total_cols = 7;
 			</tr>
 			
 			<?php
+			$total_qty = 0;
+			$total_subtotal = 0;
+			$total_potongan = 0;
 			if(!empty($po_detail)){
 			
 				$no = 1;
@@ -129,15 +132,25 @@ $total_cols = 7;
 						<td class="tbl_data_td"><?php echo $det['item_name']; ?></td>
 						<td class="tbl_data_td_xcenter"><?php echo $det['po_detail_qty']; ?></td>
 						<td class="tbl_data_td_xcenter"><?php echo $det['unit_name']; ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo priceFormat($det['po_detail_purchase']); ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo priceFormat($det['po_detail_total']); ?></td>
-						<td class="tbl_data_td_xright">Rp. <?php echo priceFormat($det['po_detail_potongan']); ?></td>
+						<td class="tbl_data_td_xright">&nbsp;<?php echo priceFormat($det['po_detail_purchase']); ?></td>
+						<td class="tbl_data_td_xright">&nbsp;<?php echo priceFormat($det['po_detail_total']); ?></td>
+						<td class="tbl_data_td_xright">&nbsp;<?php echo priceFormat($det['po_detail_potongan']); ?></td>
 					</tr>
 					<?php	
-
+					$total_qty += $det['po_detail_qty'];
+					$total_subtotal += $det['po_detail_total'];
+					$total_potongan += $det['po_detail_potongan'];
 					$no++;
 				}
-			
+				?>
+				<tr>
+					<td class="tbl_head_td_first_xright" colspan="3">TOTAL </td>
+					<td class="tbl_head_td_xcenter"><?php echo priceFormat($total_qty); ?></td>
+					<td class="tbl_head_td_xcenter" colspan="2">&nbsp;</td>
+					<td class="tbl_head_td_xright">&nbsp;<?php echo priceFormat($total_subtotal); ?></td>
+					<td class="tbl_head_td_xright">&nbsp;<?php echo priceFormat($total_potongan); ?></td>
+				</tr>
+				<?php
 			}
 			?>
 			

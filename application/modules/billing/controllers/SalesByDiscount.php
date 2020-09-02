@@ -362,10 +362,15 @@ class SalesByDiscount extends MY_Controller {
 						$total_qty = $dtRow->order_qty;
 						
 						//update-2002.003
+						$dtRow->product_price_real_before = $dtRow->product_price_real;
 						if((!empty($dtRow->include_tax) AND empty($dtRow->include_service)) OR (empty($dtRow->include_tax) AND !empty($dtRow->include_service))){
 							if($dtRow->product_price != ($dtRow->product_price_real+$dtRow->tax_total+$dtRow->service_total)){
 								$all_percentage = 100 + $dtRow->tax_percentage + $dtRow->service_percentage;
 								$dtRow->product_price_real = priceFormat(($dtRow->product_price/($all_percentage/100)), 0, ".", "");
+							}
+						
+							if($dtRow->is_compliment == 1){
+								$dtRow->product_price_real = $dtRow->product_price_real_before;
 							}
 						}
 						$total_billing[$dtRow->billing_id] += $dtRow->product_price_real * $total_qty;
@@ -986,10 +991,16 @@ class SalesByDiscount extends MY_Controller {
 						if(!empty($include_tax) OR !empty($include_service)){
 							
 							//AUTOFIX-BUGS 1 Jan 2018
+							$s['product_price_real_before'] = $s['product_price_real'];
 							if((!empty($include_tax) AND empty($include_service)) OR (empty($include_tax) AND !empty($include_service))){
 								if($s['product_price'] != ($s['product_price_real']+$s['tax_total']+$s['service_total'])){
 									$s['product_price_real'] = priceFormat(($s['product_price']/($all_percentage/100)), 0, ".", "");
 								}
+							}
+								
+							if(!empty($s['is_compliment'])){
+								//update-2003.001
+								$s['product_price_real'] = $s['product_price_real_before'];
 							}
 							
 							$total_billing_order = ($s['product_price_real']*$s['order_qty']);
@@ -2473,10 +2484,16 @@ class SalesByDiscount extends MY_Controller {
 						if(!empty($include_tax) OR !empty($include_service)){
 							
 							//AUTOFIX-BUGS 1 Jan 2018
+							$s['product_price_real_before'] = $s['product_price_real'];
 							if((!empty($include_tax) AND empty($include_service)) OR (empty($include_tax) AND !empty($include_service))){
 								if($s['product_price'] != ($s['product_price_real']+$s['tax_total']+$s['service_total'])){
 									$s['product_price_real'] = priceFormat(($s['product_price']/($all_percentage/100)), 0, ".", "");
 								}
+							}
+								
+							if(!empty($s['is_compliment'])){
+								//update-2003.001
+								$s['product_price_real'] = $s['product_price_real_before'];
 							}
 							
 							$total_billing_order = ($s['product_price_real']*$s['order_qty']);

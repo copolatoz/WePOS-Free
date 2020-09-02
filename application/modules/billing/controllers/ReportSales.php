@@ -101,7 +101,7 @@ class ReportSales extends MY_Controller {
 		
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
 		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report',
-		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
+		'jam_operasional_from','jam_operasional_to','jam_operasional_extra','nontrx_override_on'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -114,6 +114,14 @@ class ReportSales extends MY_Controller {
 		}
 		if(empty($get_opt['cashier_pembulatan_keatas'])){
 			$get_opt['cashier_pembulatan_keatas'] = 0;
+		}
+		
+		//update-2007.001
+		if(!empty($get_opt['nontrx_override_on'])){
+			if($only_txmark == 0){
+				$only_txmark = 1;
+				$data_post['only_txmark'] = $only_txmark;
+			}
 		}
 		
 		if(empty($date_from) OR empty($date_till)){
@@ -275,12 +283,18 @@ class ReportSales extends MY_Controller {
 						$total_hpp[$dtRow->billing_id] += $dtRow->product_price_hpp * $total_qty;
 						
 						//update-2002.003
+						$dtRow->product_price_real_before = $dtRow->product_price_real;
 						if((!empty($dtRow->include_tax) AND empty($dtRow->include_service)) OR (empty($dtRow->include_tax) AND !empty($dtRow->include_service))){
 							if($dtRow->product_price != ($dtRow->product_price_real+$dtRow->tax_total+$dtRow->service_total)){
 								$all_percentage = 100 + $dtRow->tax_percentage + $dtRow->service_percentage;
 								$dtRow->product_price_real = priceFormat(($dtRow->product_price/($all_percentage/100)), 0, ".", "");
 							}
+						
+							if($dtRow->is_compliment == 1){
+								$dtRow->product_price_real = $dtRow->product_price_real_before;
+							}
 						}
+						
 						$total_billing[$dtRow->billing_id] += $dtRow->product_price_real * $total_qty;
 						
 						if($sortingDesc == 'DESC'){
@@ -694,6 +708,10 @@ class ReportSales extends MY_Controller {
 			$sortingDesc = 'ASC';
 		}
 		
+		if(empty($only_txmark)){
+			$only_txmark = 0;
+		}
+		
 		$data_post = array(
 			'do'	=> '',
 			'report_data'	=> array(),
@@ -707,6 +725,7 @@ class ReportSales extends MY_Controller {
 			'user_fullname'	=> $user_fullname,
 			'diskon_sebelum_pajak_service' => 0,
 			'display_discount_type'	=> array(),
+			'only_txmark'	=> $only_txmark,
 			'filter_column'	=> array(),
 			'user_kasir'	=> ''
 		);
@@ -754,7 +773,7 @@ class ReportSales extends MY_Controller {
 
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service',
 		'cashier_max_pembulatan','cashier_pembulatan_keatas','role_id_kasir','maxday_cashier_report',
-		'jam_operasional_from','jam_operasional_to','jam_operasional_extra'));
+		'jam_operasional_from','jam_operasional_to','jam_operasional_extra','nontrx_override_on'));
 		if(!empty($get_opt['report_place_default'])){
 			$data_post['report_place_default'] = $get_opt['report_place_default'];
 		}
@@ -766,6 +785,14 @@ class ReportSales extends MY_Controller {
 		}
 		if(empty($get_opt['cashier_pembulatan_keatas'])){
 			$get_opt['cashier_pembulatan_keatas'] = 0;
+		}
+		
+		//update-2007.001
+		if(!empty($get_opt['nontrx_override_on'])){
+			if($only_txmark == 0){
+				$only_txmark = 1;
+				$data_post['only_txmark'] = $only_txmark;
+			}
 		}
 		
 		if(empty($date_from) OR empty($date_till)){
@@ -907,13 +934,21 @@ class ReportSales extends MY_Controller {
 					}		
 					
 					//REKAP TGL
-					$payment_date_exp = explode(" ",$s['payment_date']);
+					/*$payment_date_exp = explode(" ",$s['payment_date']);
 					$payment_date_min = str_replace("-","",$payment_date_exp[0]);
 					$get_payment_Y = substr($payment_date_min,0,4);
 					$get_payment_m = substr($payment_date_min,4,2);
 					$get_payment_d = substr($payment_date_min,6,2);
 					$payment_date = $get_payment_d.'-'.$get_payment_m.'-'.($get_payment_Y);
+					$all_bil_id_date[$s['billing_id']] = $payment_date;*/
+					
+					//update.2003.001
+					$get_payment_Y = substr($s['billing_no'],0,2)+2000;
+					$get_payment_m = substr($s['billing_no'],2,2);
+					$get_payment_d = substr($s['billing_no'],4,2);
+					$payment_date = $get_payment_d.'-'.$get_payment_m.'-'.($get_payment_Y);
 					$all_bil_id_date[$s['billing_id']] = $payment_date;
+					
 					
 				}
 			}
@@ -942,10 +977,15 @@ class ReportSales extends MY_Controller {
 						}
 			
 						//update-2002.003
+						$dtRow->product_price_real_before = $dtRow->product_price_real;
 						if((!empty($dtRow->include_tax) AND empty($dtRow->include_service)) OR (empty($dtRow->include_tax) AND !empty($dtRow->include_service))){
 							if($dtRow->product_price != ($dtRow->product_price_real+$dtRow->tax_total+$dtRow->service_total)){
 								$all_percentage = 100 + $dtRow->tax_percentage + $dtRow->service_percentage;
 								$dtRow->product_price_real = priceFormat(($dtRow->product_price/($all_percentage/100)), 0, ".", "");
+							}
+						
+							if($dtRow->is_compliment == 1){
+								$dtRow->product_price_real = $dtRow->product_price_real_before;
 							}
 						}
 						$total_billing[$dtRow->billing_id] += $dtRow->product_price_real * $total_qty;
@@ -1158,13 +1198,19 @@ class ReportSales extends MY_Controller {
 					}
 					
 					//REKAP TGL
-					$payment_date_exp = explode(" ",$s['payment_date']);
+					/*$payment_date_exp = explode(" ",$s['payment_date']);
 					$payment_date_min = str_replace("-","",$payment_date_exp[0]);
 					$get_payment_Y = substr($payment_date_min,0,4);
 					$get_payment_m = substr($payment_date_min,4,2);
 					$get_payment_d = substr($payment_date_min,6,2);
-					$payment_date = $get_payment_d.'-'.$get_payment_m.'-'.($get_payment_Y);
+					$payment_date = $get_payment_d.'-'.$get_payment_m.'-'.($get_payment_Y);*/
 					//$payment_date = date("d-m-Y",strtotime($s['payment_date']));
+					
+					//update.2003.001
+					$get_payment_Y = substr($s['billing_no'],0,2)+2000;
+					$get_payment_m = substr($s['billing_no'],2,2);
+					$get_payment_d = substr($s['billing_no'],4,2);
+					$payment_date = $get_payment_d.'-'.$get_payment_m.'-'.($get_payment_Y);
 					
 					$s['payment_date'] = date("d-m-Y H:i",strtotime($s['payment_date']));
 					
@@ -1767,6 +1813,7 @@ class ReportSales extends MY_Controller {
 	public function print_reportCancelBilling(){
 		
 		$this->table = $this->prefix.'billing';
+		$this->table2 = $this->prefix.'billing_detail';
 		
 		$session_user = $this->session->userdata('user_username');					
 		$user_fullname = $this->session->userdata('user_fullname');					
@@ -1888,10 +1935,15 @@ class ReportSales extends MY_Controller {
 						$total_hpp[$dtRow->billing_id] += $dtRow->product_price_hpp * $total_qty;
 						
 						//update-2002.003
+						$dtRow->product_price_real_before = $dtRow->product_price_real;
 						if((!empty($dtRow->include_tax) AND empty($dtRow->include_service)) OR (empty($dtRow->include_tax) AND !empty($dtRow->include_service))){
 							if($dtRow->product_price != ($dtRow->product_price_real+$dtRow->tax_total+$dtRow->service_total)){
 								$all_percentage = 100 + $dtRow->tax_percentage + $dtRow->service_percentage;
 								$dtRow->product_price_real = priceFormat(($dtRow->product_price/($all_percentage/100)), 0, ".", "");
+							}
+						
+							if($dtRow->is_compliment == 1){
+								$dtRow->product_price_real = $dtRow->product_price_real_before;
 							}
 						}
 						$total_billing[$dtRow->billing_id] += $dtRow->product_price_real * $total_qty;

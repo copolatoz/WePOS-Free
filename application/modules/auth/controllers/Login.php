@@ -76,7 +76,9 @@ class Login extends MX_Controller {
 		}
 		$data['is_cloud'] = $get_opt['is_cloud'];
 		
-		if(!empty($get_opt['is_cloud'])){
+		$cloud_access = config_item('cloud_access');
+		
+		if(!empty($get_opt['is_cloud']) AND !empty($cloud_access)){
 			
 			if($mkey == ''){
 				$data['title']				=	'Merchant'.$from_apps_txt.' | '.config_item('program_name').' &mdash; '.$get_opt['merchant_key'];

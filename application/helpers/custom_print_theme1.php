@@ -2,25 +2,31 @@
 
 $objCI =& get_instance();
 
+$is_preview_error = false;
 $order_apps = $objCI->input->get_post('order_apps', true);	
 if(!empty($order_apps)){
 	$r = array('success' => true);
-	echo json_encode($r); die();
+	echo json_encode($r); 
+	$is_preview_error = true;
+	//die();
 }
 
 if(empty($data_printer)){
 	echo 'Data Printer Tidak Diketahui!';
-	die();
+	$is_preview_error = true;
+	//die();
 }
 if(empty($print_content)){
 	echo 'Konten Print Kosong!';
-	die();
+	$is_preview_error = true;
+	//die();
 }
 
 //echo '<pre>';
 //print_r($print_content);
 //die();
-		
+
+if($is_preview_error == false){		
 $print_content = str_replace("[tab]","|tab|", $print_content);
 //explode
 $exp_text = explode("\n", $print_content);
@@ -844,3 +850,6 @@ if(!empty($set_tab[$printer_pin])){
 	?>
 </body>
 </html>
+<?php
+}
+?>

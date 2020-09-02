@@ -17,7 +17,8 @@ class MasterCustomer extends MY_Controller {
 		//is_active_text
 		$sortAlias = array(
 			'is_active_text' => 'is_active',
-			'customer_status_text' => 'customer_status'
+			'customer_status_text' => 'customer_status',
+			'limit_kredit_show' => 'limit_kredit'
 		);		
 		
 		// Default Parameter
@@ -47,7 +48,7 @@ class MasterCustomer extends MY_Controller {
 		}
 		
 		if(!empty($searching)){
-			$params['where'][] = "(customer_name LIKE '%".$searching."%' OR customer_code LIKE '%".$searching."%')";
+			$params['where'][] = "(customer_name LIKE '%".$searching."%' OR customer_email LIKE '%".$searching."%' OR customer_code LIKE '%".$searching."%')";
 		}
 		
 		//get data -> data, totalCount
@@ -89,6 +90,7 @@ class MasterCustomer extends MY_Controller {
 				}
 				
 				$s['source_from'] = ucwords($s['source_from']);
+				$s['limit_kredit_show'] = priceFormat($s['limit_kredit'],0);
 				
 				array_push($newData, $s);
 			}
@@ -102,140 +104,7 @@ class MasterCustomer extends MY_Controller {
 	/*SERVICES*/
 	public function save()
 	{
-		$this->table = $this->prefix.'customer';				
-		$session_user = $this->session->userdata('user_username');
-		
-		$customer_name = $this->input->post('customer_name');
-		$customer_code = $this->input->post('customer_code');
-		$customer_contact_person = $this->input->post('customer_contact_person');
-		$customer_address = $this->input->post('customer_address');
-		$customer_phone = $this->input->post('customer_phone');
-		$customer_email = $this->input->post('customer_email');
-		$customer_status = $this->input->post('customer_status');
-		$keterangan_blacklist = $this->input->post('keterangan_blacklist');
-		
-		if(empty($customer_name)){
-			$r = array('success' => false);
-			die(json_encode($r));
-		}		
-		
-		if(empty($customer_status)){
-			$customer_status = 'ok';
-		}		
-		
-		$is_active = $this->input->post('is_active');
-		if(empty($is_active)){
-			$is_active = 0;
-		}
-		
-		//CHECK CODE
-		if(!empty($customer_code)){
-			$id = $this->input->post('id', true);
-			$this->db->from($this->table);
-			$this->db->where("customer_code = '".$customer_code."'");
-			if(!empty($id)){
-				$this->db->where("id != ".$id);
-			}
-			$this->db->where("is_deleted = 0");
-			$get_last = $this->db->get();
-			if($get_last->num_rows() > 0){
-				
-				//available
-				$r = array('success' => false, 'info' => 'Kode sudah digunakan!'); 
-				die(json_encode($r));
-		
-			}else{
-				$get_code = $this->generate_customer_code($customer_code);
-				$customer_code = $get_code['customer_code'];
-				$customer_no = $get_code['customer_no'];
-			}
-		}else{
-			$get_code = $this->generate_customer_code();
-			$customer_code = $get_code['customer_code'];
-			$customer_no = $get_code['customer_no'];
-		}
-		
-		$r = '';
-		if($this->input->post('form_type_masterCustomer', true) == 'add')
-		{
-			$var = array(
-				'fields'	=>	array(
-				    'customer_code'  	=> 	$customer_code,
-				    'customer_name'  	=> 	$customer_name,
-				    'customer_contact_person'  => 	$customer_contact_person,
-				    'customer_address'  => 	$customer_address,
-				    'customer_phone'  	=> 	$customer_phone,
-				    'customer_email'  	=> 	$customer_email,
-				    'customer_status'  	=> 	$customer_status,
-				    'keterangan_blacklist'  	=> 	$keterangan_blacklist,
-				    'source_from'  	=> 	'MERCHANT',
-					'created'		=>	date('Y-m-d H:i:s'),
-					'createdby'		=>	$session_user,
-					'updated'		=>	date('Y-m-d H:i:s'),
-					'updatedby'		=>	$session_user,
-					'is_active'	=>	$is_active
-				),
-				'table'		=>  $this->table
-			);	
-			
-			if(!empty($customer_no)){
-				$var['fields']['customer_no'] = $customer_no;
-			}
-			
-			//SAVE
-			$insert_id = false;
-			$this->lib_trans->begin();
-				$q = $this->m->add($var);
-				$insert_id = $this->m->get_insert_id();
-			$this->lib_trans->commit();			
-			if($q)
-			{  
-				$r = array('success' => true, 'id' => $insert_id); 				
-			}  
-			else
-			{  
-				$r = array('success' => false);
-			}
-      		
-		}else
-		if($this->input->post('form_type_masterCustomer', true) == 'edit'){
-			$var = array('fields'	=>	array(
-				    'customer_code'  	=> 	$customer_code,
-				    'customer_name'  	=> 	$customer_name,
-				    'customer_contact_person'  => 	$customer_contact_person,
-				    'customer_address'  => 	$customer_address,
-				    'customer_phone'  	=> 	$customer_phone,
-				    'customer_email'  	=> 	$customer_email,
-				    'customer_status'  	=> 	$customer_status,
-				    'keterangan_blacklist'  	=> 	$keterangan_blacklist,
-					'updated'		=>	date('Y-m-d H:i:s'),
-					'updatedby'		=>	$session_user,
-					'is_active'		=>	$is_active
-				),
-				'table'			=>  $this->table,
-				'primary_key'	=>  'id'
-			);
-			
-			if(!empty($customer_no)){
-				$var['fields']['customer_no'] = $customer_no;
-			}
-			
-			//UPDATE
-			$id = $this->input->post('id', true);
-			$this->lib_trans->begin();
-				$update = $this->m->save($var, $id);
-			$this->lib_trans->commit();
-			
-			if($update)
-			{  
-				$r = array('success' => true, 'id' => $id);
-			}  
-			else
-			{  
-				$r = array('success' => false);
-			}
-		}
-		
+		$r = $this->m->addUpdate();
 		die(json_encode(($r==null or $r=='')? array('success'=>false) : $r));
 	}
 	
@@ -279,7 +148,7 @@ class MasterCustomer extends MY_Controller {
 
 		$this->db->from($this->table);
 		$this->db->where("is_deleted = 0");
-		$this->db->order_by("customer_name","ASC");
+		$this->db->order_by("customer_code","ASC");
 		$get_customer = $this->db->get();
 		
 		$data_customer = array();
@@ -325,7 +194,7 @@ class MasterCustomer extends MY_Controller {
 		
 		$this->db->from($this->table);
 		$this->db->where("customer_code LIKE '".$prefix_customer_code."%'");
-		$this->db->where("is_deleted = 0");
+		//$this->db->where("is_deleted = 0");
 		$this->db->order_by('customer_no', 'DESC');
 		$this->db->order_by('customer_code', 'DESC');
 		$get_last = $this->db->get();

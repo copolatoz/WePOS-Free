@@ -1068,10 +1068,15 @@ if(!function_exists('printing_process')){
 		
 		if(!empty($custom_print)){
 			include 'custom_print_'.$custom_print.'.php';
-			die();
+			//die();
+			
+			if($custom_print == 'email' AND !empty($return_data)){
+				return $return_data;
+			}
+			
+		}else{
+			include 'default_print.php';
 		}
-		
-		include 'default_print.php';
 		
 	}
 }

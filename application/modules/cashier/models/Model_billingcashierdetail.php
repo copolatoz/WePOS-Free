@@ -9,7 +9,7 @@ class Model_BillingCashierDetail extends DB_Model {
 		$this->prefix = config_item('db_prefix2');
 		$this->table = $this->prefix.'billing_detail';
 		$this->table_product_gramasi = $this->prefix.'product_gramasi';
-		$this->table_product_package = $this->prefix.'product_package';
+		//$this->table_product_package = $this->prefix.'product_package';
 		$this->table_product = $this->prefix.'product';	
 		$this->table_items = $this->prefix.'items';	
 	}
@@ -47,9 +47,15 @@ class Model_BillingCashierDetail extends DB_Model {
 				
 				//BILLING
 				$billing_no = $dt_rowguid['billing_no'];
+				
+				$get_billno_y = substr($billing_no,0,2);
+				$get_billno_m = substr($billing_no,2,2);
+				$get_billno_d = substr($billing_no,4,2);
+				$billing_date = (2000+$get_billno_y)."-".$get_billno_m."-".$get_billno_d;
+					
 				$payment_date = strtotime($dt_rowguid['payment_date']);
 				$payment_date = date("Y-m-d", $payment_date);
-					
+				
 				$update_all_detail_storehouse = array(
 					'storehouse_id'	=> $retail_warehouse
 				);
@@ -63,16 +69,10 @@ class Model_BillingCashierDetail extends DB_Model {
 			
 			//update 2019-02-13
 			$all_product_order = array();
-			$all_product_order_package = array();
-			$all_product_gramasi_package = array();
-			$all_product_gramasi_package_qty = array();
-			$all_product_gramasi_package_varian_item = array();
-			$all_product_package_varian = array();
-			$all_product_package_qty = array();
-			$all_product_package_empty = array();
 			$all_product_gramasi = array();
 			$all_product_varian = array();
 			$all_product_qty = array();
+			$all_detail_product = array();
 			
 			if(!empty($dt_rowguid) AND !empty($billingDetail)){
 				
@@ -82,7 +82,7 @@ class Model_BillingCashierDetail extends DB_Model {
 					
 					$total_qty = $dtRow->order_qty;
 					
-					//update 2019-02-11
+					//update-2003.001
 					//NO-PACKAGE
 					if($dtRow->product_type == 'item' AND !empty($dtRow->order_qty)){
 						if(empty($dtRow->varian_id)){
@@ -101,6 +101,21 @@ class Model_BillingCashierDetail extends DB_Model {
 								'qty'			=> 0
 							);
 						}
+						
+						//billing-detail-product
+						if(empty($all_detail_product[$dtRow->id])){
+							$all_detail_product[$dtRow->id] = array();
+						}
+						$all_detail_product[$dtRow->id][] = array(
+							'product_id'	=> $dtRow->product_id,
+							'from_item'		=> $dtRow->from_item,
+							'id_ref_item'	=> $dtRow->id_ref_item,
+							'unit_id'		=> $dtRow->unit_id,
+							'varian_id'		=> $dtRow->varian_id,
+							'price_hpp'		=> $dtRow->product_price_hpp,
+							'product_price'	=> $dtRow->product_price,
+							'qty'			=> $dtRow->order_qty
+						);
 						
 						$all_product_order[$key_prod_varian]['qty'] += $total_qty;
 						$all_product_order[$key_prod_varian]['price_hpp'] += ($dtRow->product_price_hpp * $total_qty);
@@ -122,74 +137,6 @@ class Model_BillingCashierDetail extends DB_Model {
 						
 					}
 					
-					//PACKAGE
-					if($dtRow->product_type == 'package' AND !empty($dtRow->order_qty)){
-						//get all product package / default product
-						if(empty($dtRow->varian_id)){
-							$dtRow->varian_id = 0;
-						}
-						$key_prod_varian = $dtRow->product_id.'_'.$dtRow->varian_id;
-						if(empty($all_product_order_package[$key_prod_varian])){
-							$all_product_order_package[$key_prod_varian] = array(
-								'product_id'	=> $dtRow->product_id,
-								'from_item'		=> $dtRow->from_item,
-								'id_ref_item'	=> $dtRow->id_ref_item,
-								'unit_id'		=> $dtRow->unit_id,
-								'varian_id'		=> $dtRow->varian_id,
-								'price_hpp'		=> 0,
-								'product_price'	=> 0,
-								'qty'			=> 0
-							);
-						}
-						
-						$all_product_order_package[$key_prod_varian]['qty'] += $total_qty;
-						$all_product_order_package[$key_prod_varian]['price_hpp'] += ($dtRow->product_price_hpp * $total_qty);
-						$all_product_order_package[$key_prod_varian]['product_price'] += 0;
-						
-						if(!in_array($key_prod_varian, $all_product_package_varian)){
-							$all_product_package_varian[] = $key_prod_varian;
-						}
-						
-						if(empty($all_product_package_qty[$key_prod_varian])){
-							$all_product_package_qty[$key_prod_varian] = 0;
-						}
-						
-						$all_product_package_qty[$key_prod_varian] += $total_qty;
-						
-						$this->db->select("a.*");
-						$this->db->from($this->table_product_package." as a");
-						$this->db->where("a.package_id IN (".$dtRow->product_id.") AND a.varian_id = '".$dtRow->varian_id."'");
-						$this->db->where("a.is_deleted = 0");
-						$get_package = $this->db->get();
-						if($get_package->num_rows() > 0){
-							foreach($get_package->result() as $dtRow){
-								
-								//$key_prod_varian_item = $dtRow->product_id.'_'.$dtRow->varian_id_item;
-								if(empty($all_product_gramasi_package[$key_prod_varian])){
-									$all_product_gramasi_package[$key_prod_varian] = array();
-									$all_product_gramasi_package_qty[$key_prod_varian] = array();
-									$all_product_gramasi_package_varian_item[$key_prod_varian] = array();
-								}
-								
-								//get all product gramasi 
-								if(!in_array($dtRow->product_id, $all_product_gramasi_package[$key_prod_varian])){
-									$all_product_gramasi_package[$key_prod_varian][] = $dtRow->product_id;
-									$all_product_gramasi_package_qty[$key_prod_varian][$dtRow->product_id] = 0;
-									$all_product_gramasi_package_varian_item[$key_prod_varian][$dtRow->product_id] = $dtRow->varian_id_item;
-								}
-								
-								$all_product_gramasi_package_qty[$key_prod_varian][$dtRow->product_id] += $dtRow->product_qty;
-								
-							}
-							
-						}else{
-							
-							if(!in_array($dtRow->product_id, $all_product_package_empty)){
-								$all_product_package_empty[] = $dtRow->product_id;
-							}
-						}
-					}
-					
 					//UNIK KODE
 					if(!empty($dt['use_stok_kode_unik'])){
 						if($dt['use_stok_kode_unik'] == 1){
@@ -203,7 +150,7 @@ class Model_BillingCashierDetail extends DB_Model {
 											"item_id" => $dt['id_ref_item'],
 											"kode_unik" => $kode_unik,
 											"ref_out" => $billing_no,
-											"date_out" => $payment_date.' '.date("H:i:s"),
+											"date_out" => $billing_date.' '.date("H:i:s"),
 											"storehouse_id" => $retail_warehouse
 										);
 										
@@ -222,93 +169,7 @@ class Model_BillingCashierDetail extends DB_Model {
 			$all_item_usage = array();
 			
 			//collection stock from gramasi
-			if(!empty($all_product_gramasi_package)){
-						
-				foreach($all_product_gramasi_package as $packageId => $productId){
-					
-					if(!empty($productId)){
-						$all_product_gramasi_package_sql = implode(",", $productId);
-						$this->db->select("a.*, b.unit_id, b.item_hpp, b.sales_price");
-						$this->db->from($this->table_product_gramasi." as a");
-						$this->db->join($this->table_items." as b","b.id = a.item_id","LEFT");
-						$this->db->where("a.product_id IN (".$all_product_gramasi_package_sql.")");
-						$this->db->where('a.is_deleted', 0);
-						$get_gramasi_package = $this->db->get();
-						if($get_gramasi_package->num_rows() > 0){
-							foreach($get_gramasi_package->result_array() as $dtRow){
-								
-								$key_prod_varian = $packageId;
-								
-								if(in_array($key_prod_varian, $all_product_package_varian)){
-									
-									$get_qty_order = 0;
-									if(!empty($all_product_package_qty[$key_prod_varian])){
-										$get_qty_order = $all_product_package_qty[$key_prod_varian];
-									}
-									
-									$get_qty_package = 0;
-									if(!empty($all_product_gramasi_package_qty[$key_prod_varian][$dtRow['product_id']])){
-										$get_qty_package = $all_product_gramasi_package_qty[$key_prod_varian][$dtRow['product_id']];
-									}
-									
-									$get_varian_item = 0;
-									if(!empty($all_product_gramasi_package_varian_item[$key_prod_varian][$dtRow['product_id']])){
-										$get_varian_item = $all_product_gramasi_package_varian_item[$key_prod_varian][$dtRow['product_id']];
-									}
-									
-									if(!empty($get_varian_item)){
-										if($get_varian_item == $dtRow['varian_id']){
-											if(empty($all_item_usage[$dtRow['item_id']])){
-												$all_item_usage[$dtRow['item_id']] = array(
-													'id'	=> $dtRow['item_id'],
-													'unit_id'	=> $dtRow['unit_id'],
-													'item_hpp'	=> 0,
-													'item_price'=> 0,
-													'qty'		=> 0,
-												);
-											}
-											
-											$total_gramasi_qty = $dtRow['item_qty']*$get_qty_package*$get_qty_order;
-											$total_gramasi_item_hpp = $dtRow['item_price']*$total_gramasi_qty;
-											
-											//*gramasi tidak ada hpp -> asumsi = item price
-											$all_item_usage[$dtRow['item_id']]['qty'] += $total_gramasi_qty;
-											$all_item_usage[$dtRow['item_id']]['item_hpp'] += $total_gramasi_item_hpp;
-											$all_item_usage[$dtRow['item_id']]['item_price'] += 0;
-											
-										}
-									}else{
-										if(empty($all_item_usage[$dtRow['item_id']])){
-											$all_item_usage[$dtRow['item_id']] = array(
-												'id'	=> $dtRow['item_id'],
-												'unit_id'	=> $dtRow['unit_id'],
-												'item_hpp'	=> 0,
-												'item_price'=> 0,
-												'qty'		=> 0,
-											);
-										}
-										
-										$total_gramasi_qty = $dtRow['item_qty']*$get_qty_package*$get_qty_order;
-										$total_gramasi_item_hpp = $dtRow['item_price']*$total_gramasi_qty;
-										
-										//*gramasi tidak ada hpp -> asumsi = item price
-										$all_item_usage[$dtRow['item_id']]['qty'] += $total_gramasi_qty;
-										$all_item_usage[$dtRow['item_id']]['item_hpp'] += $total_gramasi_item_hpp;
-										$all_item_usage[$dtRow['item_id']]['item_price'] += 0;
-										
-									}
-									
-								}
-								
-							}
-						}
-					}
-				}
-				
-			}
-			
-			
-			//collection stock from gramasi
+			$all_product_gramasi_data = array();
 			if(!empty($all_product_gramasi)){
 				$all_product_gramasi_sql = implode(",", $all_product_gramasi);
 				$this->db->select("a.*, b.unit_id, b.item_hpp");
@@ -337,19 +198,26 @@ class Model_BillingCashierDetail extends DB_Model {
 								$all_item_usage[$dtRow['item_id']] = array(
 									'id'	=> $dtRow['item_id'],
 									'unit_id'	=> $dtRow['unit_id'],
-									'item_hpp'	=> 0,
+									'item_hpp'	=> $dtRow['item_hpp'],
 									'item_price'=> 0,
 									'qty'		=> 0,
+									'hpp'		=> 0,
 								);
 							}
 							
 							$total_gramasi_qty = $dtRow['item_qty']*$get_qty;
-							$total_gramasi_item_hpp = $dtRow['item_price']*$dtRow['item_qty']*$get_qty;
+							$total_gramasi_item_hpp = $dtRow['item_hpp']*$dtRow['item_qty']*$get_qty;
 							
 							//*gramasi tidak ada hpp -> asumsi = item price
 							$all_item_usage[$dtRow['item_id']]['qty'] += $total_gramasi_qty;
-							$all_item_usage[$dtRow['item_id']]['item_hpp'] += $total_gramasi_item_hpp;
+							$all_item_usage[$dtRow['item_id']]['hpp'] += $total_gramasi_item_hpp;
 							$all_item_usage[$dtRow['item_id']]['item_price'] += 0;
+							
+							if(empty($all_product_gramasi_data[$key_prod_varian])){
+								$all_product_gramasi_data[$key_prod_varian] = array();
+							}
+							
+							$all_product_gramasi_data[$key_prod_varian][] = $dtRow;
 							
 						}
 						
@@ -358,56 +226,60 @@ class Model_BillingCashierDetail extends DB_Model {
 				
 			}
 			
-			//update 2019-02-11
-			//if product from_item, id_ref_item
-			if(!empty($all_product_order)){
-				foreach($all_product_order as $dt){
+			//save to detail gramasi
+			$all_bil_detail_gramasi = array();
+			if(!empty($all_detail_product)){
+				foreach($all_detail_product as $det_id => $dt_product){
 					
-					//FROM ITEM
-					if(!empty($dt['id_ref_item']) AND !in_array($dt['product_id'], $all_product_gramasi)){
-						if(empty($all_item_usage[$dt['id_ref_item']])){
-							$all_item_usage[$dt['id_ref_item']] = array(
-								'id'	=> $dt['id_ref_item'],
-								'unit_id'	=> $dt['unit_id'],
-								'item_hpp'	=> 0,
-								'item_price'=> 0,
-								'qty'		=> 0,
-							);
+					$detail_qty = 0;
+					if(!empty($all_detail_product[$det_id][0])){
+						$detail_qty = $all_detail_product[$det_id][0]['qty'];
+					}
+					
+					if(!empty($dt_product)){
+						foreach($dt_product as $dtP){
+							$key_prod_varian = $dtP['product_id'].'_'.$dtP['varian_id'];
+						
+							if(!empty($all_product_gramasi_data[$key_prod_varian])){
+								
+								foreach($all_product_gramasi_data[$key_prod_varian] as $dtRow){
+									$all_bil_detail_gramasi[] = array(
+										'billing_id'		=> $billing_id,
+										'billing_detail_id' => $det_id,
+										'product_id' 		=> $dtRow['product_id'],
+										'item_id' 			=> $dtRow['item_id'],
+										'item_price' 		=> $dtRow['item_price'],
+										'item_qty' 			=> ($dtRow['item_qty']*$detail_qty),
+										'created'			=> date('Y-m-d H:i:s'),
+										'createdby'			=> $session_user,
+										'updated'			=> date('Y-m-d H:i:s'),
+										'updatedby'			=> $session_user,
+										'is_active' 		=> 1,
+										'is_deleted' 		=> 0,
+										'product_varian_id' => $dtRow['product_varian_id'],
+										'varian_id' 		=> $dtRow['varian_id'],
+										'item_hpp' 			=> ($dtRow['item_hpp']*$dtRow['item_qty']*$detail_qty),
+										'unit_id'			=> $dtRow['unit_id'],
+									);
+								}
+								
+							}
 						}
-						
-						$all_item_usage[$dt['id_ref_item']]['qty'] += $dt['qty'];
-						$all_item_usage[$dt['id_ref_item']]['item_hpp'] += $dt['price_hpp'];
-						$all_item_usage[$dt['id_ref_item']]['item_price'] += 0;
-						
+					}
+				}
+				
+				//delete all gramasi
+				if($update_stok == 'update' OR $update_stok == 'usage' OR $update_stok == 'rollback' OR $update_stok == 'usage_rollback'){
+					$this->db->delete($this->prefix."billing_detail_gramasi", "billing_id = ".$billing_id); 
+				}
+				
+				if($update_stok == 'update' OR $update_stok == 'usage'){
+					if(!empty($all_bil_detail_gramasi)){
+						$this->db->insert_batch($this->prefix.'billing_detail_gramasi', $all_bil_detail_gramasi);
 					}
 				}
 			}
 			
-			if(!empty($all_product_order_package)){
-				foreach($all_product_order_package as $dt){
-					
-					//FROM ITEM
-					if(!empty($dt['id_ref_item']) AND in_array($dt['product_id'], $all_product_package_empty)){
-						
-						if(empty($all_item_usage[$dt['id_ref_item']])){
-							$all_item_usage[$dt['id_ref_item']] = array(
-								'id'	=> $dt['id_ref_item'],
-								'unit_id'	=> $dt['unit_id'],
-								'item_hpp'	=> 0,
-								'item_price'=> 0,
-								'qty'		=> 0,
-							);
-						}
-						
-						
-						
-						$all_item_usage[$dt['id_ref_item']]['qty'] += $dt['qty'];
-						$all_item_usage[$dt['id_ref_item']]['item_hpp'] += $dt['price_hpp'];
-						$all_item_usage[$dt['id_ref_item']]['item_price'] += 0;
-						
-					}
-				}
-			}
 			
 			$dtInsert_stock = array();
 			if(!empty($all_item_usage) AND !empty($retail_warehouse) AND ($update_stok == 'update' OR $update_stok == 'rollback')){
@@ -416,6 +288,7 @@ class Model_BillingCashierDetail extends DB_Model {
 					//DELIVERY
 					$billing_trx_type = 'out';
 					$billing_trx_qty = $dt['qty'];
+					//$billing_trx_hpp = $dt['item_hpp'];
 					
 					if(empty($update_stock_item_unit[$retail_warehouse])){
 						$update_stock_item_unit[$retail_warehouse] = array();
@@ -427,9 +300,10 @@ class Model_BillingCashierDetail extends DB_Model {
 					
 					$dtInsert_stock[] = array(
 						"item_id" => $item_id,
-						"trx_date" => $payment_date,
+						"trx_date" => $billing_date,
 						"trx_type" => $billing_trx_type,
 						"trx_qty" => $billing_trx_qty,
+						//"trx_hpp" => $billing_trx_hpp,
 						"unit_id" => $dt['unit_id'],
 						"storehouse_id" => $retail_warehouse,
 						"trx_nominal" => $dt['item_hpp'],
@@ -445,8 +319,8 @@ class Model_BillingCashierDetail extends DB_Model {
 				
 				if($update_stok == 'rollback'){
 					//DELETE ALL STOCK
-					$this->db->where("trx_ref_data", $billing_no);
-					$this->db->delete($this->prefix."stock"); 
+					//$this->db->where("trx_ref_data", $billing_no);
+					$this->db->delete($this->prefix."stock", "trx_ref_data = '".$billing_no."'"); 
 					
 					$unik_stok = array(
 						'ref_out' => NULL,
@@ -466,7 +340,7 @@ class Model_BillingCashierDetail extends DB_Model {
 				}
 			}
 			
-			return array('update_stock' => $update_stock_item_unit);
+			return array('update_stock' => $update_stock_item_unit, 'all_item_usage' => $all_item_usage);
 		}
 	}
 	

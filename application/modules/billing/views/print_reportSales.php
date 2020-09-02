@@ -16,6 +16,10 @@
 			extract($filter_column);
 		}
 		
+		if(!empty($only_txmark)){
+			$show_tax = true;
+		}
+
 		$payment_data_content = '';
 		if($show_payment == true){
 			if(!empty($payment_data)){
@@ -564,6 +568,7 @@
 						<br/>
 						<br/>
 						Printed: <?php echo date("d-m-Y H:i:s"); ?>
+						<?php if(!empty($only_txmark)){ echo ' / TRX-ON';} ?>
 						<br/>
 					</td>
 					<td colspan="2" class="xcenter">

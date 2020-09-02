@@ -1121,6 +1121,41 @@ class CloseCashierShift extends MY_Controller {
 			//$all_bil_id = array();
 			$all_discount_id = array();
 			$summary_payment = array();
+			$summary_payment[0] = array(
+				'payment_id'	=> 1,
+				'payment_name'	=> 'CASH',
+				'bank_id'	=> 0,
+				'bank_name'	=> 'CASH',
+				'total_billing'	=> 0,
+				'total_billing_show'	=> 0,
+				'discount_total'	=> 0,
+				'discount_total_show'	=> 0,
+				'discount_billing_total'	=> 0,
+				'discount_billing_total_show'	=> 0,
+				'tax_total'	=> 0,
+				'tax_total_show'	=> 0,
+				'service_total'	=> 0,
+				'service_total_show'	=> 0,
+				'sub_total'	=> 0,
+				'sub_total_show'	=> 0,
+				'net_sales'	=> 0,
+				'net_sales_show'	=> 0,
+				'total_pembulatan'	=> 0,
+				'total_pembulatan_show'	=> 0,
+				'total_compliment'	=> 0,
+				'total_compliment_show'	=> 0,
+				'grand_total'	=> 0,
+				'grand_total_show'	=> 0,
+				'total_qty'	=> 0,
+				'total_hpp'	=> 0,
+				'total_hpp_show'	=> 0,
+				'compliment_total'	=> 0,
+				'compliment_total_show'	=> 0,
+				'total_dp'	=> 0,
+				'total_dp_show'	=> 0,
+				'total_profit'	=> 0,
+			);
+			
 			$konversi_pembulatan_billing = array();
 			$balancing_discount_billing = array();
 			

@@ -9,6 +9,4 @@ class Model_BillingCashier extends DB_Model {
 		$this->table = $this->prefix.'billing';
 	}
 	
-	
-
 } 

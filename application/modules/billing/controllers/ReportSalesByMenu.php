@@ -17,6 +17,7 @@ class ReportSalesByMenu extends MY_Controller {
 		$this->table = $this->prefix.'billing';
 		$this->table2 = $this->prefix.'billing_detail';		
 		$this->table_varian = $this->prefix.'varian';		
+		$this->table_floorplan = $this->prefix.'floorplan';		
 		
 		$session_user = $this->session->userdata('user_username');					
 		$user_fullname = $this->session->userdata('user_fullname');					
@@ -81,13 +82,15 @@ class ReportSalesByMenu extends MY_Controller {
 		$show_tax = json_decode($show_tax);
 		$show_service = json_decode($show_service);
 		$format_nominal = json_decode($format_nominal);
+		$breakdown_package = json_decode($breakdown_package);
 		
 		$data_post['filter_column'] = array(
 			'show_payment' => $show_payment,
 			'show_compliment' => $show_compliment,
 			'show_tax' => $show_tax,
 			'show_service' => $show_service,
-			'format_nominal' => $format_nominal
+			'format_nominal' => $format_nominal,
+			'breakdown_package' => $breakdown_package
 		);
 
 		$get_opt = get_option_value(array('report_place_default','diskon_sebelum_pajak_service','cashier_max_pembulatan',
@@ -147,24 +150,27 @@ class ReportSalesByMenu extends MY_Controller {
 			//b.tax_total, b.service_total,
 			//b.include_tax, b.tax_percentage, b.include_service, b.service_percentage, b.is_compliment,
 			$this->db->select("a.*, b.billing_no, b.total_billing, b.grand_total, b.discount_perbilling, b.payment_id, 
-								b.is_half_payment, b.total_cash, b.total_credit, b.total_dp,
+								b.is_half_payment, b.total_cash, b.total_credit, b.total_dp, b.table_id,
 								b.discount_percentage as billing_discount_percentage, b.discount_total as billing_discount_total,
 								b.total_pembulatan as billing_total_pembulatan, b.diskon_sebelum_pajak_service,
 								c.product_code, c.product_name, c.product_group, c.category_id, 
 								d.product_category_code as category_code, d.product_category_name as category_name, 
-								g.nama_shift, CONCAT(h.user_firstname,' ',h.user_lastname) as nama_kasir");
+								g.nama_shift, CONCAT(h.user_firstname,' ',h.user_lastname) as nama_kasir,
+								i.table_tipe, i.floorplan_id, j.floorplan_name");
 			$this->db->from($this->table2." as a");
 			$this->db->join($this->prefix.'billing as b','b.id = a.billing_id','LEFT');
 			$this->db->join($this->prefix.'product as c','c.id = a.product_id','LEFT');
 			$this->db->join($this->prefix.'product_category as d','d.id = c.category_id','LEFT');
 			$this->db->join($this->prefix.'shift as g','g.id = b.shift','LEFT');
 			$this->db->join($this->prefix_apps.'users as h','h.user_username = b.updatedby','LEFT');
+			$this->db->join($this->prefix.'table as i','i.id = b.table_id','LEFT');
+			$this->db->join($this->prefix.'floorplan as j','j.id = i.floorplan_id','LEFT');
 			$this->db->where("(a.order_status != 'cancel' AND a.order_qty > 0)");	
 			$this->db->where("a.is_deleted", 0);
 			$this->db->where("b.is_deleted", 0);
 			$this->db->where("b.billing_status", "paid");			
-			//$this->db->order_by("d.product_category_name", 'ASC');		
-			
+			//$this->db->order_by("d.product_category_name", 'ASC');	
+
 			//update-0120.001
 			$this->db->where($where_shift_billing);
 			//$this->db->where("b.billing_no = '2002040006'");
@@ -228,6 +234,25 @@ class ReportSalesByMenu extends MY_Controller {
 						$data_post['tipe_sales'] = 'Marketing/Sales-Fee';
 						break;
 					
+					case 'sales_only_dinein': 
+						$this->db->where("(i.table_tipe = 'dinein')");
+						$data_post['tipe_sales'] = 'Dine-In';
+						break;
+					
+					case 'sales_only_takeaway': 
+						$this->db->where("(i.table_tipe = 'takeaway')");
+						$data_post['tipe_sales'] = 'Takeaway';
+						break;
+					
+					case 'sales_only_delivery': 
+						$this->db->where("(i.table_tipe = 'delivery')");
+						$data_post['tipe_sales'] = 'Delivery';
+						break;
+					
+					case 'all_menu': 
+						$data_post['tipe_sales'] = 'Semua Menu';
+						break;
+					
 					default: 
 						//nothing	
 						break;
@@ -236,6 +261,7 @@ class ReportSalesByMenu extends MY_Controller {
 				
 			}
 			
+			$breakdown_package_use = false;
 			if(!empty($tipe_laporan)){
 				if($tipe_laporan == 'varian'){
 					$order_qty = 3;
@@ -262,7 +288,51 @@ class ReportSalesByMenu extends MY_Controller {
 						$order_qty = 10;
 					}
 				}
+				if($tipe_laporan == 'floorplan'){
+					$order_qty = 11;
+					if(!empty($useview)){
+						$order_qty = 12;
+					}
+				}
+				
+				if($tipe_laporan == 'menu_qty_perhari'){
+					$order_qty = 13;
+					if(!empty($useview)){
+						$order_qty = 14;
+					}
+				}
+				
+				if($tipe_laporan == 'menu_total_perhari'){
+					$order_qty = 15;
+					if(!empty($useview)){
+						$order_qty = 16;
+					}
+				}
+				
+				if(!empty($breakdown_package)){
+					if($tipe_laporan == 'package'){
+						$this->db->where("(a.ref_order_id IS NULL OR a.ref_order_id = 0)");
+						$breakdown_package_use = false;
+					}else{
+						$this->db->where("a.product_type", "item");
+						$breakdown_package_use = true;
+					}
+				}else{
+					$this->db->where("(a.ref_order_id IS NULL OR a.ref_order_id = 0)");
+					$breakdown_package_use = false;
+				}
 			}
+			
+			if(!empty($groupCat)){
+				if(!empty($breakdown_package)){
+					$this->db->where("a.product_type", "item");
+					$breakdown_package_use = true;
+				}else{
+					$this->db->where("(a.ref_order_id IS NULL OR a.ref_order_id = 0)");
+					$breakdown_package_use = false;
+				}
+			}
+			
 			
 			$get_dt = $this->db->get();
 			if($get_dt->num_rows() > 0){
@@ -282,6 +352,80 @@ class ReportSalesByMenu extends MY_Controller {
 			$all_product_data = array();
 			$newData = array();
 			$no = 1;
+			
+			//load all menu
+			if($tipe_sales == 'all_menu'){
+				$this->db->select("c.*, c.id as product_id, d.product_category_code as category_code, d.product_category_name as category_name");
+				$this->db->from($this->prefix.'product as c');
+				$this->db->join($this->prefix.'product_category as d','d.id = c.category_id','LEFT');
+				$this->db->where("c.is_deleted = 0");
+				$get_all_menu = $this->db->get();
+				if($get_all_menu->num_rows() > 0){
+					foreach($get_all_menu->result_array() as $s){
+						
+						$keyID = $s['product_id'];
+						
+						/*if(!empty($order_qty)){
+							if($order_qty == 3 OR $order_qty == 4){
+								$keyID = $s['product_id']."_".$s['varian_id'];
+							}
+						}*/
+						
+						$all_product_data[$keyID] = array(
+							'product_id'	=> $s['product_id'],
+							'product_name'	=> $s['product_name'],
+							'product_code'	=> $s['product_code'],
+							'product_group'	=> $s['product_group'],
+							'product_type'	=> $s['product_type'],
+							'category_id'	=> $s['category_id'],
+							'category_name'	=> $s['category_name'],
+							'category_code'	=> $s['category_code'],
+							'product_price'		=> $s['product_price'],
+							'product_price_hpp'	=> $s['product_price_hpp'],
+							'varian_id'		=> 0,
+							'varian_name'	=> '',
+							'total_qty'	=> 0,
+							'total_billing'	=> 0,
+							'total_billing_show'	=> 0,
+							'sub_total'	=> 0,
+							'sub_total_show'	=> 0,
+							'net_sales_total'	=> 0,
+							'net_sales_total_show'	=> 0,
+							'grand_total'	=> 0,
+							'grand_total_show'	=> 0,
+							'tax_total'	=> 0,
+							'tax_total_show'	=> 0,
+							'total_pembulatan'	=> 0,
+							'total_pembulatan_show'	=> 0,
+							'service_total'	=> 0,
+							'service_total_show'	=> 0,
+							'discount_total'	=> 0,
+							'discount_total_show'	=> 0,
+							'discount_billing_total'	=> 0,
+							'discount_billing_total_show'	=> 0,
+							'all_discount_total'	=> 0,
+							'all_discount_total_show'	=> 0,
+							'total_hpp'	=> 0,
+							'total_hpp_show'	=> 0,
+							'total_profit'	=> 0,
+							'total_profit_show'	=> 0,
+							'is_takeaway'	=> 0,
+							'is_compliment'	=> 0,
+							'compliment_total'	=> 0,
+							'discount_total_before'	=> 0,
+							'discount_total_before_show'	=> 0,
+							'discount_billing_total_before'	=> 0,
+							'discount_billing_total_before_show'	=> 0,
+							'discount_total_after'	=> 0,
+							'discount_total_after_show'	=> 0,
+							'discount_billing_total_after'	=> 0,
+							'discount_billing_total_after_show'	=> 0,
+							'floorplan_id'	=> 0,
+							'floorplan_name'	=> '',
+						);
+					}
+				}
+			}
 			
 			$billing_detail_data = array();
 			if(!empty($data_post['report_data'])){
@@ -326,22 +470,27 @@ class ReportSalesByMenu extends MY_Controller {
 					$allow_item = true;
 					
 					//PACKAGE & PACKAGE ITEM ----------------------------------------------------
-					if($s['product_type'] == 'package'){
-						//add package
-						$package_billing_product[$s['id']] = $s;
-					}
+					//update-2003.001
+					if($breakdown_package_use == true){
+						$allow_item = true;
+					}else{
+						if($s['product_type'] == 'package'){
+							//add package
+							$package_billing_product[$s['id']] = $s;
+						}
 
-					if($s['package_item'] == 1){
-						$allow_item = false;
+						if($s['package_item'] == 1){
+							$allow_item = false;
 
-						//ref_order_id
-						if(!empty($s['ref_order_id'])){
-							if(!empty($package_billing_product[$s['ref_order_id']])){
-								if(empty($package_billing_product[$s['ref_order_id']]['package_id'])){
-									$package_billing_product[$s['ref_order_id']]['package_id'] = array();
+							//ref_order_id - update-2003.001
+							/*if(!empty($s['ref_order_id'])){
+								if(!empty($package_billing_product[$s['ref_order_id']])){
+									if(empty($package_billing_product[$s['ref_order_id']]['package_id'])){
+										$package_billing_product[$s['ref_order_id']]['package_id'] = array();
+									}
+									$package_billing_product[$s['ref_order_id']]['package_id'][] = $s['id'];
 								}
-								$package_billing_product[$s['ref_order_id']]['package_id'][] = $s['id'];
-							}
+							}*/
 						}
 					}
 
@@ -354,6 +503,13 @@ class ReportSalesByMenu extends MY_Controller {
 						if(!empty($order_qty)){
 							if($order_qty == 3 OR $order_qty == 4){
 								$keyID = $s['product_id']."_".$s['varian_id'];
+							}
+							if($order_qty == 11 OR $order_qty == 12){
+								$keyID = $s['product_id']."_".$s['floorplan_id'];
+							}
+							if($order_qty == 13 OR $order_qty == 14 OR $order_qty == 15 OR $order_qty == 16){
+								$billing_no_x = substr($s['billing_no'],0,6);
+								$keyID = $s['product_id']."_".$billing_no_x;
 							}
 						}
 						
@@ -368,9 +524,9 @@ class ReportSalesByMenu extends MY_Controller {
 								'category_id'	=> $s['category_id'],
 								'category_name'	=> $s['category_name'],
 								'category_code'	=> $s['category_code'],
-								'varian_id'		=> $s['varian_id'],
 								'product_price'		=> $s['product_price'],
 								'product_price_hpp'	=> $s['product_price_hpp'],
+								'varian_id'		=> $s['varian_id'],
 								'varian_name'	=> '',
 								'total_qty'	=> 0,
 								'total_billing'	=> 0,
@@ -408,10 +564,15 @@ class ReportSalesByMenu extends MY_Controller {
 								'discount_total_after_show'	=> 0,
 								'discount_billing_total_after'	=> 0,
 								'discount_billing_total_after_show'	=> 0,
+								'floorplan_id'		=> $s['floorplan_id'],
+								'floorplan_name'	=> '',
 							);
 							
 							$no++;
 							
+							if($order_qty == 13 OR $order_qty == 14 OR $order_qty == 15 OR $order_qty == 16){
+								$all_product_data[$keyID]['billing_nox'] = $billing_no_x;
+							}
 						}
 						
 						$all_product_data[$keyID]['total_qty'] += $s['order_qty'];
@@ -452,6 +613,7 @@ class ReportSalesByMenu extends MY_Controller {
 						if(!empty($include_tax) OR !empty($include_service)){
 							
 							//AUTOFIX-BUGS 1 Jan 2018
+							$s['product_price_real_before'] = $s['product_price_real'];
 							if((!empty($include_tax) AND empty($include_service)) OR (empty($include_tax) AND !empty($include_service))){
 								if($s['product_price'] != ($s['product_price_real']+$s['tax_total']+$s['service_total'])){
 									$s['product_price_real'] = priceFormat(($s['product_price']/($all_percentage/100)), 0, ".", "");
@@ -460,7 +622,10 @@ class ReportSalesByMenu extends MY_Controller {
 							
 							//update-2001.002
 							if(!empty($s['is_compliment'])){
-								//$s['product_price_real'] = $s['product_price'];
+								
+								//update-2003.001
+								$s['product_price_real'] = $s['product_price_real_before'];
+								
 								$s['tax_total'] = 0;
 								$s['service_total'] = 0;
 							}
@@ -1204,6 +1369,7 @@ class ReportSalesByMenu extends MY_Controller {
 			//die();
 
 			$varian_name = array();
+			$floorplan_name = array();
 			if(!empty($order_qty)){
 				if($order_qty == 3 OR $order_qty == 4){
 					$this->db->select("*");
@@ -1215,11 +1381,21 @@ class ReportSalesByMenu extends MY_Controller {
 						}
 					}
 				}
+				if($order_qty == 11 OR $order_qty == 12){
+					$this->db->select("*");
+					$this->db->from($this->table_floorplan);
+					$get_floorplan = $this->db->get();
+					if($get_floorplan->num_rows() > 0){
+						foreach($get_floorplan->result() as $dt){
+							$floorplan_name[$dt->id] = $dt->floorplan_name;
+						}
+					}
+				}
 			}
 			
 			$recap_sort = array();
-			$sort_qty = array();
 			$sort_profit = array();
+			$sort_qty = array();
 			$no = 1;
 			if(!empty($all_product_data)){
 				foreach($all_product_data as $dt){
@@ -1238,6 +1414,22 @@ class ReportSalesByMenu extends MY_Controller {
 								$dt['varian_name'] = $varian_name[$dt['varian_id']];
 							}
 							
+						}
+						if($order_qty == 11 OR $order_qty == 12){
+							$keyID = $dt['product_id']."_".$dt['floorplan_id'];
+							$keyID_sort = $dt['product_id']."_".$dt['floorplan_id'];
+							
+							if(!empty($floorplan_name[$dt['floorplan_id']])){
+								//$dt['product_name'] = $dt['product_name'].' - '.$floorplan_name[$dt['floorplan_id']];
+								$dt['floorplan_name'] = $floorplan_name[$dt['floorplan_id']];
+							}
+							
+						}
+						if($order_qty == 13 OR $order_qty == 14 OR $order_qty == 15 OR $order_qty == 16){
+							if(!empty($dt['billing_nox'])){
+								$keyID = $dt['product_id']."_".$dt['billing_nox'];
+								$keyID_sort = $dt['product_id']."_".$dt['billing_nox'];
+							}
 						}
 					}
 					
@@ -1688,6 +1880,71 @@ class ReportSalesByMenu extends MY_Controller {
 					$newData = $xnewData;*/
 				}
 				
+				//Floorplan 
+				if($order_qty == 11){
+					$tipe_report = 'TIPE/LANTAI';
+					$use_group = 'floorplan_id';
+					/*if($sorting == 'qty'){
+						arsort($sort_qty);
+					}
+					$new_GroupData = array();
+					foreach($sort_qty as $key => $dt){
+						
+						if(!empty($newData[$key])){
+							foreach($newData[$key] as $varID => $dtx){
+								if(empty($new_GroupData[$dtx['varian_id']])){
+									$new_GroupData[$dtx['varian_id']] = array();
+								}
+									
+								$new_GroupData[$dtx['varian_id']][] = $dtx;
+							}
+						}
+							
+					}
+					$newData = $new_GroupData;*/
+					
+				}
+				
+				//VARIAN PROFIT
+				if($order_qty == 12){
+					$tipe_report = 'TIPE/LANTAI PROFIT';
+					$use_group = 'floorplan_id';
+					/*if($sorting == 'qty'){
+						arsort($sort_profit);
+					}
+					$new_GroupData = array();
+					foreach($sort_profit as $key => $dt){
+						
+						if(!empty($newData[$key])){
+							foreach($newData[$key] as $varID => $dtx){
+								if(empty($new_GroupData[$dtx['varian_id']])){
+									$new_GroupData[$dtx['varian_id']] = array();
+								}
+									
+								$new_GroupData[$dtx['varian_id']][] = $dtx;
+							}
+						}
+							
+					}
+					$newData = $new_GroupData;*/
+				}
+				
+				if($order_qty == 13){
+					$tipe_report = 'MENU QTY/HARI';
+				}
+				
+				if($order_qty == 14){
+					$tipe_report = 'MENU QTY/HARI PROFIT';
+				}
+				
+				if($order_qty == 15){
+					$tipe_report = 'MENU TOTAL/HARI';
+				}
+				
+				if($order_qty == 16){
+					$tipe_report = 'MENU TOTAL/HARI PROFIT';
+				}
+				
 			}else{
 				$order_qty = 0;
 				//$xnewData = array();
@@ -1736,7 +1993,8 @@ class ReportSalesByMenu extends MY_Controller {
 								$new_GroupData[$dtx[$use_group]][] = $dtx;
 							}
 						}
-					}else{
+					}else
+					{
 						$dtx = $newData[$key];
 						if(!empty($dtx[$use_group])){
 							if(empty($new_GroupData[$dtx[$use_group]])){
@@ -1772,7 +2030,6 @@ class ReportSalesByMenu extends MY_Controller {
 						}
 					}
 				}
-				
 				$newData = $xnewData;
 			}
 			
@@ -1817,15 +2074,17 @@ class ReportSalesByMenu extends MY_Controller {
 				
 				$newData = $new_GroupData;
 			}*/
-				
+			
 			$data_post['report_data'] = $newData;
 			$data_post['payment_data'] = $dt_payment_name;
 			$data_post['category_name'] = $category_name;
 			$data_post['category_code'] = $category_code;
 			$data_post['varian_name'] = $varian_name;
+			$data_post['floorplan_name'] = $floorplan_name;
 			$data_post['display_discount_type'] = $display_discount_type;
 						
 		}
+		
 		
 		//DO-PRINT
 		if(!empty($do)){
@@ -1878,6 +2137,35 @@ class ReportSalesByMenu extends MY_Controller {
 				}
 			}
 			
+			if($tipe_report == 'TIPE/LANTAI'){
+				$data_post['report_name'] = 'SALES PRODUCT/MENU - TIPE/LANTAI';
+				$useview = 'print_reportSalesByMenuFloorplan';
+				
+				if($do == 'excel'){
+					$useview = 'excel_reportSalesByMenuFloorplan';
+				}
+			}
+			
+			if($tipe_report == 'MENU QTY/HARI'){
+				$data_post['report_name'] = 'SALES PRODUCT/MENU - QTY/PERHARI';
+				$data_post['perhari'] = 'qty';
+				$useview = 'print_reportSalesByMenuHari';
+				
+				if($do == 'excel'){
+					$useview = 'excel_reportSalesByMenuHari';
+				}
+			}
+			
+			if($tipe_report == 'MENU TOTAL/HARI'){
+				$data_post['report_name'] = 'SALES PRODUCT/MENU - TOTAL/PERHARI';
+				$data_post['perhari'] = 'total';
+				$useview = 'print_reportSalesByMenuHari';
+				
+				if($do == 'excel'){
+					$useview = 'excel_reportSalesByMenuHari';
+				}
+			}
+			
 		}else{
 			$useview = 'print_reportProfitSalesByMenu';
 			$data_post['report_name'] = 'SALES PROFIT PRODUCT/MENU';
@@ -1922,6 +2210,36 @@ class ReportSalesByMenu extends MY_Controller {
 				}
 			}
 			
+			if($tipe_report == 'TIPE/LANTAI PROFIT'){
+				$data_post['report_name'] = 'SALES PROFIT PRODUCT/MENU - TIPE/LANTAI';
+				$useview = 'print_reportProfitSalesByMenuFloorplan';
+			
+				if($do == 'excel'){
+					$useview = 'excel_reportProfitSalesByMenuFloorplan';
+				}
+			}
+			
+			if($tipe_report == 'MENU QTY/HARI PROFIT'){
+				$data_post['report_name'] = 'SALES PROFIT PRODUCT/MENU - QTY/PERHARI';
+				$data_post['perhari'] = 'qty';
+				$useview = 'print_reportProfitSalesByMenuHari';
+				
+				if($do == 'excel'){
+					$useview = 'excel_reportProfitSalesByMenuHari';
+				}
+			}
+			
+			
+			if($tipe_report == 'MENU TOTAL/HARI PROFIT'){
+				$data_post['report_name'] = 'SALES PROFIT PRODUCT/MENU - TOTAL/PERHARI';
+				$data_post['perhari'] = 'total';
+				$useview = 'print_reportProfitSalesByMenuHari';
+				
+				if($do == 'excel'){
+					$useview = 'excel_reportProfitSalesByMenuHari';
+				}
+			}
+			
 		}
 		
 
@@ -1958,6 +2276,26 @@ class ReportSalesByMenu extends MY_Controller {
 						$useview = 'excel_reportProfitSalesByMenuCategory';
 					}
 					
+					if($tipe_report == 'MENU QTY/HARI PROFIT'){
+						$data_post['report_name'] = 'SALES PROFIT BY MENU CATEGORY - QTY/PERHARI';
+						$data_post['perhari'] = 'qty';
+						$useview = 'print_reportProfitSalesByMenuCategoryHari';
+						
+						if($do == 'excel'){
+							$useview = 'excel_reportProfitSalesByMenuCategoryHari';
+						}
+					}
+					
+					if($tipe_report == 'MENU TOTAL/HARI PROFIT'){
+						$data_post['report_name'] = 'SALES PROFIT BY MENU CATEGORY - TOTAL/PERHARI';
+						$data_post['perhari'] = 'total';
+						$useview = 'print_reportProfitSalesByMenuCategoryHari';
+						
+						if($do == 'excel'){
+							$useview = 'excel_reportProfitSalesByMenuCategoryHari';
+						}
+					}
+					
 				}else{
 					$useview = 'print_reportSalesByMenuCategory';
 					$data_post['report_name'] = 'SALES BY MENU CATEGORY';
@@ -1965,6 +2303,27 @@ class ReportSalesByMenu extends MY_Controller {
 					if($do == 'excel'){
 						$useview = 'excel_reportSalesByMenuCategory';
 					}
+					
+					if($tipe_report == 'MENU QTY/HARI'){
+						$data_post['report_name'] = 'SALES BY MENU CATEGORY - QTY/PERHARI';
+						$data_post['perhari'] = 'qty';
+						$useview = 'print_reportSalesByMenuCategoryHari';
+						
+						if($do == 'excel'){
+							$useview = 'excel_reportSalesByMenuCategoryHari';
+						}
+					}
+					
+					if($tipe_report == 'MENU TOTAL/HARI'){
+						$data_post['report_name'] = 'SALES BY MENU CATEGORY - TOTAL/PERHARI';
+						$data_post['perhari'] = 'total';
+						$useview = 'print_reportSalesByMenuCategoryHari';
+						
+						if($do == 'excel'){
+							$useview = 'excel_reportSalesByMenuCategoryHari';
+						}
+					}
+					
 				}
 				
 			}

@@ -64,7 +64,7 @@ class DiscountPlanner extends MY_Controller {
 		}
 		if(!empty($show_valid_date)){
 			$today_date = date("Y-m-d H:i:s");
-			$params['where'][] = "(discount_date_type = 'unlimited_date' OR (discount_date_type = 'limited_date' AND ('".$today_date."' BETWEEN date_start AND date_end)))";
+			$params['where'][] = "(is_active = 1 AND (discount_date_type = 'unlimited_date' OR (discount_date_type = 'limited_date' AND ('".$today_date."' BETWEEN date_start AND date_end))))";
 		}
 		
 		//get data -> data, totalCount

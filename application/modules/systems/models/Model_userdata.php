@@ -194,7 +194,8 @@ class Model_UserData extends DB_Model {
 		$this->db->select('a.id, a.module_name, a.module_folder');
 		$this->db->from($prefix.'users_quickstart as b');
 		$this->db->join($prefix.'modules as a','a.id = b.module_id','left');
-		$this->db->where('a.show_on_start_menu = 1 OR a.show_on_context_menu = 1');
+		//$this->db->where('a.show_on_start_menu = 1 OR a.show_on_context_menu = 1');
+		$this->db->where('a.show_on_shorcut_desktop',1);
 		$this->db->where('b.user_id',$user_id);
 		$dt_module = $this->db->get();
 		
@@ -243,7 +244,7 @@ class Model_UserData extends DB_Model {
 			if($get_sel_module->num_rows() > 0){
 				foreach($get_sel_module->result() as $dt){
 					
-					if($dt->show_on_start_menu == 1 OR $dt->show_on_context_menu == 1){
+					if($dt->show_on_shorcut_desktop == 1){
 						if(!in_array($dt->id, $allowed_module_id)){
 							$allowed_module_id[] = $dt->id;
 						}

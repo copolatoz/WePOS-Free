@@ -25,12 +25,43 @@ class MasterProduct extends MY_Controller {
 		//is_active_text
 		$sortAlias = array(
 			'is_active_text' => 'a.is_active',
-			'has_varian_text' => 'a.has_varian'
+			'has_varian_text' => 'a.has_varian',
+			'product_color' => 'a.product_bg_color'
 		);		
+
+		//update-2003.001
+		$get_opt = get_option_value(array('hide_compliment_order','display_kode_menu_dipencarian',
+		'cashier_menu_bg_text_color','cashier_display_menu_image',
+		'include_tax','include_service','diskon_sebelum_pajak_service',
+		'default_tax_percentage','default_service_percentage'));
+  		
+		//get option tax and service
+		$include_tax = 0;
+		if(!empty($get_opt['include_tax'])){
+			$include_tax = $get_opt['include_tax'];
+		}
 		
-		//update-2001.002
-		$get_opt = get_option_value(array('hide_compliment_order','display_kode_menu_dipencarian','cashier_menu_bg_text_color','cashier_display_menu_image'));
-  		$hide_compliment_order = 0;
+		$include_service = 0;
+		if(!empty($get_opt['include_service'])){
+			$include_service = $get_opt['include_service'];
+		}
+		
+		$default_tax_percentage = 0;
+		if(!empty($get_opt['default_tax_percentage'])){
+			$default_tax_percentage = $get_opt['default_tax_percentage'];
+		}		
+		
+		$default_service_percentage = 0;
+		if(!empty($get_opt['default_service_percentage'])){
+			$default_service_percentage = $get_opt['default_service_percentage'];
+		}	
+		
+		$diskon_sebelum_pajak_service = 0;
+		if(!empty($get_opt['diskon_sebelum_pajak_service'])){
+			$diskon_sebelum_pajak_service = $get_opt['diskon_sebelum_pajak_service'];
+		}	
+		
+		$hide_compliment_order = 0;
 		if(!empty($get_opt['hide_compliment_order'])){
 			$hide_compliment_order = 1;
 		}
@@ -48,7 +79,7 @@ class MasterProduct extends MY_Controller {
 		}
 		
 		$sql_fields_select = 'a.*, b.product_category_name, b.product_category_code, b.product_category_bg_color, b.product_category_text_color, c.id as item_id, c.item_code, d.unit_name, d.unit_code';
-		
+
 		// Default Parameter
 		$params = array(
 			'fields'		=> $sql_fields_select,
@@ -114,6 +145,7 @@ class MasterProduct extends MY_Controller {
 		//get data -> data, totalCount
 		$get_data = $this->m->find_all($params);
 		
+
 		//GET PROMO
 		$dt_promo = array();
 		$dt_promo_id = array();
@@ -341,9 +373,40 @@ class MasterProduct extends MY_Controller {
 			}
 		}
 		
+		$allow_use_stok_kode_unik = array();
+		$this->db->select('a.product_id');
+		$this->db->from($this->prefix.'product_gramasi as a');
+		$this->db->join($this->table.' as b',"b.id = a.product_id","LEFT");
+		$this->db->join($this->prefix.'items as c','c.id = a.item_id','LEFT');
+		$this->db->where("b.is_deleted = 0 AND (b.id_ref_item = 0 OR b.from_item = 0) AND c.use_stok_kode_unik = 1");
+		$get_linkitem_detail = $this->db->get();
+		if($get_linkitem_detail->num_rows() > 0){
+			foreach($get_linkitem_detail->result() as $dt){
+				
+				if(!in_array($dt->product_id, $allow_use_stok_kode_unik)){
+					$allow_use_stok_kode_unik[] = $dt->product_id;
+				}
+				
+			}
+		}
+		
   		$newData = array();
 		if(!empty($get_data['data'])){
 			foreach ($get_data['data'] as $s){
+				
+				if(!empty($searching)){
+					if(strtolower($searching) == strtolower($s['item_code'])){
+						$s['item_code'] = $searching;
+						$s['product_code'] = $searching;
+					}
+					if(strtolower($searching) == strtolower($s['product_code'])){
+						$s['item_code'] = $searching;
+						$s['product_code'] = $searching;
+					}
+				}else{
+					$s['product_code'] = strtoupper($s['product_code']);
+					$s['item_code'] = strtoupper($s['item_code']);
+				}
 				
 				if(empty($s['item_code'])){
 					$s['item_code'] = $s['product_code'];
@@ -433,14 +496,100 @@ class MasterProduct extends MY_Controller {
 					$s['promo_percentage'] = $dt_promo[$usePromoID]->discount_percentage;
 					$s['promo_desc'] = $dt_promo[$usePromoID]->discount_name;
 					
-					if($dt_promo[$usePromoID]->discount_percentage == '0.00' AND !empty($dt_promo[$usePromoID]->discount_price)){
-						$s['promo_percentage'] = $dt_promo[$usePromoID]->discount_percentage;
-						$promo_price = $dt_promo[$usePromoID]->discount_price;
+					//update-2003.001
+					$tax_percentage = $default_tax_percentage;
+					$service_percentage = $default_service_percentage;
+					$product_price_real = 0;
+					if(!empty($include_tax) OR !empty($include_service)){
+						if(!empty($include_tax) AND !empty($include_service)){
+							$all_percentage = 100 + $tax_percentage + $service_percentage;
+							$one_percent = $s['product_price'] / $all_percentage;
+							$tax_total = priceFormat($one_percent * $tax_percentage, 0, ".", "");
+							$service_total = priceFormat($one_percent * $service_percentage, 0, ".", "");
+							$product_price_real = $s['product_price'] - ($tax_total + $service_total);
+						
+						}else{
+							if(!empty($include_tax)){
+								$all_percentage = 100 + $tax_percentage;
+								$one_percent = $s['product_price'] / $all_percentage;
+								$tax_total = priceFormat($one_percent * $tax_percentage, 0, ".", "");
+								$product_price_real = $s['product_price'] - ($tax_total);
+							}
+							
+							if(!empty($include_service)){
+								$all_percentage = 100 + $service_percentage;
+								$one_percent = $s['product_price'] / $all_percentage;
+								$service_total = priceFormat($one_percent * $service_percentage, 0, ".", "");
+								$product_price_real = $s['product_price'] - ($service_total);
+							}
+						}
+					}else
+					{
+						$product_price_real = $s['product_price'];
+					}
+				
+					//update-2003.001
+					//adjustment price
+					if($diskon_sebelum_pajak_service == 1){
+						
+						//promo
+						if($dt_promo[$usePromoID]->discount_percentage == '0.00' AND !empty($dt_promo[$usePromoID]->discount_price)){
+							$s['promo_percentage'] = $dt_promo[$usePromoID]->discount_percentage;
+							$promo_price = $dt_promo[$usePromoID]->discount_price;
+						}else{
+							$promo_price = priceFormat($product_price_real * ($s['promo_percentage']/100), 0, ".", "");
+						}
+						
+						$product_price = $product_price_real - $promo_price;
+						$tax_total = priceFormat($product_price * ($tax_percentage /100), 0, ".", "");
+						$service_total = priceFormat($product_price * ($service_percentage/100), 0, ".", "");
+						
+						if(!empty($include_tax) OR !empty($include_service)){
+							if(!empty($include_tax) AND !empty($include_service)){
+								$product_price = $product_price + $tax_total + $service_total;
+							}else{
+								if(!empty($include_tax)){
+									$product_price = $product_price + $tax_total;
+								}
+								if(!empty($include_service)){
+									$product_price = $product_price + $service_total;
+								}
+							}
+						}
+						
 					}else{
-						$promo_price = ($s['product_price'] * ($s['promo_percentage']/100));
+						$product_price = $product_price_real;
+						$tax_total = priceFormat($product_price * ($tax_percentage /100), 0, ".", "");
+						$service_total = priceFormat($product_price * ($service_percentage/100), 0, ".", "");
+						
+						//$product_price = $product_price+$tax_total+$service_total;
+						
+						//promo
+						if($dt_promo[$usePromoID]->discount_percentage == '0.00' AND !empty($dt_promo[$usePromoID]->discount_price)){
+							$s['promo_percentage'] = $dt_promo[$usePromoID]->discount_percentage;
+							$promo_price = $dt_promo[$usePromoID]->discount_price;
+						}else{
+							$product_price_tax_service = $product_price+$tax_total+$service_total;
+							$promo_price = priceFormat($product_price_tax_service * ($s['promo_percentage']/100),0,".","");
+						}
+						
+						if(!empty($include_tax) OR !empty($include_service)){
+							if(!empty($include_tax) AND !empty($include_service)){
+								$product_price = $product_price + $tax_total + $service_total;
+							}else{
+								if(!empty($include_tax)){
+									$product_price = $product_price + $tax_total;
+								}
+								if(!empty($include_service)){
+									$product_price = $product_price + $service_total;
+								}
+							}
+						}
+						
+						$product_price = $product_price - $promo_price;
 					}
 					
-					$product_price = $s['product_price'] - $promo_price;
+					
 					$s['product_price'] = $product_price;
 					$s['promo_price'] = $promo_price;
 					$s['promo_price_show'] = priceFormat($s['promo_price']);
@@ -494,6 +643,17 @@ class MasterProduct extends MY_Controller {
 					$allow_prod = false;
 				}
 				
+				
+				$s['data_stok_kode_unik'] = '';
+				if(in_array($s['id'], $allow_use_stok_kode_unik)){
+					$s['use_stok_kode_unik'] = 1;
+				}
+				
+				if(!empty($selected_product_code) AND $selected_product_code == $s['product_code']){
+					$s['data_stok_kode_unik'] = $selected_imei;
+					$s['use_tax'] = $use_tax_imei;
+				}
+				
 				if($allow_prod == true){
 					array_push($newData, $s);
 				}
@@ -543,7 +703,7 @@ class MasterProduct extends MY_Controller {
 		$show_all_text = $this->input->post('show_all_text');
 		$show_choose_text = $this->input->post('show_choose_text');
 		if(!empty($keywords)){
-			$searching = $keywords;
+			$searching = trim($keywords);
 		}
 		
 		if(!empty($is_dropdown)){
@@ -601,12 +761,12 @@ class MasterProduct extends MY_Controller {
 			$include_service = $get_opt['include_service'];
 		}
 		
-		$default_tax_percentage = 10;
+		$default_tax_percentage = 0;
 		if(!empty($get_opt['default_tax_percentage'])){
 			$default_tax_percentage = $get_opt['default_tax_percentage'];
 		}		
 		
-		$default_service_percentage = 5;
+		$default_service_percentage = 0;
 		if(!empty($get_opt['default_service_percentage'])){
 			$default_service_percentage = $get_opt['default_service_percentage'];
 		}	
@@ -768,6 +928,7 @@ class MasterProduct extends MY_Controller {
 		$this->table2 = $this->prefix.'product_package';				
 		$this->table_gramasi = $this->prefix.'product_gramasi';				
 		$this->table_product_varian = $this->prefix.'product_varian';				
+		$this->table_items = $this->prefix.'items';				
 		$session_user = $this->session->userdata('user_username');
 		
 		$product_code = $this->input->post('product_code');
@@ -791,6 +952,10 @@ class MasterProduct extends MY_Controller {
 		//$use_tax = $this->input->post('use_tax');
 		//$use_service = $this->input->post('use_service');
 		$tipe = $this->input->post('tipe');
+		
+		$from_item = $this->input->post('from_item');
+		$id_ref_item = $this->input->post('id_ref_item');
+		
 		
 		//update-2001.002
 		$product_bg_color = $this->input->post('product_bg_color');
@@ -843,6 +1008,7 @@ class MasterProduct extends MY_Controller {
 			$tiny_size_height = $get_opt['tiny_size_height'];
 		}
 		
+
 		$is_upload_file = false;		
 		if(!empty($_FILES['upload_image']['name'])){
 						
@@ -919,6 +1085,12 @@ class MasterProduct extends MY_Controller {
 				$get_product_code = $this->generate_product_code($tipe);
 				$product_code = $get_product_code['product_code'];
 				$product_no = $get_product_code['product_no'];
+				
+				if($product_type == 'package'){
+					$product_code = 'PKT-'.$product_code;
+				}else{
+					$product_prefix = 'SKU-'.$product_code;
+				}
 				
 			}
 				
@@ -1069,6 +1241,15 @@ class MasterProduct extends MY_Controller {
 				'primary_key'	=>  'id'
 			);
 			
+			if(!empty($from_item) AND !empty($id_ref_item)){
+				
+			}else{
+				$var['fields']['category_id'] = $category_id;
+				$var['fields']['unit_id'] = $unit_id;
+				$var['fields']['product_code'] = $product_code;
+				$var['fields']['product_type'] = $product_type;
+			}
+			
 			if($set_code){
 				$var['fields']['product_code'] = $product_code;
 			}
@@ -1104,6 +1285,15 @@ class MasterProduct extends MY_Controller {
 			
 			if($update)
 			{  
+				if(!empty($from_item) AND !empty($id_ref_item)){
+					$update_data = array(
+						"item_name" => $product_name, 
+						"sales_price" => $product_price, 
+						"sales_use_tax" => $use_tax
+					);
+					$update_items = $this->db->update($this->table_items,$update_data,"id = ".$id_ref_item);
+				}
+				
 				if($old_product_type == 'package' AND $old_product_type != $product_type){	
 					//remove all package item					
 					$delete_data = array("is_deleted" => 0);
@@ -1254,7 +1444,8 @@ class MasterProduct extends MY_Controller {
 			if(!empty($get_exp[0])){
 				$first_format = $get_exp[0];
 				$first_format_length_code = strlen($first_format);
-				$get_product_no = substr($product_code, $first_format_length_code, $product_no_length);
+				//$get_product_no = substr($product_code, $first_format_length_code, $product_no_length);
+				$get_product_no = substr($product_code, $product_no_length*-1);
 				$product_no = (int) $get_product_no;
 			}
 			//update 
@@ -1278,6 +1469,13 @@ class MasterProduct extends MY_Controller {
 		
 		$product_name = $this->input->post('product_name');
 		$product_sku = $this->input->post('product_sku');
+		$product_type = $this->input->post('product_type');
+
+		if($product_type == 'package'){
+			$product_prefix = 'PKT-';
+		}else{
+			$product_prefix = 'SKU-';
+		}
 		
 		$opt_value = array(
 			'product_code_format',
@@ -1303,7 +1501,7 @@ class MasterProduct extends MY_Controller {
 			$first_format = $get_exp[0];
 			
 			$this->db->from($this->table);
-			$this->db->where("product_code LIKE '".$first_format."%' AND product_name = '".$product_name."'");
+			$this->db->where("product_code LIKE '".$product_prefix.$first_format."%' AND product_name = '".$product_name."'");
 			$this->db->where("is_deleted = 0");
 			$this->db->order_by('product_no', 'DESC');
 			$this->db->order_by('product_code', 'DESC');
@@ -1322,7 +1520,7 @@ class MasterProduct extends MY_Controller {
 			}else{
 				
 				$this->db->from($this->table);
-				$this->db->where("product_code LIKE '".$first_format."%'");
+				$this->db->where("product_code LIKE '".$product_prefix.$first_format."%'");
 				$this->db->where("is_deleted = 0");
 				$this->db->order_by('product_no', 'DESC');
 				$this->db->order_by('product_code', 'DESC');

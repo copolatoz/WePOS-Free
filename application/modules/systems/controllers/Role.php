@@ -156,19 +156,26 @@ class Role extends MY_Controller {
 		if(!empty($_POST['id_widget'])){
 			$id_widget = json_decode($_POST['id_widget'], true);
 		}
-
+		
+		$role_name = $this->input->post('role_name', true);
+		$role_description = $this->input->post('role_description', true);
+		$is_active = $this->input->post('is_active');
+		if(empty($is_active)){
+			$is_active = 0;
+		}
+		
 		if($this->input->post('form_type', true) == 'add')
 		{
 			$var = array(
 				'fields'	=>	array(
-				    'role_name'  		=> 	$this->input->post('role_name', true),
-					'role_description'  => 	$this->input->post('role_description', true),
+				    'role_name'  		=> 	$role_name,
+					'role_description'  => 	$role_description,
 					'client_id'		  	=> 	$session_client_id,
 					'created'			=>	date('Y-m-d H:i:s'),
 					'createdby'			=>	$session_user,
 					'updatedby'			=>	date('Y-m-d H:i:s'),
 					'updatedby'			=>	$session_user,
-					'is_active'			=>	$this->input->post('is_active')
+					'is_active'			=>	$is_active
 				),
 				'table'		=>  $this->table,
 				'modules'	=>	$id_module,
@@ -195,12 +202,12 @@ class Role extends MY_Controller {
 		else if($this->input->post('form_type', true) == 'edit')
 		{
 			$var = array('fields'	=>	array(
-				    'role_name'  		=> 	$this->input->post('role_name', true),
-					'role_description'  => 	$this->input->post('role_description', true),
+				    'role_name'  		=> 	$role_name,
+					'role_description'  => 	$role_description,
 					'client_id'		  	=> 	$session_client_id,
 					'updated'			=>	date('Y-m-d H:i:s'),
 					'updatedby'			=>	$session_user,
-					'is_active'			=>	$this->input->post('is_active')
+					'is_active'			=>	$is_active
 				),
 				'table'			=>  $this->table,
 				'primary_key'	=>  'id',

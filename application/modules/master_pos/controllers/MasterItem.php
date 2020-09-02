@@ -122,6 +122,11 @@ class MasterItem extends MY_Controller {
 		if(!empty($get_data['data'])){
 			foreach ($get_data['data'] as $s){
 				
+				$s['item_code'] = strtoupper($s['item_code']);
+				$s['item_sku'] = strtoupper($s['item_sku']);
+				$s['item_category_code'] = strtoupper($s['item_category_code']);
+				$s['item_subcategory_code'] = strtoupper($s['item_subcategory_code']);
+				
 				if(empty($from_distribution)){
 					if(empty($s['item_image'])){
 						$s['item_image'] = 'no-image.jpg';
@@ -280,6 +285,11 @@ class MasterItem extends MY_Controller {
 		if(!empty($get_data['data'])){
 			foreach ($get_data['data'] as $s){
 				
+				$s['item_code'] = strtoupper($s['item_code']);
+				$s['item_sku'] = strtoupper($s['item_sku']);
+				$s['item_category_code'] = strtoupper($s['item_category_code']);
+				$s['item_subcategory_code'] = strtoupper($s['item_subcategory_code']);
+				
 				$item_name = explode(" - ", $s['item_name']);
 				$s['item_name'] = $item_name[0];
 				
@@ -317,7 +327,7 @@ class MasterItem extends MY_Controller {
 			
 		// Default Parameter
 		$params = array(
-			'fields'		=> 'a.id, a.item_code, a.item_sku, a.item_name, a.item_price, a.sales_price, a.item_hpp, a.last_in, a.unit_id, b.unit_name, a.use_stok_kode_unik',
+			'fields'		=> 'a.id, a.item_code, a.item_sku, a.item_name, a.item_price, a.sales_price, a.item_hpp, a.last_in, a.unit_id, b.unit_code, b.unit_name, a.use_stok_kode_unik',
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table.' as a',
 			'join'			=> array(
@@ -456,6 +466,11 @@ class MasterItem extends MY_Controller {
 				$s['item_hpp_show'] = 'Rp '.priceFormat($s['item_hpp']);
 				$s['last_in_show'] = 'Rp '.priceFormat($s['last_in']);
 				$s['item_code_name'] = $s['item_code'].' / '.$s['item_name'];
+				
+				$s['use_stok_kode_unik_text'] = '<font color="red">Tidak</font>';
+				if(!empty($s['use_stok_kode_unik'])){
+					$s['use_stok_kode_unik_text'] = '<font color="green">Ya</font>';
+				}
 				
 				if($use_current_stock == true){
 					if(in_array($s['id'], $all_item_stock)){
@@ -631,7 +646,8 @@ class MasterItem extends MY_Controller {
 				$r = array('success' => false, 'info' => 'Input Persentase &amp; Supplier');
 				die(json_encode($r));
 			}
-			$total_bagi_hasil = numberFormat($sales_price*($persentase_bagi_hasil/100));
+			//$total_bagi_hasil = numberFormat($sales_price*($persentase_bagi_hasil/100));
+			$total_bagi_hasil = ($sales_price*($persentase_bagi_hasil/100));
 			
 		}
 		
@@ -674,7 +690,7 @@ class MasterItem extends MY_Controller {
 				//cek item code
 				$get_item_code = $this->generate_item_code($form_module_masterItem);
 				$item_code = $get_item_code['item_code'];
-				$item_no = $get_product_code['item_no'];
+				$item_no = $get_item_code['item_no'];
 				
 			}
 			
@@ -884,6 +900,7 @@ class MasterItem extends MY_Controller {
 				$dt_cat = $cek_cat->row();
 				
 				$data_category = array(
+					'product_category_code' =>  $dt_cat->item_category_code,
 					'product_category_name' =>  $dt_cat->item_category_name,
 					'product_category_desc'	=>	$dt_cat->item_category_desc,
 					'updated'				=>	date('Y-m-d H:i:s'),
@@ -909,15 +926,34 @@ class MasterItem extends MY_Controller {
 				
 			}
 			
+			$id_items = 0;
+			if($this->input->post('form_type_masterItem', true) == 'edit'){
+				$id_items = $id;
+			}else{
+				$id_items = $insert_id;
+			}
+			
+			$get_item = array();
+			$this->db->from($this->table);
+			$this->db->where("id = '".$id_items."'");
+			$this->db->where("is_deleted = 0");
+			$get_item_dt = $this->db->get();
+			if($get_item_dt->num_rows() > 0){
+				$get_item = $get_item_dt->row();
+				$item_no = $get_item->item_no;
+			}
 			
 			//UPDATE AS MENU SALES
 			//harga, hpp, nama, category
 			$data_product = array(
+				'product_code' 	=>  $item_code,
+				'product_no' 	=>  $item_no,
 				'product_name' 	=>  $item_name,
 				'product_desc'	=>	$item_desc,
 				'product_price'	=>	$sales_price,
 				'normal_price'	=>	$sales_price,
 				'product_hpp'	=>	$item_price,
+				'unit_id'		=>	$unit_id,
 				'category_id'	=>	$category_product_id,
 				'product_type'	=>	'item',
 				'product_group'	=>	'other',
@@ -932,13 +968,6 @@ class MasterItem extends MY_Controller {
 				'persentase_bagi_hasil'	=>	$persentase_bagi_hasil,
 				'total_bagi_hasil'	=>	$total_bagi_hasil
 			);
-			
-			$id_items = 0;
-			if($this->input->post('form_type_masterItem', true) == 'edit'){
-				$id_items = $id;
-			}else{
-				$id_items = $insert_id;
-			}
 			
 			if(!empty($id_items)){
 				
@@ -1783,11 +1812,10 @@ class MasterItem extends MY_Controller {
 		$time_create_update = date('Y-m-d H:i:s');
 		$session_user = $this->session->userdata('user_username');
 		
-		$all_product_id = array();
-			
 		if(!empty($all_id_ref_item)){
 			$all_id_ref_item_sql = implode(",", $all_id_ref_item);
 					
+			$all_product_id = array();
 			$all_product_ref_id = array();
 			$all_item_price = array();
 			

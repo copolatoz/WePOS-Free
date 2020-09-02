@@ -3,12 +3,16 @@
 <head>
     <title><?php echo $title; ?></title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="viewport" content="width=device-width, initial-scale=0.9, minimum-scale=0.9, maximum-scale=1, viewport-fit=cover" />
 	<meta http-equiv="X-UA-Compatible" content="chrome=1">
 	<meta name="description" content="<?php echo $meta_description; ?>">
     <meta name="author" content="<?php echo $meta_author; ?>">
     <meta name="keywords" content="<?php echo $meta_keywords; ?>">
 
-    <link rel="shortcut icon" href="<?php echo BASE_URL; ?>apps.min/helper/login/favicon.ico" />
+    <link rel="shortcut icon" href="<?php echo base_url(); ?>apps.min/helper/login/favicon.ico" />
+	<link rel="apple-touch-icon" sizes="180x180" href="<?php echo base_url(); ?>apps.min/helper/login/icon-180x180.png">
 	
 	<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>assets/js/extjs.4.2/theme/css/ext-all<?php echo $theme; ?>.css" />
 	<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>assets/desktop/css/modules.css" />	
@@ -25,7 +29,18 @@
 	</style>
 </head>
 <body style="background:#83aac0 url(<?php echo BASE_URL; ?>apps.min/helper/login/background.jpg) center top no-repeat;">
-	<div style="width:400px; margin:90px auto 0px;"><img src="<?php echo BASE_URL; ?>apps.min/helper/login/logo.png"></div>
+	<?php
+	if(!empty($view_multiple_store) AND !empty($data_multiple_store)){
+		?>
+		<div style="width:400px; margin:80px auto 0px;"><img src="<?php echo BASE_URL; ?>apps.min/helper/login/logo.png"></div>
+		<?php
+	}else{
+		?>
+		<div style="width:400px; margin:100px auto 0px;"><img src="<?php echo BASE_URL; ?>apps.min/helper/login/logo.png"></div>
+		<?php
+	}
+	?>
+	
 	<script src="<?php echo BASE_URL; ?>assets/js/extjs.4.2/ext-all.js" type="text/javascript" charset="utf-8"></script>	
 	<?php 
 	$from_apps_text = '';
@@ -36,18 +51,49 @@
 	if(!empty($cloud_data)){
 		$login_title = 'LOGIN '.$from_apps_text.'&mdash; MERCHANT';
 	}
-
-	if(!empty($view_multiple_store) AND !empty($data_multiple_store)){
-		
-	}
 	?>
 	
 	<script type="text/javascript" charset="utf-8">
+	var from_apps = '<?php echo $from_apps; ?>';
+	var allowBlankMultiStore = true;
+	var hiddenBlankMultiStore = true;
+	var	heightFormLogin = 180;
+	var data_multiple_store = new Ext.data.Store({
+		    fields: ['val', 'name', 'data'],
+			data : [
+				{"val":"", "name":"Pilih Outlet"},
+				<?php
+				if(!empty($view_multiple_store) AND !empty($data_multiple_store)){
+					foreach($data_multiple_store as $dt){
+						$dt_imp = array(
+							$dt['client_ip'],
+							$dt['mysql_user'],
+							$dt['mysql_pass'],
+							$dt['mysql_port'],
+							$dt['mysql_database'],
+						);
+						echo '{"val":"'.$dt['id'].'", "name":"'.$dt['client_name'].'","data":"'.implode("|", $dt_imp).'"},';
+					}
+				}
+				?>
+			],
+			autoLoad : true
+		});
+		
+	<?php
+	if(!empty($view_multiple_store) AND !empty($data_multiple_store)){
+		?>
+		allowBlankMultiStore = false;
+		hiddenBlankMultiStore = false;
+		heightFormLogin = 215;
+		<?php
+	}
+	?>
 	
 	var win = new Ext.Window ({
 		title: '<?php echo $login_title; ?>',
 		width:300,
-		height:230,
+		height:heightFormLogin,
 		iconCls: 'btn-lock',
 		animCollapse:false,
 		constrainHeader:true,
@@ -86,18 +132,43 @@
 						id : 'type_login',
 						name: 'type_login',
 						value: 'pin'
-					},
-					{
+					},{
 						xtype: 'hidden', 
 						id : 'view_multiple_store',
 						name: 'view_multiple_store',
-						value: 0
+						value: <?php echo $view_multiple_store; ?>
 					},
+					{
+						xtype: 'combobox',
+						name: 'select_store_data',
+						fieldLabel: 'Store/Outlet',
+						id:'select_store_data',
+						height: 30,
+						anchor: '100%',
+						margin: '0 0 5 0',
+						fieldStyle: 'font-weight:bold; font-size:14px; text-align:left; color:#666;',
+						labelStyle: 'font-weight:bold; font-size:14px; text-align:left; color:#666; padding-top:3px;',
+						store: data_multiple_store,
+						queryMode: 'local',
+						hiddenName : "val",
+						displayField: 'name',
+						valueField: 'val',
+						typeAhead: true,
+						minChars: 1,
+						forceSelection: true,
+						allowBlank: allowBlankMultiStore,
+						hidden: hiddenBlankMultiStore,
+						listeners:{
+							select: function(combo, records, eOpts){
+								var form2 = Ext.getCmp('form_loginAplikasi').getForm();	
+								form2.findField('store_data').setValue(records[0].data.data);
+							}
+						}
+					},			
 					{
 						xtype: 'hidden', 
 						id : 'store_data',
-						name: 'store_data',
-						value: ''
+						name: 'store_data'
 					},
 					{
 						xtype: 'hidden', 
@@ -114,7 +185,7 @@
 					  inputType: 'password',
 					  height: 30,
 					  anchor: '100%',
-					  margin: '0 0 15 0',
+					  margin: '0 0 8 0',
 					  fieldStyle: 'font-weight:bold; font-size:14px; text-align:left; color:#666;',
 					  labelStyle: 'font-weight:bold; font-size:14px; text-align:left; color:#666; padding-top:3px;',
 					  allowBlank: false,
@@ -171,7 +242,12 @@
 					fieldStyle: 'text-align:center;',
 				}
 			]
-		}]
+		}],
+		listeners : {
+			show : function (window, eOpts) {
+				window.alignTo(document.body, 't', [-150,220]);
+			},
+		}
 		
 	});
 
@@ -245,7 +321,33 @@
 
 	Ext.onReady(function() {
 		win.show();
+		var getOS = getMobileOperatingSystem();
+		//alert(getOS+' = '+from_apps);
+		if(getOS != 'general' && from_apps == 0){
+			Ext.getCmp('from_apps').setValue(1);
+			//window.location = appUrl+'login-apps';
+		}
 	});
+	
+	function getMobileOperatingSystem() {
+	  var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+		  // Windows Phone must come first because its UA also contains "Android"
+		if (/windows phone/i.test(userAgent)) {
+			return "Windows Phone";
+		}
+
+		if (/android/i.test(userAgent)) {
+			return "Android";
+		}
+
+		// iOS detection from: http://stackoverflow.com/a/9039885/177710
+		if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+			return "iOS";
+		}
+
+		return "general";
+	}
 	</script>		
 	<!-- Start of wepos Zendesk Widget script -->
 	<script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key=070b419f-4ff0-414d-9bee-29eb623a28b5"> </script>

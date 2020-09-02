@@ -254,7 +254,7 @@ class PurchaseOrder extends MY_Controller {
 		
 		// Default Parameter
 		$params = array(
-			'fields'		=> "a.*, b.item_code, b.item_name, b.item_price, b2.item_price as item_price_supplier, b.item_image, c.unit_name, e.ro_number",
+			'fields'		=> "a.*, b.item_code, b.item_name, b.item_price, b2.item_price as item_price_supplier, b.item_image, b.use_stok_kode_unik, c.unit_name, c.unit_code, e.ro_number",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table.' as a',
 			'join'			=> array(
@@ -296,6 +296,7 @@ class PurchaseOrder extends MY_Controller {
 			foreach ($get_data['data'] as $s){
 				$s['po_detail_purchase_show'] = 'Rp '.priceFormat($s['po_detail_purchase']);
 				$s['po_detail_potongan_show'] = 'Rp '.priceFormat($s['po_detail_potongan']);
+				$s['po_detail_tax_show'] = 'Rp '.priceFormat($s['po_detail_tax']);
 				$s['po_detail_total_show'] = 'Rp '.priceFormat($s['po_detail_total']);
 				$s['item_id_real'] = $s['item_id'];
 				
@@ -303,10 +304,21 @@ class PurchaseOrder extends MY_Controller {
 					$s['po_receive_qty'] = 0;
 				}
 				
+				$potongan_per_qty = $s['po_detail_potongan'] / $s['po_detail_qty'];
+				$tax_per_qty = $s['po_detail_tax'] / $s['po_detail_qty'];
+				
 				//$s['po_receive_total'] = ($s['po_receive_qty']*$s['po_detail_purchase']);
-				$s['po_receive_total'] = ($s['po_receive_qty']* ($s['po_detail_purchase'] - $s['po_detail_potongan']));
+				$s['po_receive_total'] = ($s['po_receive_qty']*$s['po_detail_purchase']);
+				$s['po_receive_total'] -= ($s['po_receive_qty']*$potongan_per_qty);
+				$s['po_receive_total'] += ($s['po_receive_qty']*$tax_per_qty);
+				
 				$s['po_receive_total_show'] = 'Rp '.priceFormat($s['po_receive_total']);
 				$s['item_code_name'] = $s['item_code'].' / '.$s['item_name'];
+				
+				$s['use_stok_kode_unik_text'] = '<font color="red">Tidak</font>';
+				if(!empty($s['use_stok_kode_unik'])){
+					$s['use_stok_kode_unik_text'] = '<font color="green">Ya</font>';
+				}
 				
 				array_push($newData, $s);
 			}
@@ -330,7 +342,7 @@ class PurchaseOrder extends MY_Controller {
 		// Default Parameter
 		$params = array(
 			'fields'		=> "a.id, a.ro_id, '' as po_id, a.item_id, a.supplier_item_id, a.unit_id, a.id as ro_detail_id, 'new' as po_detail_status, 
-								a.ro_detail_qty as po_detail_qty, b.item_code, b.item_name, a.item_price, b.item_image, c.unit_name, 
+								a.ro_detail_qty as po_detail_qty, b.item_code, b.item_name, a.item_price, b.item_image, c.unit_name, c.unit_code, 
 								a.item_price as po_detail_purchase, a.item_price*a.ro_detail_qty as po_detail_total,
 								a2.ro_number",
 			'primary_key'	=> 'a.id',
@@ -398,6 +410,8 @@ class PurchaseOrder extends MY_Controller {
 		$this->table_receiving = $this->prefix.'receiving';
 		$this->table_receiving_detail = $this->prefix.'receive_detail';
 		$session_client_id = $this->session->userdata('client_id');
+		$session_user = $this->session->userdata('user_username');
+		$id_user = $this->session->userdata('id_user');
 				
 		if(empty($session_client_id)){
 			die(json_encode(array('data' => array(), 'totalCount' => 0)));
@@ -409,10 +423,11 @@ class PurchaseOrder extends MY_Controller {
 								a.id AS po_detail_id, a.po_detail_qty, a.po_receive_qty,
 								a.po_detail_purchase AS receive_det_purchase, 
 								a.po_detail_potongan AS receive_det_potongan, 
+								a.po_detail_tax AS receive_det_tax, 
 								a.po_detail_status AS receive_detail_status, 
 								a.po_detail_total AS  receive_det_total, 
 								b.item_code, b.item_name, b.item_price, b.item_image, b.use_stok_kode_unik,
-								c.unit_name, 
+								c.unit_name, c.unit_code,
 								b2.item_price as item_price_supplier, 
 								DATE_FORMAT(NOW(),'%d-%m-%Y') AS receive_det_date, '' as current_stock",
 			'primary_key'	=> 'a.id',
@@ -475,14 +490,21 @@ class PurchaseOrder extends MY_Controller {
 			foreach ($get_data['data'] as $s){
 				
 				//generate id
-				$s['id'] = 'new_'.($mktime_now+$no);
+				$s['id'] = 'new-'.$id_user.'-'.$s['id'].'-'.($mktime_now+$no);
+				$s['temp_id'] = 'new-'.$id_user.'-'.$s['po_id'].'-'.$s['po_detail_id'];
 				$s['receive_det_purchase'] = $s['receive_det_purchase'];
 				$s['receive_det_purchase_show'] = 'Rp '.priceFormat($s['receive_det_purchase']);
 				$s['po_detail_qty_sisa'] = $s['po_detail_qty'] - $s['po_receive_qty'];
 				$s['receive_det_qty'] = $s['po_detail_qty_sisa'];
 				$s['item_id_real'] = $s['item_id'];
 				$s['item_code_name'] = $s['item_code'].' / '.$s['item_name'];
-				$s['data_stok_kode_unik'] = '';
+				
+				$s['use_stok_kode_unik_text'] = '<font color="red">Tidak</font>';
+				if(!empty($s['use_stok_kode_unik'])){
+					$s['use_stok_kode_unik_text'] = '<font color="green">Ya</font>';
+					$s['receive_det_qty'] = 0;
+				}
+				
 				array_push($newData, $s);
 				
 				$no++;
@@ -499,7 +521,7 @@ class PurchaseOrder extends MY_Controller {
 	{
 		$this->table = $this->prefix.'po';	
 		$this->table2 = $this->prefix.'po_detail';			
-		$this->table_receiving = $this->prefix.'receiving';			
+		$this->table_receiving = $this->prefix.'receiving';		
 		
 		$this->prefix_acc = config_item('db_prefix3');
 		$this->table_account_payable = $this->prefix_acc.'account_payable';			
@@ -616,12 +638,15 @@ class PurchaseOrder extends MY_Controller {
 					"item_image" => $dt['item_image'],
 					"unit_id" => $dt['unit_id'],
 					"unit_name" => $dt['unit_name'],
+					"unit_code" => $dt['unit_code'],
 					"po_detail_qty" => $dt['po_detail_qty'],
 					"po_detail_status" => $dt['po_detail_status'],
 					"po_detail_purchase" => $dt['po_detail_purchase'],
 					"po_detail_purchase_show" => $dt['po_detail_purchase_show'],
 					"po_detail_potongan" => $dt['po_detail_potongan'],
+					"po_detail_tax" => $dt['po_detail_tax'],
 					"po_detail_potongan_show" => $dt['po_detail_potongan_show'],
+					"po_detail_tax_show" => $dt['po_detail_tax_show'],
 					"po_detail_total" => $dt['po_detail_total'],
 					"po_detail_total_show" => $dt['po_detail_total_show'],
 					"ro_id" => 0,
@@ -951,7 +976,7 @@ class PurchaseOrder extends MY_Controller {
         }
 		die(json_encode($r));
 	}
-	
+		
 	public function validation_used_PO($sql_Id = ''){
 		
 		$get_opt = get_option_value(array("as_server_backup"));
@@ -1077,7 +1102,6 @@ class PurchaseOrder extends MY_Controller {
 	
 	public function deleteDetail()
 	{
-		
 		$get_opt = get_option_value(array("as_server_backup"));
 		cek_server_backup($get_opt);
 		

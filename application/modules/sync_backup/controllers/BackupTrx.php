@@ -3980,4 +3980,371 @@ class BackupTrx extends MY_Controller {
 		
       	die(json_encode($return_data));
 	}
+	
+	//update-2007.001
+	public function billingTrx()
+	{
+		/*helper billing*/
+		$this->load->helper('billing');
+		$this->load->model('cashier/model_billingcashierprint', 'mprint');
+		
+		$get_current_date = get_current_date(false);
+		if(!empty($get_current_date['datenowstr'])){
+			$current_date = $get_current_date['datenowstr'];
+		}else{
+			die();
+		}
+		
+		$current_billno_prefix = date("ymd", $current_date);
+		$tanggal = date("Y-m-d", $current_date);
+		
+		$return_data = array('success' => true);
+		$return_data['prefix'] = $current_billno_prefix;
+		
+		//generate Rekap
+		$params_settlement = array(
+			'show_txmark'	=> 0,
+			'return_data'	=> 1,
+		);
+		$data_settlement = $this->mprint->printSettlement($params_settlement);
+		//$data_settlement['discount_total'] = $data_settlement['total_discount_item']+$data_settlement['total_discount_billing'];
+		$data_rekap = array(
+			'tanggal' => $tanggal
+		);
+	
+		if(!empty($data_settlement['summary_data'])){
+			$dtx = $data_settlement['summary_data'];
+			$dtx['discount_total'] = $dtx['total_discount_item']+$dtx['total_discount_billing'];
+			$data_rekap['qty_billing'] = $dtx['total_of_billing'];
+			$data_rekap['total_guest'] = $dtx['total_of_guest'];
+			$data_rekap['total_billing'] = $dtx['total_billing'];
+			$data_rekap['tax_total'] = $dtx['tax_total'];
+			$data_rekap['service_total'] = $dtx['service_total'];
+			$data_rekap['discount_total'] = $dtx['discount_total'];
+			$data_rekap['discount_billing'] = $dtx['total_discount_billing'];
+			$data_rekap['discount_item'] = $dtx['total_discount_item'];
+			$data_rekap['total_dp'] = $dtx['total_dp'];
+			$data_rekap['grand_total'] = $dtx['grand_total'];
+			$data_rekap['sub_total'] = $dtx['net_sales'];
+			$data_rekap['total_pembulatan'] = $dtx['total_pembulatan'];
+			$data_rekap['total_compliment'] = $dtx['compliment_total'];
+		}
+		
+		if(!empty($data_settlement['report_data'])){
+			$total_hpp = 0;
+			$total_profit = 0;
+			$qty_halfpayment = 0;
+			$qty_payment = array();
+			$qty_payment = array(1 => 0, 2 => 0, 3 => 0, 4 => 0);
+			$total_payment = array(1 => 0, 2 => 0, 3 => 0, 4 => 0);
+			
+			foreach($data_settlement['report_data'] as $dt){
+				$total_hpp += $dt['total_hpp'];
+				$total_profit += ($dt['total_billing']-$dt['total_hpp']);
+				
+				if($dt['payment_id'] == 0){
+					$dt['payment_id'] = 1;
+				}
+				
+				if(empty($qty_payment[$dt['payment_id']])){
+					$qty_payment[$dt['payment_id']] = 0;
+				}
+				$qty_payment[$dt['payment_id']]++;
+				
+				if(empty($total_payment[$dt['payment_id']])){
+					$total_payment[$dt['payment_id']] = 0;
+				}
+				
+				if($dt['is_half_payment'] == 1){
+					$qty_halfpayment++;
+					
+					$total_payment[$dt['payment_id']] += $dt['total_credit'];
+					$total_payment[1] += $dt['total_cash'];
+					
+				}else{
+					if($dt['payment_id'] == 1){
+						$total_payment[$dt['payment_id']] += $dt['total_cash'];
+					}else{
+						$total_payment[$dt['payment_id']] += $dt['total_credit'];
+					}
+				}
+				
+				
+			}
+			$data_rekap['total_hpp'] = $total_hpp;
+			$data_rekap['total_profit'] = $total_profit;
+			$data_rekap['qty_halfpayment'] = $qty_halfpayment;
+			$data_rekap['qty_payment_1'] = $qty_payment[1];
+			$data_rekap['total_payment_1'] = $total_payment[1];
+			$data_rekap['qty_payment_2'] = $qty_payment[2];
+			$data_rekap['total_payment_2'] = $total_payment[2];
+			$data_rekap['qty_payment_3'] = $qty_payment[3];
+			$data_rekap['total_payment_3'] = $total_payment[3];
+			$data_rekap['qty_payment_4'] = $qty_payment[4];
+			$data_rekap['total_payment_4'] = $total_payment[4];
+		}
+		
+		$salesTrxData = array();
+		$salesTrxID = 0;
+		$this->db->select('*');
+		$this->db->from($this->prefix_pos.'closing_sales');
+		$this->db->where("tanggal = '".$tanggal."'");
+		$get_salestrx = $this->db->get();
+		$total_salestrx = $get_salestrx->num_rows();
+		if($total_salestrx > 0){
+			$salesTrxData = $get_salestrx->row_array();
+			$salesTrxID = $salesTrxData['id'];
+			$this->db->update($this->prefix_pos.'closing_sales', $data_rekap, 'id = '.$salesTrxID);
+		}else{
+			$this->db->insert($this->prefix_pos.'closing_sales', $data_rekap);
+		}
+		
+		//$return_data['data_rekap'] = $data_rekap;
+		
+      	die(json_encode($return_data));
+	}
+	
+	public function nonTrx()
+	{
+		/*helper billing*/
+		$this->load->helper('billing');
+		$this->load->model('cashier/model_billingcashierprint', 'mprint');
+		
+		$get_current_date = get_current_date(false);
+		if(!empty($get_current_date['datenowstr'])){
+			$current_date = $get_current_date['datenowstr'];
+		}else{
+			die();
+		}
+		
+		//update-2008.001
+		$get_post_date = $this->input->post_get("date");
+		if(!empty($get_post_date)){
+			//d-m-Y
+			$current_date_mk = $get_post_date;
+			$current_date = strtotime($current_date_mk);
+		}
+		
+		$current_billno_prefix = date("ymd", $current_date);
+		$tanggal = date("Y-m-d", $current_date);
+		
+		$return_data = array('success' => true);
+		$return_data['prefix'] = $current_billno_prefix;
+		
+		//cek last billing nonTrx
+		$billingTrxData = array();
+		$this->db->select('id');
+		$this->db->from($this->prefix_pos.'billing_trx');
+		$this->db->where("billing_no LIKE '".$current_billno_prefix."%'");
+		$get_billingtrx = $this->db->get();
+		$total_billingtrx = $get_billingtrx->num_rows();
+		if($total_billingtrx > 0){
+			$billingTrxData = $get_billingtrx->result_array();
+		}
+		$return_data['total_billingtrx'] = $total_billingtrx;
+
+		//collect billing from lastID-nonTrx
+		$billingData = array();
+		$billingDataID = array();
+		$billingDataNoTaxID = array();
+		$this->db->select('*');
+		$this->db->from($this->prefix_pos.'billing');
+		$this->db->where("billing_no LIKE '".$current_billno_prefix."%'");
+		$this->db->where('txmark',1);
+		$this->db->where('billing_status','paid');
+		$this->db->order_by('id','ASC');
+		$get_billing = $this->db->get();
+		$total_billing = $get_billing->num_rows();
+		if($total_billing > 0){
+			foreach($get_billing->result_array() as $dt){
+				
+				//update-2008.001
+				$dt['billing_no'] = $dt['txmark_no'];
+				
+				$billingData[$dt['id']] = $dt;
+				if(!in_array($dt['id'], $billingDataID)){
+					$billingDataID[] = $dt['id'];
+				}
+			}
+		}
+		$return_data['total_billing'] = $total_billing;
+		
+		//collect detail nonTrx
+		$billingDetailData = array();
+		$this->db->select('a.*');
+		$this->db->from($this->prefix_pos.'billing_detail as a');
+		$this->db->join($this->prefix_pos.'billing as b',"b.id = a.billing_id","LEFT");
+		$this->db->where("b.billing_no LIKE '".$current_billno_prefix."%'");
+		$this->db->where('b.txmark',1);
+		$this->db->where('b.billing_status','paid');
+		
+		$billingDataID_sql = -1;
+		if(!empty($billingDataID)){
+			$billingDataID_sql = implode(",", $billingDataID);
+		}
+		
+		$this->db->where("a.billing_id IN (".$billingDataID_sql.")");
+		
+		$this->db->order_by('a.id','ASC');
+		
+		$get_billing_detail = $this->db->get();
+		$total_billing_detail = $get_billing_detail->num_rows();
+		if($total_billing_detail > 0){
+			foreach($get_billing_detail->result_array() as $dt){
+				//update-2008.001
+				if((($dt['is_takeaway'] == 1 OR $dt['is_compliment'] == 1) AND $dt['tax_total'] == 0) OR ($dt['tax_total'] == 0 AND $dt['order_status'] == 'done')){
+					if(!in_array($dt['billing_id'], $billingDataNoTaxID)){
+						$billingDataNoTaxID[] = $dt['billing_id'];
+					}
+				}else{
+					$billingDetailData[] = $dt;
+				}
+			}
+		}
+		$return_data['total_billing_detail'] = $total_billing_detail;
+		
+		//remove all nontrx
+		$billingTrxId = array();
+		if(!empty($billingTrxData)){
+			foreach($billingTrxData as $dt){
+				if(!in_array($dt['id'], $billingTrxId)){
+					$billingTrxId[] = $dt['id'];
+				}
+			}
+		}
+		if(!empty($billingTrxId)){
+			$billingTrxId_sql = implode(",",$billingTrxId);
+			$this->db->delete($this->prefix_pos.'billing_trx',"id IN (".$billingTrxId_sql.")");
+			$this->db->delete($this->prefix_pos.'billing_detail_trx',"billing_id IN (".$billingTrxId_sql.")");
+		}
+		
+		//update-2008.001
+		if(!empty($billingDataNoTaxID)){
+			foreach($billingDataNoTaxID as $xID){
+				if(!empty($billingData[$xID])){
+					unset($billingData[$xID]);
+				}
+			}
+		}
+		
+		//save batch
+		if(!empty($billingData)){
+			
+			//update-2008.001
+			$billingData_new = $billingData;
+			$billingData = array();
+			foreach($billingData_new as $dt){
+				$billingData[] =  $dt;
+			}
+			
+			$this->db->insert_batch($this->prefix_pos.'billing_trx',$billingData);
+			
+			if(!empty($billingDetailData)){
+				$this->db->insert_batch($this->prefix_pos.'billing_detail_trx',$billingDetailData);
+			}
+		}
+		
+		//generate Rekap
+		$params_settlement = array(
+			'show_txmark'	=> 1,
+			'return_data'	=> 1,
+		);
+		$data_settlement = $this->mprint->printSettlement($params_settlement);
+		//$data_settlement['discount_total'] = $data_settlement['total_discount_item']+$data_settlement['total_discount_billing'];
+		$data_rekap = array(
+			'tanggal' => $tanggal
+		);
+	
+		if(!empty($data_settlement['summary_data'])){
+			$dtx = $data_settlement['summary_data'];
+			$dtx['discount_total'] = $dtx['total_discount_item']+$dtx['total_discount_billing'];
+			$data_rekap['qty_billing'] = $dtx['total_of_billing'];
+			$data_rekap['total_guest'] = $dtx['total_of_guest'];
+			$data_rekap['total_billing'] = $dtx['total_billing'];
+			$data_rekap['tax_total'] = $dtx['tax_total'];
+			$data_rekap['service_total'] = $dtx['service_total'];
+			$data_rekap['discount_total'] = $dtx['discount_total'];
+			$data_rekap['discount_billing'] = $dtx['total_discount_billing'];
+			$data_rekap['discount_item'] = $dtx['total_discount_item'];
+			$data_rekap['total_dp'] = $dtx['total_dp'];
+			$data_rekap['grand_total'] = $dtx['grand_total'];
+			$data_rekap['sub_total'] = $dtx['net_sales'];
+			$data_rekap['total_pembulatan'] = $dtx['total_pembulatan'];
+			$data_rekap['total_compliment'] = $dtx['compliment_total'];
+		}
+		
+		if(!empty($data_settlement['report_data'])){
+			$total_hpp = 0;
+			$total_profit = 0;
+			$qty_halfpayment = 0;
+			$qty_payment = array();
+			$qty_payment = array(1 => 0, 2 => 0, 3 => 0, 4 => 0);
+			$total_payment = array(1 => 0, 2 => 0, 3 => 0, 4 => 0);
+			
+			foreach($data_settlement['report_data'] as $dt){
+				$total_hpp += $dt['total_hpp'];
+				$total_profit += ($dt['total_billing']-$dt['total_hpp']);
+				
+				if($dt['payment_id'] == 0){
+					$dt['payment_id'] = 1;
+				}
+				
+				if(empty($qty_payment[$dt['payment_id']])){
+					$qty_payment[$dt['payment_id']] = 0;
+				}
+				$qty_payment[$dt['payment_id']]++;
+				
+				if(empty($total_payment[$dt['payment_id']])){
+					$total_payment[$dt['payment_id']] = 0;
+				}
+				
+				if($dt['is_half_payment'] == 1){
+					$qty_halfpayment++;
+					
+					$total_payment[$dt['payment_id']] += $dt['total_credit'];
+					$total_payment[1] += $dt['total_cash'];
+					
+				}else{
+					if($dt['payment_id'] == 1){
+						$total_payment[$dt['payment_id']] += $dt['total_cash'];
+					}else{
+						$total_payment[$dt['payment_id']] += $dt['total_credit'];
+					}
+				}
+				
+				
+			}
+			$data_rekap['total_hpp'] = $total_hpp;
+			$data_rekap['total_profit'] = $total_profit;
+			$data_rekap['qty_halfpayment'] = $qty_halfpayment;
+			$data_rekap['qty_payment_1'] = $qty_payment[1];
+			$data_rekap['total_payment_1'] = $total_payment[1];
+			$data_rekap['qty_payment_2'] = $qty_payment[2];
+			$data_rekap['total_payment_2'] = $total_payment[2];
+			$data_rekap['qty_payment_3'] = $qty_payment[3];
+			$data_rekap['total_payment_3'] = $total_payment[3];
+			$data_rekap['qty_payment_4'] = $qty_payment[4];
+			$data_rekap['total_payment_4'] = $total_payment[4];
+		}
+		
+		$salesTrxData = array();
+		$salesTrxID = 0;
+		$this->db->select('*');
+		$this->db->from($this->prefix_pos.'closing_sales_trx');
+		$this->db->where("tanggal = '".$tanggal."'");
+		$get_salestrx = $this->db->get();
+		$total_salestrx = $get_salestrx->num_rows();
+		if($total_salestrx > 0){
+			$salesTrxData = $get_salestrx->row_array();
+			$salesTrxID = $salesTrxData['id'];
+			$this->db->update($this->prefix_pos.'closing_sales_trx', $data_rekap, 'id = '.$salesTrxID);
+		}else{
+			$this->db->insert($this->prefix_pos.'closing_sales_trx', $data_rekap);
+		}
+		
+		//$return_data['data_rekap'] = $data_rekap;
+		
+      	die(json_encode($return_data));
+	}
+	
 }

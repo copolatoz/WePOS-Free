@@ -18,6 +18,10 @@ if(!empty($filter_column)){
 	extract($filter_column);
 }
 
+if(!empty($only_txmark)){
+	$show_tax = true;
+}
+
 $payment_data_content = '';
 if($show_payment == true){
 	if(!empty($payment_data)){
@@ -521,7 +525,9 @@ if($show_dp == false){
 			<td colspan="<?php echo $total_cols; ?>">&nbsp;</td>
 		</tr>
 		<tr>
-			<td colspan="3">Printed: <?php echo date("d-m-Y H:i:s");?></td>
+			<td colspan="3">Printed: <?php echo date("d-m-Y H:i:s");?>
+			<?php if(!empty($only_txmark)){ echo ' / TRX-ON';} ?>
+			</td>
 			<td colspan="<?php echo $total_cols-7; ?>" class="xcenter">&nbsp;</td>
 			<td colspan="2" class="xcenter">
 					Prepared by:<br/><br/><br/><br/>

@@ -46,7 +46,7 @@ class ProductVarian extends MY_Controller {
 		$show_choose_text = $this->input->post('show_choose_text');
 		
 		if(!empty($is_dropdown)){
-			$params['order'] = array('a.id' => 'ASC');
+			$params['order'] = array('a.product_price' => 'ASC');
 		}
 		if(!empty($searching)){
 			$params['where'][] = "(b.varian_name LIKE '%".$searching."%')";
@@ -60,13 +60,13 @@ class ProductVarian extends MY_Controller {
 		  		
   		$newData = array();
 		
-		
+
 		if(!empty($show_all_text)){
 			$dt = array('id' => '-1', 'varian_name' => 'Pilih Semua');
 			array_push($newData, $dt);
 		}else{
 			if(!empty($show_choose_text)){
-				$dt = array('id' => '', 'varian_name' => 'Pilih Ukuran/Porsi');
+				$dt = array('id' => '', 'varian_name' => 'Pilih Ukuran/Varian');
 				array_push($newData, $dt);
 			}
 		}
@@ -297,6 +297,10 @@ class ProductVarian extends MY_Controller {
 				
 				$s['tax_price'] = $tax_total;
 				$s['service_price'] = $service_total;
+				
+				if(!empty($show_choose_text)){
+					$s['varian_name'] = $s['varian_name'].' / '.priceFormat($product_price);
+				}
 				
 				array_push($newData, $s);
 			}

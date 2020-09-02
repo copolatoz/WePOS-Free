@@ -106,6 +106,10 @@ class MasterSupplier extends MY_Controller {
 				}
 				$s['source_from'] = ucwords($s['source_from']);
 				
+				if(empty($s['supplier_termin'])){
+					$s['supplier_termin'] = 0;
+				}
+				
 				array_push($newData, $s);
 			}
 		}
@@ -125,11 +129,13 @@ class MasterSupplier extends MY_Controller {
 		$supplier_code = $this->input->post('supplier_code');
 		$supplier_contact_person = $this->input->post('supplier_contact_person');
 		$supplier_address = $this->input->post('supplier_address');
+		$supplier_city = $this->input->post('supplier_city');
 		$supplier_phone = $this->input->post('supplier_phone');
 		$supplier_fax = $this->input->post('supplier_fax');
 		$supplier_email = $this->input->post('supplier_email');
 		$supplier_status = $this->input->post('supplier_status');
 		$keterangan_blacklist = $this->input->post('keterangan_blacklist');
+		$supplier_termin = $this->input->post('supplier_termin');
 		
 		if(empty($supplier_name)){
 			$r = array('success' => false);
@@ -181,11 +187,13 @@ class MasterSupplier extends MY_Controller {
 				    'supplier_name'  	=> 	$supplier_name,
 				    'supplier_contact_person'  	=> 	$supplier_contact_person,
 				    'supplier_address'  => 	$supplier_address,
+				    'supplier_city'  => 	$supplier_city,
 				    'supplier_phone'  	=> 	$supplier_phone,
 				    'supplier_fax'  	=> 	$supplier_fax,
 				    'supplier_email'  	=> 	$supplier_email,
 				    'supplier_status'  	=> 	$supplier_status,
 				    'keterangan_blacklist'  	=> 	$keterangan_blacklist,
+				    'supplier_termin'  	=> 	$supplier_termin,
 					'source_from'  	=> 	'MERCHANT',
 				    'created'		=>	date('Y-m-d H:i:s'),
 					'createdby'		=>	$session_user,
@@ -222,11 +230,13 @@ class MasterSupplier extends MY_Controller {
 				    'supplier_name'  	=> 	$supplier_name,
 				    'supplier_contact_person'  	=> 	$supplier_contact_person,
 				    'supplier_address'  => 	$supplier_address,
+				    'supplier_city'  => 	$supplier_city,
 				    'supplier_phone'  	=> 	$supplier_phone,
 				    'supplier_fax'  	=> 	$supplier_fax,
 				    'supplier_email'  	=> 	$supplier_email,
 				    'supplier_status'  	=> 	$supplier_status,
 				    'keterangan_blacklist'  	=> 	$keterangan_blacklist,
+				    'supplier_termin'  	=> 	$supplier_termin,
 					'updated'		=>	date('Y-m-d H:i:s'),
 					'updatedby'		=>	$session_user,
 					'is_active'		=>	$is_active
@@ -299,7 +309,7 @@ class MasterSupplier extends MY_Controller {
 
 		$this->db->from($this->table);
 		$this->db->where("is_deleted = 0");
-		$this->db->order_by("supplier_name","ASC");
+		$this->db->order_by("supplier_code","ASC");
 		$get_supplier = $this->db->get();
 		
 		$data_supplier = array();

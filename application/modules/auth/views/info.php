@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/html">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="target-densitydpi=device-dpi, width=device-width, initial-scale=1.0, maximum-scale=1">
-    <meta name="description" content="<?php echo $meta_description; ?>">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="viewport" content="width=device-width, initial-scale=0.9, minimum-scale=0.9, maximum-scale=1, viewport-fit=cover" />
+	<meta name="description" content="<?php echo $meta_description; ?>">
     <meta name="author" content="<?php echo $meta_author; ?>">
     <meta name="keywords" content="<?php echo $meta_keywords; ?>">
 
-    <link rel="shortcut icon" href="<?php echo BASE_URL; ?>apps.min/helper/images/favicon.ico" />
+    <link rel="shortcut icon" href="<?php echo base_url(); ?>apps.min/helper/login/favicon.ico" />
+	<link rel="apple-touch-icon" sizes="180x180" href="<?php echo base_url(); ?>apps.min/helper/login/icon-180x180.png">
 	<link href="<?php echo BASE_URL; ?>assets/themes/frontend/css/modern.css" rel="stylesheet">
     <link href="<?php echo BASE_URL; ?>assets/themes/frontend/css/site-red.css" rel="stylesheet" type="text/css">
 	

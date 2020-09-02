@@ -116,7 +116,7 @@ class StockOpname extends MY_Controller {
 		
 		// Default Parameter
 		$params = array(
-			'fields'		=> "a.*, b.item_name, b.item_code, b.item_price, b.item_hpp, b.item_image, c.unit_name, a2.sto_number",
+			'fields'		=> "a.*, b.item_name, b.item_code, b.item_price, b.item_hpp, b.item_image, b.use_stok_kode_unik, c.unit_code, c.unit_name, a2.sto_number",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table.' as a',
 			'join'			=> array(
@@ -143,8 +143,9 @@ class StockOpname extends MY_Controller {
 		if(!empty($searching)){
 			$params['where'][] = "(b.item_name LIKE '%".$searching."%')";
 		}
+		
 		if(!empty($sto_id)){
-			$params['where'] = array('a.sto_id' => $sto_id);
+			$params['where'][] = array('a.sto_id' => $sto_id);
 		}
 		
 		//get data -> data, totalCount
@@ -170,6 +171,64 @@ class StockOpname extends MY_Controller {
 				
 				$s['item_code_name'] = $s['item_code'].' / '.$s['item_name'];
 				
+				$s['use_stok_kode_unik_text'] = '<font color="red">Tidak</font>';
+				if(!empty($s['use_stok_kode_unik'])){
+					$s['use_stok_kode_unik_text'] = '<font color="green">Ya</font>';
+				}
+				
+				unset($s['data_stok_kode_unik']);
+				array_push($newData, $s);
+				
+			}
+		}
+		
+		$get_data['data'] = $newData;
+		
+      	die(json_encode($get_data));
+	}
+	
+	public function gridDataDetailKodeUnik()
+	{
+		
+		$this->table = $this->prefix.'stock_opname_kode_unik';
+		$session_client_id = $this->session->userdata('client_id');
+				
+		if(empty($session_client_id)){
+			die(json_encode(array('data' => array(), 'totalCount' => 0)));
+		}
+		
+		// Default Parameter
+		$params = array(
+			'fields'		=> "a.*",
+			'primary_key'	=> 'a.id',
+			'table'			=> $this->table.' as a',
+			'join'			=> array(),
+			'order'			=> array('a.id' => 'DESC'),
+			'single'		=> false,
+			'output'		=> 'array' //array, object, json
+		);
+		
+		//DROPDOWN & SEARCHING
+		$is_dropdown = $this->input->post('is_dropdown');
+		$searching = $this->input->post('query');
+		$stod_id = $this->input->post('stod_id');
+		
+		//if(!empty($is_dropdown)){
+			$params['order'] = array('a.id' => 'DESC');
+		//}
+		if(!empty($searching)){
+			$params['where'][] = "(a.kode_unik LIKE '%".$searching."%')";
+		}
+		
+		$params['where'][] = array('a.stod_id' => $stod_id);
+		
+		//get data -> data, totalCount
+		$get_data = $this->m2->find_all($params);
+		  		
+		$newData = array();
+		
+		if(!empty($get_data['data'])){
+			foreach ($get_data['data'] as $s){
 				array_push($newData, $s);
 			}
 		}
@@ -184,6 +243,9 @@ class StockOpname extends MY_Controller {
 	{
 		$this->table = $this->prefix.'stock_opname';	
 		$this->table2 = $this->prefix.'stock_opname_detail';			
+		$this->table3 = $this->prefix.'stock_opname_kode_unik';			
+		$this->table_item_kode_unik = $this->prefix.'item_kode_unik';			
+		$this->table_item_kode_unik_log = $this->prefix.'item_kode_unik_log';			
 		$this->table_storehouse = $this->prefix.'storehouse';			
 		$this->table_items = $this->prefix.'items';			
 		$session_user = $this->session->userdata('user_username');
@@ -224,11 +286,9 @@ class StockOpname extends MY_Controller {
 		//stoDetail
 		$all_add_item = array();		
 		$stoDetail = $this->input->post('stoDetail');
-		if(!empty($stoDetail)){
-			$stoDetail = json_decode($stoDetail, true);		
-			
+		$stoDetail = json_decode($stoDetail, true);	
+		if(!empty($stoDetail)){	
 			foreach($stoDetail as $dt){
-						
 				if(!in_array($dt['item_id'], $all_add_item)){
 					$all_add_item[] = $dt['item_id'];
 				}	
@@ -510,20 +570,63 @@ class StockOpname extends MY_Controller {
 		}
 		
 		$r['sto_id'] = $sto_id;
-		$r['sto_number'] = $get_sto_number;
-		$r['update_stock'] = $update_stock;
-		$r['rollback_stock'] = $rollback_stock;
+		$r['use_stok_kode_unik'] = 0;
+		$r['totalDetail'] = 0;
 		
 		if($update_stock == true){
-							
+			
+			$all_item_stock = array();			
+			$get_curr_recap_item = array();			
 			$dtInsert_stock = array();
 				
+			$all_stod_id = array();
+			$all_stod_data = array();
 			//Insert Kartu Stock
 			$this->db->from($this->table2);
 			$this->db->where("sto_id", $sto_id);
 			$get_detail = $this->db->get();
 			if($get_detail->num_rows() > 0){
 				foreach($get_detail->result_array() as $dt){
+					if(!in_array($dt['item_id'], $get_curr_recap_item)){
+						$get_curr_recap_item[] = $dt['item_id'];
+					}
+				}
+			}
+			
+			//stock_rekap
+			//update-2003.001
+			if(!empty($get_curr_recap_item)){
+				$get_curr_recap_item_sql = implode(",", $get_curr_recap_item);
+				$this->db->select("a.*");
+				$this->db->from($this->prefix."stock_rekap as a");
+				if(!empty($storehouse_id)){
+					$this->db->where('a.storehouse_id', $storehouse_id);	
+				}
+				$this->db->where("(a.trx_date = '".$sto_date."')");
+				$this->db->where("a.item_id IN (".$get_curr_recap_item_sql.")");
+				$getItemStock = $this->db->get();
+				if($getItemStock->num_rows() > 0){
+					foreach($getItemStock->result_array() as $dtR){
+						if(empty($all_item_stock[$dtR['item_id']])){
+							$all_item_stock[$dtR['item_id']] = $dtR;
+						}
+					}
+				}
+			}
+			
+			$update_jumlah_awal = array();
+			if($get_detail->num_rows() > 0){
+				foreach($get_detail->result_array() as $dt){
+					
+					if(!empty($all_item_stock[$dt['item_id']])){
+						if($dt['jumlah_awal'] != $all_item_stock[$dt['item_id']]['total_stock']){
+							$dt['jumlah_awal'] = $all_item_stock[$dt['item_id']]['total_stock'];
+							$update_jumlah_awal[] = array(
+								'id'	=> $dt['id'],
+								'jumlah_awal'	=> $dt['jumlah_awal']
+							);
+						}
+					}
 					
 					$is_selisih = $dt['jumlah_fisik'] - $dt['jumlah_awal'];
 					
@@ -553,12 +656,25 @@ class StockOpname extends MY_Controller {
 						"is_sto" => "1"
 					);
 					
+					//if(!in_array($dt['id'], $all_stod_id) AND !empty($dt['use_stok_kode_unik'])){
+					if(!empty($dt['use_stok_kode_unik'])){
+						//$all_stod_id[] = $dt['id'];
+						//$all_stod_data[$dt['id']] = $dt;
+						if($r['use_stok_kode_unik'] == 0){
+							$r['use_stok_kode_unik'] = 1;
+						}
+						
+						$r['totalDetail']++;
+					}
+					
 				}
 				
 				if(!empty($dtInsert_stock)){
 					$this->db->insert_batch($this->prefix.'stock', $dtInsert_stock);
 				}
 				
+				//$r['totalDetail'] = $get_detail->num_rows();
+		
 			}
 			
 			//UPDATE ALL DETAUL STATUS
@@ -566,6 +682,10 @@ class StockOpname extends MY_Controller {
 				'stod_status'	=> 1
 			);
 			$this->db->update($this->table2, $update_det, "sto_id = '".$sto_id."'");
+			
+			if(!empty($update_jumlah_awal)){
+				$this->db->update_batch($this->table2, $update_jumlah_awal, "id");
+			}
 						
 		}
 		
@@ -580,6 +700,69 @@ class StockOpname extends MY_Controller {
 				'stod_status'	=> 0
 			);
 			$this->db->update($this->table2, $update_det, "sto_id = '".$sto_id."'");
+			
+			
+			///UPDATE STOREHOUSE DEFAULT
+			$default_storehouse_kode_unik = array();
+			$default_kode_unik = array();
+			$this->db->from($this->table_item_kode_unik_log);
+			$this->db->where("ref_out", $get_sto_number);
+			$get_default_log = $this->db->get();
+			if($get_default_log->num_rows() > 0){
+				foreach($get_default_log->result_array() as $dt){
+					$default_storehouse_kode_unik[$dt['kode_unik_id']] = $dt['storehouse_id'];
+					if(!in_array($dt['kode_unik_id'], $default_kode_unik)){
+						$default_kode_unik[] = $dt['kode_unik_id'];
+					}
+				}
+			}
+			
+			//DELETE ALL STOCK - KODE UNIK
+			$this->db->where("(ref_in = '".$get_sto_number."' OR ref_out = '".$get_sto_number."')");
+			$this->db->delete($this->table_item_kode_unik_log); 
+			
+			//DELETE ALL STOCK - KODE UNIK
+			$this->db->where("(ref_in = '".$get_sto_number."' OR ref_out = '".$get_sto_number."')");
+			$this->db->delete($this->table_item_kode_unik); 
+			
+			if(!empty($default_kode_unik)){
+				$default_kode_unik_sql = implode(",", $default_kode_unik);
+				
+				$available_log = array();
+				$available_log_storehouse = array();
+				$this->db->from($this->table_item_kode_unik_log);
+				$this->db->where("kode_unik_id IN (".$default_kode_unik_sql.")");
+				$this->db->order_by("id","DESC");
+				$get_default_log = $this->db->get();
+				if($get_default_log->num_rows() > 0){
+					foreach($get_default_log->result_array() as $dt){
+						if(!in_array($dt['kode_unik_id'], $available_log)){
+							$available_log[] = $dt['kode_unik_id'];
+							$available_log_storehouse[$dt['kode_unik_id']] = $dt['storehouse_id'];
+						}
+					}
+				}
+			}
+			
+			if(!empty($default_storehouse_kode_unik)){
+				
+				$default_storehouse_kode_unik_BU = $default_storehouse_kode_unik;
+				$default_storehouse_kode_unik = array();
+				foreach($default_storehouse_kode_unik_BU as $kodeid => $storeid){
+					if(!empty($available_log_storehouse[$kodeid])){
+						$storeid = $available_log_storehouse[$kodeid];
+					}
+					
+					$default_storehouse_kode_unik[] = array(
+						'id'			=> $kodeid,
+						'storehouse_id'	=> $storeid,
+					);
+					
+				}
+				
+				$this->db->update_batch($this->table_item_kode_unik, $default_storehouse_kode_unik,"id");
+			}
+			
 		}
 		
 		if($update_stock == true OR $rollback_stock == true){
@@ -603,6 +786,173 @@ class StockOpname extends MY_Controller {
 			$updateStock = $this->stock->update_stock_rekap($post_params);
 		}
 		
+		$r['sto_id'] = $sto_id;
+		$r['sto_number'] = $get_sto_number;
+		$r['update_stock'] = $update_stock;
+		$r['rollback_stock'] = $rollback_stock;
+		
+		die(json_encode(($r==null or $r=='')? array('success'=>false) : $r));
+	}
+	
+	public function updateStockKodeUnik(){
+		
+		$this->table = $this->prefix.'stock_opname';	
+		$this->table2 = $this->prefix.'stock_opname_detail';			
+		$this->table3 = $this->prefix.'stock_opname_kode_unik';			
+		$this->table_item_kode_unik = $this->prefix.'item_kode_unik';			
+		$this->table_item_kode_unik_log = $this->prefix.'item_kode_unik_log';			
+		$this->table_storehouse = $this->prefix.'storehouse';			
+		$this->table_items = $this->prefix.'items';		
+		
+		$sto_id = $this->input->post('sto_id');
+		$sto_no = $this->input->post('sto_no');
+		$perdata = $this->input->post('perdata');
+		$limit = $this->input->post('limit');
+		$from_limit = $limit-1;
+		if($from_limit < 0){
+			$from_limit = 0;
+		}
+		
+		$storehouse_id = 0;
+		$get_sto_number = '';
+		$sto_date = '';
+		
+		$this->db->from($this->table);
+		$this->db->where("id", $sto_id);
+		$get_sto = $this->db->get();
+		if($get_sto->num_rows() > 0){
+			$dt_sto = $get_sto->row();
+			$get_sto_number = $dt_sto->sto_number;
+			$storehouse_id = $dt_sto->storehouse_id;
+			$sto_date = $dt_sto->sto_date;
+		}else{
+			$r = array('success' => false, 'info'	=> 'Data Stock Opname Tidak Ada!');
+			die(json_encode($r));
+		}
+		
+		$all_stod_id = array();
+		$all_stod_data = array();
+		
+		$this->db->from($this->table2);
+		$this->db->where("sto_id = ".$sto_id." AND use_stok_kode_unik = 1");
+		$this->db->limit(($limit*$perdata), ($from_limit*$perdata));
+		$get_detail = $this->db->get();
+		if($get_detail->num_rows() > 0){
+			
+			foreach($get_detail->result_array() as $dt){
+				if(!in_array($dt['id'], $all_stod_id) AND !empty($dt['use_stok_kode_unik'])){
+					$all_stod_id[] = $dt['id'];
+					$all_stod_data[$dt['id']] = $dt;
+				}
+			}
+			
+		}else{
+			$r = array('success' => false, 'info'	=> 'Detail Stock Opname Tidak Ada!');
+			die(json_encode($r));
+		}
+		
+		//update stok sn/imei
+		if(!empty($all_stod_id)){
+			
+			$r = array('success' => true, 'info'	=> count($all_stod_id).' Data Stock SN/IMEI sudah disimpan!');
+			
+			$stod_id_sql = implode(",", $all_stod_id);
+		
+			//cari di stok sn/imei
+			$all_new_sn_imei = array();
+			$dtInsert_stock_kode_unik = array();
+			$dtUpdate_stock_kode_unik = array();
+			$dtUpdate_stock_kode_unik_log = array();
+			
+			$this->db->select('a.*, b.id as kode_id, b.storehouse_id');
+			$this->db->from($this->table3.' as a');
+			$this->db->join($this->table_item_kode_unik.' as b',"b.kode_unik = a.kode_unik","LEFT");
+			$this->db->where("stod_id IN (".$stod_id_sql.")");
+			$get_detail_kode_unik = $this->db->get();
+			if($get_detail_kode_unik->num_rows() > 0){
+				foreach($get_detail_kode_unik->result_array() as $dt){
+					if(empty($dt['kode_id'])){
+						
+						if(!in_array($dt['kode_unik'], $all_new_sn_imei)){
+							$all_new_sn_imei[] = $dt['kode_unik'];
+						
+							$get_det_data = $all_stod_data[$dt['stod_id']];
+							if(empty($get_det_data)){
+								$get_det_data['item_id'] = 0;
+								$get_det_data['item_hpp'] = 0;
+							}
+							
+							$dtInsert_stock_kode_unik[] = array(
+								'item_id'	=> $get_det_data['item_id'],
+								"kode_unik" => $dt['kode_unik'],
+								"ref_in" => $get_sto_number,
+								"date_in" => $sto_date.' '.date("H:i:s"),
+								"storehouse_id" => $storehouse_id,
+								"item_hpp" => $get_det_data['current_hpp_avg'],
+								"varian_name" => $dt['varian_name'],
+								"varian_group" => $dt['varian_name']
+							);
+							
+							$dtInsert_stock_kode_unik_log[] = array(
+								'kode_unik_id'	=> $get_det_data['item_id'],
+								"ref_in" => $get_sto_number,
+								"date_in" => $sto_date.' '.date("H:i:s"),
+								"storehouse_id" => $storehouse_id,
+								"item_hpp" => $get_det_data['current_hpp_avg'],
+								"varian_name" => $dt['varian_name'],
+								"varian_group" => $dt['varian_name']
+							);
+						}
+						
+					}else{
+						
+						if($dt['storehouse_id'] != $storehouse_id){
+							
+							$dtUpdate_stock_kode_unik[] = array(
+								"id" => $dt['kode_id'],
+								"storehouse_id" => $storehouse_id
+							);
+							
+							$dtInsert_stock_kode_unik_log[] = array(
+								'kode_unik_id'	=> $get_det_data['item_id'],
+								"ref_out" => $get_sto_number,
+								"date_out" => $sto_date.' '.date("H:i:s"),
+								"storehouse_id" => $dt['storehouse_id'],
+								"item_hpp" => $get_det_data['current_hpp_avg'],
+								"varian_name" => $dt['varian_name'],
+								"varian_group" => $dt['varian_name']
+							);
+							
+							$dtInsert_stock_kode_unik_log[] = array(
+								'kode_unik_id'	=> $get_det_data['item_id'],
+								"ref_in" => $get_sto_number,
+								"date_in" => $sto_date.' '.date("H:i:s"),
+								"storehouse_id" => $storehouse_id,
+								"item_hpp" => $get_det_data['current_hpp_avg'],
+								"varian_name" => $dt['varian_name'],
+								"varian_group" => $dt['varian_name']
+							);
+							
+						}
+						
+					}
+				}
+			}
+			
+			if(!empty($dtInsert_stock_kode_unik)){
+				$this->db->insert_batch($this->table_item_kode_unik, $dtInsert_stock_kode_unik);
+			}
+			
+			if(!empty($dtUpdate_stock_kode_unik)){
+				$this->db->update_batch($this->table_item_kode_unik, $dtUpdate_stock_kode_unik,"id");
+			}
+			
+			if(!empty($dtInsert_stock_kode_unik_log)){
+				$this->db->insert_batch($this->table_item_kode_unik_log, $dtInsert_stock_kode_unik_log);
+			}
+			
+		}
+			
 		die(json_encode(($r==null or $r=='')? array('success'=>false) : $r));
 	}
 	
@@ -645,14 +995,14 @@ class StockOpname extends MY_Controller {
 			$storehouse_id = $dt_sto->storehouse_id;
 			$sto_date = $dt_sto->sto_date;
 			if($dt_sto->sto_status == 'done'){
-				$r = array('success' => false, 'info' => 'Cannot Update Item, Status STock Opname is been done!'); 
+				$r = array('success' => false, 'info' => 'Tidak Bisa Update, Status STock Opname sudah selesai!'); 
 				die(json_encode($r));	
 			}
 				
 		}
 		
 		if(empty($sto_id) OR empty($item_id) OR empty($session_client_id)){
-			$r = array('success' => false, 'info' => 'Save Detail Failed!');
+			$r = array('success' => false, 'info' => 'Simpan Detail Gagal!');
 			die(json_encode($r));
 		}		
 		
@@ -726,7 +1076,144 @@ class StockOpname extends MY_Controller {
 		}  
 		else
 		{  
-			$r = array('success' => false, 'info' => 'Save Detail Failed!');
+			$r = array('success' => false, 'info' => 'Simpan Detail Gagal!');
+		}
+		
+		die(json_encode(($r==null or $r=='')? array('success'=>false) : $r));
+	}
+	
+	public function saveKodeUnik(){
+		
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
+		
+		$this->table = $this->prefix.'stock_opname';				
+		$this->table2 = $this->prefix.'stock_opname_detail';				
+		$this->table3 = $this->prefix.'stock_opname_kode_unik';				
+		$this->table_items = $this->prefix.'items';				
+		$this->table_varian_item = $this->prefix.'varian_item';				
+		
+		$session_user = $this->session->userdata('user_username');
+		$session_client_id = $this->session->userdata('client_id');
+		
+		$sto_id = $this->input->post('sto_id');
+		$stod_id = $this->input->post('stod_id');
+		$kode_unik_id = $this->input->post('kode_unik_id');
+		$varian_name = $this->input->post('varian_name');
+		$kode_unik = $this->input->post('kode_unik');
+		
+		$varian_name = strtoupper($varian_name);
+		
+		//check data main if been validated
+		$storehouse_id = 0;
+		$sto_date = 0;
+		$dt_sto = array();
+		$this->db->from($this->table);
+		$this->db->where("id = ".$sto_id);
+		//$this->db->where("sto_status IN ('done')");
+		$get_dt = $this->db->get();
+		if($get_dt->num_rows() > 0){
+			
+			$dt_sto = $get_dt->row();
+			$storehouse_id = $dt_sto->storehouse_id;
+			$sto_date = $dt_sto->sto_date;
+			if($dt_sto->sto_status == 'done'){
+				$r = array('success' => false, 'info' => 'Tidak Bisa Update, Status Stock Opname sudah selesai!'); 
+				die(json_encode($r));	
+			}
+				
+		}
+		
+		if(empty($sto_id) OR empty($stod_id) OR empty($kode_unik) OR empty($session_client_id)){
+			$r = array('success' => false, 'info' => 'Simpan Kode Unik Gagal!');
+			die(json_encode($r));
+		}		
+		
+		
+		if(!empty($stod_id) AND !empty($kode_unik)){
+			
+			$available_info = '';
+			$this->db->select("a.*");
+			$this->db->from($this->table3." as a");
+			$this->db->where("a.stod_id = ".$stod_id);
+			$this->db->where("a.kode_unik = '".$kode_unik."'");
+		
+			$get_same_kode_unik= $this->db->get();
+			if($get_same_kode_unik->num_rows() > 0){
+				foreach($get_same_kode_unik->result() as $dtI){
+					
+					if(empty($available_info)){
+						$available_info = 'SN/IMEI: '.$kode_unik.' sudah ada!';
+					}
+					
+				}
+			}
+			
+			if(!empty($available_info)){
+				$r = array('success' => false, 'info'	=> $available_info);
+				die(json_encode($r));
+			}
+			
+		}
+		
+		$var = array('fields'	=>	array(
+				'stod_id'		=> 	$stod_id,
+				'kode_unik' 	=> 	$kode_unik,
+				'varian_name' 	=> 	$varian_name,
+			),
+			'table'			=>  $this->table3,
+			'primary_key'	=>  'id'
+		);
+		
+		//ADD/Edit		
+		$this->lib_trans->begin();
+			if(!empty($kode_unik_id)){
+				$edit = $this->m2->save($var, $kode_unik_id);
+			}else{
+				$edit = $this->m2->save($var);
+				$kode_unik_id = $this->m->get_insert_id();
+			}
+		$this->lib_trans->commit();
+		
+		if($edit)
+		{  
+				
+			$r = array('success' => true, 'kode_unik_id' => $kode_unik_id);
+			
+			$new_varian = false;
+			$update_varian_id = 0;
+			
+			$this->db->select("a.*");
+			$this->db->from($this->table_varian_item." as a");
+			$this->db->where("a.varian_name = '".$varian_name."'");
+			$get_varian_name = $this->db->get();
+			if($get_varian_name->num_rows() > 0){
+				$dt_varian = $get_varian_name->row();
+				if($dt_varian->is_active == 0 OR $dt_varian->is_deleted == 1){
+					$update_varian_id = $dt_varian->id;
+				}
+			}else{
+				$new_varian = true;
+			}	
+			
+			$data_varian = array(
+				'varian_name' 	=> 	$varian_name,
+				'is_active' 	=> 	1,
+				'is_deleted' 	=> 	0,
+			);
+			
+			if($new_varian == true){
+				$this->db->update($this->table_varian_item,$data_varian);
+			}
+			
+			if(!empty($update_varian_id)){
+				$this->db->update($this->table_varian_item,$data_varian,"id=".$update_varian_id);
+			}
+			
+		}  
+		else
+		{  
+			$r = array('success' => false, 'info' => 'Simpan Kode Unik Gagal!');
 		}
 		
 		die(json_encode(($r==null or $r=='')? array('success'=>false) : $r));
@@ -1159,7 +1646,7 @@ class StockOpname extends MY_Controller {
 		$this->db->where("sto_status IN ('done')");
 		$get_dt = $this->db->get();
 		if($get_dt->num_rows() > 0){
-			$r = array('success' => false, 'info' => 'Cannot Delete Stock Opname, Status is been done!</br>Please Refresh List Stock Opname!'); 
+			$r = array('success' => false, 'info' => 'Cannot Delete Stock Opname, Status sudah selesai!</br>Please Refresh List Stock Opname!'); 
 			die(json_encode($r));		
 		}	
 		
@@ -1196,7 +1683,7 @@ class StockOpname extends MY_Controller {
         }  
         else
         {  
-            $r = array('success' => false, 'info' => 'Delete Stock Opname Failed!'); 
+            $r = array('success' => false, 'info' => 'Hapus Stock Opname Gagal!'); 
         }
 		die(json_encode($r));
 	}
@@ -1224,7 +1711,7 @@ class StockOpname extends MY_Controller {
 		$this->db->where("stod_status = 1");
 		$get_dt = $this->db->get($this->table);
 		if($get_dt->num_rows() > 0){
-			$r = array('success' => false, 'info' => 'Cannot Delete Data, Status Stock Opname is Done!'); 
+			$r = array('success' => false, 'info' => 'Tidak bisa hapus data, Status Stock Opname sudah selesai!'); 
 			die(json_encode($r));			
 		}
 		
@@ -1239,7 +1726,53 @@ class StockOpname extends MY_Controller {
         }  
         else
         {  
-            $r = array('success' => false, 'info' => 'Delete Stock Opname Detail Failed!'); 
+            $r = array('success' => false, 'info' => 'Hapus Stock Opname Detail Gagal!'); 
+        }
+		die(json_encode($r));
+	}
+	
+	public function deleteKodeUnik()
+	{
+		
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
+		
+		$this->table_sto = $this->prefix.'stock_opname';
+		$this->table_sto_kodeunik = $this->prefix.'stock_opname_kode_unik';
+		
+		$sto_id = $this->input->post('sto_id', true);	
+		$stod_id = $this->input->post('stod_id', true);	
+		$get_id = $this->input->post('id', true);	
+		
+		$id = json_decode($get_id, true);
+		//old data id
+		$sql_Id = $id;
+		if(is_array($id)){
+			$sql_Id = implode("','", $id);
+		}
+
+		
+		//check data main if been done
+		$this->db->where("id IN ('".$sto_id."')");
+		$this->db->where("sto_status = 'done'");
+		$get_dt = $this->db->get($this->table_sto);
+		if($get_dt->num_rows() > 0){
+			$r = array('success' => false, 'info' => 'Tidak bisa hapus data, Status Stock Opname sudah selesai!'); 
+			die(json_encode($r));			
+		}
+		
+		//delete data
+		$this->db->where("id IN ('".$sql_Id."')");
+		$q = $this->db->delete($this->table_sto_kodeunik);
+		
+		$r = '';
+		if($q)  
+        {  
+            $r = array('success' => true); 
+        }  
+        else
+        {  
+            $r = array('success' => false, 'info' => 'Hapus SN/IMEI Gagal!'); 
         }
 		die(json_encode($r));
 	}

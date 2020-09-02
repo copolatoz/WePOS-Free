@@ -38,7 +38,8 @@ class MasterTableInv extends MY_Controller {
 		$sortAlias = array(
 			'is_active_text' => 'b.is_active',
 			'floorplan_name' => 'c.floorplan_name',
-			'room_name' => 'c2.room_name'
+			'room_name' => 'c2.room_name',
+			'table_tipe_text' => 'b.table_tipe'
 		);		
 		
 		// Default Parameter
@@ -74,6 +75,7 @@ class MasterTableInv extends MY_Controller {
 		//update-2001.002
 		$purpose = $this->input->post('purpose');
 		$floorplan_id = $this->input->post('floorplan_id');
+		$floorplan_name = $this->input->post('floorplan_name');
 		
 		$get_opt_var = array('jam_operasional_from','jam_operasional_to','jam_operasional_extra',
 		'hold_table_timer','hold_table_ayce_timer','hold_table_warning_timer');
@@ -250,6 +252,8 @@ class MasterTableInv extends MY_Controller {
 				
 				if(!empty($s['kapasitas'])){
 					$s['kapasitas_text'] = 'Kapasitas: '.$s['kapasitas'].' org';
+				}else{
+					$s['kapasitas_text'] = '';
 				}
 				
 				$text_tipe = 'Dine In';
@@ -353,7 +357,7 @@ class MasterTableInv extends MY_Controller {
 						if(empty($floorplan_id)){
 							$s['table_info'] .= '<div style="font-size:16px; margin:5px 0px 15px;"><b>Semua Lantai/Floorplan</b></div>';
 						}else{
-							$s['table_info'] .= '<div style="font-size:20px; margin:5px 0px 15px;"><b>'.$s['floorplan_name'].'</b></div>';
+							$s['table_info'] .= '<div style="font-size:20px; margin:5px 0px 15px;"><b>'.$floorplan_name.'</b></div>';
 						}
 						$s['table_info'] .= '<div style="font-size:10px;">Klik u/ lihat Lantai Lainnya</div>';
 						$s['table_color'] = '6904a9';
@@ -401,7 +405,7 @@ class MasterTableInv extends MY_Controller {
 					}
 					
 					if($s['status'] == 'booked'){
-						$s['table_info'] .= '<div style="font-size:10px; margin:0px 0px 0px; line-height: 14px;">Tamu: '.$s['total_guest'].' Orang</div>';
+						$s['table_info'] .= '<div style="font-size:10px; margin:-1px 0px 0px; line-height: 12px;">Tamu: '.$s['total_guest'].' Orang</div>';
 						
 						if(!empty($get_opt['hold_table_timer'])){
 							$billing_created_exp = explode(" ", $s['billing_created']);
@@ -441,7 +445,7 @@ class MasterTableInv extends MY_Controller {
 								}
 							
 							}
-							$s['table_info'] .= '<div style="font-size:12px; margin:-2px 0px 0px; line-height: 14px;">Timer: '.$waktu_kunjungan.'</div>';
+							$s['table_info'] .= '<div style="font-size:10px; margin:-1px 0px 0px; line-height: 12px;">Timer: '.$waktu_kunjungan.'</div>';
 						}
 						
 					}else{
@@ -491,6 +495,22 @@ class MasterTableInv extends MY_Controller {
 					array_push($newData, $s);
 					$no_data++;
 				}
+				
+			}
+		}else{
+			if($purpose == 'tableList'){
+				$s = array();
+				$s['id'] = 0;
+				$s['table_info'] = '<div style="font-size:12px; margin:5px">Lantai yg dipilih:</div>';
+				if(empty($floorplan_id)){
+					$s['table_info'] .= '<div style="font-size:16px; margin:5px 0px 15px;"><b>Semua Lantai/Floorplan</b></div>';
+				}else{
+					$s['table_info'] .= '<div style="font-size:20px; margin:5px 0px 15px;"><b>'.$floorplan_name.'</b></div>';
+				}
+				$s['table_info'] .= '<div style="font-size:10px;">Klik u/ lihat Lantai Lainnya</div>';
+				$s['table_color'] = '6904a9';
+				$s['floorplan_button'] = 1;
+				array_push($newData, $s);
 				
 			}
 		}

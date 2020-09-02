@@ -12,7 +12,226 @@ class Model_account_payable extends DB_Model {
 		$this->table_account_payable = $this->prefix.'account_payable';
 		$this->table_po = $this->prefix_app.'po';
 		$this->table_po_detail = $this->prefix_app.'po_detail';
+		$this->table_purchasing = $this->prefix_app.'purchasing';
+		$this->table_purchasing_detail = $this->prefix_app.'purchasing_detail';
 		$this->table_supplier = $this->prefix_app.'supplier';
+	}
+	
+	function set_account_payable_Purchasing($purchasing_id = ''){
+		
+		$session_user = $this->session->userdata('user_username');
+		
+		$auto_pengakuan_hutang = 0;
+		$default_pengakuan_hutang = 0;
+		$get_opt = get_option_value(array('auto_pengakuan_hutang','default_pengakuan_hutang'));
+		if(!empty($get_opt['auto_pengakuan_hutang'])){
+			$auto_pengakuan_hutang = $get_opt['auto_pengakuan_hutang'];
+		}
+		if(!empty($get_opt['default_pengakuan_hutang'])){
+			$default_pengakuan_hutang = $get_opt['default_pengakuan_hutang'];
+		}
+		
+		if(empty($purchasing_id)){
+			return false;
+		}
+		
+		$this->db->select("a.*, b.supplier_name, b.supplier_phone, b.supplier_address");
+		$this->db->from($this->table_purchasing.' as a');
+		$this->db->join($this->table_supplier.' as b', "b.id = a.supplier_id", "LEFT");
+		$this->db->where("a.id = '".$purchasing_id."'");
+		$get_purchasing = $this->db->get();
+		if($get_purchasing->num_rows() > 0){
+			
+			$data_Purchasing = $get_purchasing->row();
+			if($data_Purchasing->purchasing_payment == 'credit'){
+				
+				$data_post = array();
+				
+				//get detail Purchasing
+				$all_qty_price = 0;
+				$data_Purchasing->purchasing_total_price = 0;
+				$this->db->from($this->table_purchasing_detail);
+				$this->db->where("purchasing_id = '".$purchasing_id."'");
+				$get_purchasing_det = $this->db->get();
+				if($get_purchasing_det->num_rows() > 0){
+					foreach($get_purchasing_det->result() as $det){
+						//$all_qty_price += (($det->purchasing_detail_purchase - $det->purchasing_detail_potongan)*$det->purchasing_detail_qty);
+						$all_qty_price += ($det->purchasing_detail_purchase*$det->purchasing_detail_qty);
+					}
+					$data_Purchasing->purchasing_total_price = $all_qty_price;
+					$data_Purchasing->purchasing_total_price -= $data_Purchasing->purchasing_discount;
+					$data_Purchasing->purchasing_total_price += $data_Purchasing->purchasing_tax;
+					$data_Purchasing->purchasing_total_price += $data_Purchasing->purchasing_shipping;
+				}
+				
+				$this->db->from($this->table_account_payable);
+				$this->db->where("ap_tipe = 'purchasing'");
+				$this->db->where("purchasing_id = '".$purchasing_id."'");
+				$get_ap = $this->db->get();
+				if($get_ap->num_rows() > 0){
+					
+					$data_AP = $get_ap->row();
+					
+					//update AP
+					$data_post = array(
+						'ap_name'	=> $data_Purchasing->supplier_name,
+						'ap_date'	=> date('Y-m-d'),
+						'ap_phone'	=> $data_Purchasing->supplier_phone,
+						'ap_address'	=> $data_Purchasing->supplier_address,
+						'supplier_id'	=> $data_Purchasing->supplier_id,
+						'no_ref'		=> $data_Purchasing->purchasing_number,
+						'updated'		=>	date('Y-m-d H:i:s'),
+						'updatedby'		=>	$session_user
+					);
+					
+					if($data_Purchasing->purchasing_status == 'done'){
+						
+						
+						if($data_AP->ap_status == 'pengakuan'){
+							//update AP
+							$data_post['total_tagihan'] = $data_Purchasing->purchasing_total_price;
+						}
+						
+						if($data_AP->is_deleted == 1){
+							$data_post['is_active'] = 1;
+							$data_post['is_deleted'] = 0;
+						}
+						
+						if($data_AP->total_tagihan != $data_Purchasing->purchasing_total_price){
+							$data_post['total_tagihan'] = $data_Purchasing->purchasing_total_price;
+						}
+						
+						if($data_AP->ap_status == 'pengakuan' OR empty($data_AP->autoposting_id)){
+							if(!empty($auto_pengakuan_hutang) AND !empty($auto_pengakuan_hutang)){
+								$data_post['autoposting_id'] = $default_pengakuan_hutang;
+								$data_post['ap_status'] = 'posting';
+							}
+						}
+						
+					}else{
+						
+						$data_post['total_tagihan'] = $data_Purchasing->purchasing_total_price;
+						$data_post['is_active'] = 0;
+						$data_post['is_deleted'] = 1;
+						
+					}
+					
+				}else{
+					
+					if($data_Purchasing->purchasing_status == 'done'){
+						
+						//create new AP
+						$data_post = array(
+							'ap_name'	=> $data_Purchasing->supplier_name,
+							'ap_date'	=> date('Y-m-d'),
+							'ap_phone'	=> $data_Purchasing->supplier_phone,
+							'ap_address'	=> $data_Purchasing->supplier_address,
+							'ap_tipe'	=> 'purchasing',
+							'ap_status'	=> 'pengakuan',
+							'purchasing_id'			=> $data_Purchasing->id,
+							'supplier_id'	=> $data_Purchasing->supplier_id,
+							'no_ref'		=> $data_Purchasing->purchasing_number,
+							'total_tagihan'	=> $data_Purchasing->purchasing_total_price,
+							'created'		=>	date('Y-m-d H:i:s'),
+							'createdby'		=>	$session_user,
+							'updated'		=>	date('Y-m-d H:i:s'),
+							'updatedby'		=>	$session_user
+						);
+						
+						if(!empty($auto_pengakuan_hutang) AND !empty($auto_pengakuan_hutang)){
+							$data_post['autoposting_id'] = $default_pengakuan_hutang;
+							$data_post['ap_status'] = 'posting';
+						}
+						
+					}
+					
+  
+				}
+				
+				$return = true;
+				if(!empty($data_post)){
+					if(!empty($data_AP->id)){
+						
+						$add_ap = $this->db->update($this->table_account_payable, $data_post, "id = '".$data_AP->id."'");
+						if($add_ap == false){
+							$return = false;
+						}
+						
+					}else{
+						
+						$get_ap_no = $this->generate_ap_number();
+						$data_post['ap_no'] = $get_ap_no;
+						
+						$add_ap = $this->db->insert($this->table_account_payable, $data_post);
+						if($add_ap == false){
+							$return = false;
+						}
+						
+					}
+				}
+				return $return;
+				
+			}else{
+				
+				$this->db->from($this->table_account_payable);
+				$this->db->where("ap_tipe = 'purchasing'");
+				$this->db->where("purchasing_id = '".$purchasing_id."'");
+				$get_ap = $this->db->get();
+				if($get_ap->num_rows() > 0){
+					
+					$data_AP = $get_ap->row();
+					
+					//update AP
+					$data_post = array(
+						'ap_name'	=> $data_Purchasing->supplier_name,
+						'ap_date'	=> date('Y-m-d'),
+						'ap_phone'	=> $data_Purchasing->supplier_phone,
+						'ap_address'	=> $data_Purchasing->supplier_address,
+						'supplier_id'	=> $data_Purchasing->supplier_id,
+						'no_ref'		=> $data_Purchasing->purchasing_number,
+						'updated'		=>	date('Y-m-d H:i:s'),
+						'updatedby'		=>	$session_user
+					);
+					
+					$return = false;
+					if($data_Purchasing->purchasing_status == 'done'){
+						
+						if($data_AP->total_tagihan != $data_Purchasing->purchasing_total_price){
+							$data_AP->total_tagihan = $data_Purchasing->purchasing_total_price;
+							
+							//update AP
+							$data_post = array();
+							$data_post['total_tagihan'] = $data_Purchasing->purchasing_total_price;
+							
+							$this->db->update($this->table_account_payable, $data_post, "id = '".$data_AP->id."'");
+						}
+						
+						if($data_AP->ap_status == 'pengakuan' OR $data_AP->ap_status == 'posting'){
+							//update AP
+							$data_post['total_tagihan'] = $data_Purchasing->purchasing_total_price;
+							$data_post['is_active'] = 0;
+							$data_post['is_deleted'] = 1;
+							
+							$return = true;
+							
+							$this->db->update($this->table_account_payable, $data_post, "id = '".$data_AP->id."'");
+							
+							return $return;
+							
+						}else{
+							$return = 'kontrabon';
+							return $return;
+						}
+						
+					}
+					
+					return $return;
+				}
+			}
+			
+			
+		}
+		
 	}
 	
 	function set_account_payable_PO($po_id = ''){

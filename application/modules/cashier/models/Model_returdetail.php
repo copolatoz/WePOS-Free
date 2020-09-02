@@ -485,7 +485,14 @@ class Model_returdetail extends DB_Model {
 													$item_price = $dtgramasi->item_price*$item_qty;
 													
 													$item_hpp = ($dtgramasi->item_price*$dtgramasi->item_qty);
-													$persentase_hpp = round(($item_hpp/$total_hpp_real),2);
+													
+													if(empty($total_hpp_real)){
+														$total_hpp_real = 1;
+														$persentase_hpp = round(($item_hpp/$total_hpp_real),2);
+													}else{
+														$persentase_hpp = round(($item_hpp/$total_hpp_real),2);
+													}
+													
 													$returd_price_percent = round($returd_price*$persentase_hpp,0);
 													$total_returd_price += $returd_price_percent;
 													
@@ -696,7 +703,14 @@ class Model_returdetail extends DB_Model {
 										$item_price = $dtgramasi->item_price*$item_qty;
 										
 										$item_hpp = ($dtgramasi->item_price*$dtgramasi->item_qty);
-										$persentase_hpp = round(($item_hpp/$total_hpp_real),2);
+										
+										if(empty($total_hpp_real)){
+											$total_hpp_real = 1;
+											$persentase_hpp = round(($item_hpp/$total_hpp_real),2);
+										}else{
+											$persentase_hpp = round(($item_hpp/$total_hpp_real),2);
+										}
+										
 										$returd_price_percent = round($returd_price*$persentase_hpp,0);
 										$total_returd_price += $returd_price_percent;
 										
@@ -849,8 +863,10 @@ class Model_returdetail extends DB_Model {
 						
 					if(empty($dt['id'])){
 					
-						unset($dt['id']);
-						$dtInsert[] = $dt;
+						if(!empty($dt['returd_qty'])){
+							unset($dt['id']);
+							$dtInsert[] = $dt;
+						}
 					
 					}else{
 							

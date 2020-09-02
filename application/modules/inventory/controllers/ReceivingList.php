@@ -138,7 +138,8 @@ class ReceivingList extends MY_Controller {
 		
 		// Default Parameter
 		$params = array(
-			'fields'		=> "a.*, a2.receive_status, b.id as item_id_real, b.item_code, b.item_name, b.item_price, b.item_image, b.use_stok_kode_unik, c.unit_name, a2.receive_number",
+			'fields'		=> "a.*, a2.receive_status, b.id as item_id_real, b.item_code, b.item_name, 
+			b.item_price, b.item_image, b.use_stok_kode_unik, c.unit_name, c.unit_code, a2.receive_number",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table.' as a',
 			'join'			=> array(
@@ -188,7 +189,12 @@ class ReceivingList extends MY_Controller {
 				$s['receive_det_date'] = date('d-m-Y', strtotime($s['receive_det_date']));
 				$s['receive_det_qty_before'] = $s['receive_det_qty'];
 				$s['item_code_name'] = $s['item_code'].' / '.$s['item_name'];
-
+				
+				$s['use_stok_kode_unik_text'] = '<font color="red">Tidak</font>';
+				if(!empty($s['use_stok_kode_unik'])){
+					$s['use_stok_kode_unik_text'] = '<font color="green">Ya</font>';
+				}
+				
 				if(!in_array($s['po_detail_id'], $all_po_det_id)){
 					$all_po_det_id[] = $s['po_detail_id'];
 					$all_po_det_qty[$s['po_detail_id']] = array();
@@ -318,14 +324,79 @@ class ReceivingList extends MY_Controller {
       	die(json_encode($get_data));
 	}
 	
+	public function gridDataDetailKodeUnik()
+	{
+		
+		$this->table = $this->prefix.'receive_kode_unik';
+		$session_client_id = $this->session->userdata('client_id');
+				
+		if(empty($session_client_id)){
+			die(json_encode(array('data' => array(), 'totalCount' => 0)));
+		}
+		
+		// Default Parameter
+		$params = array(
+			'fields'		=> "a.*",
+			'primary_key'	=> 'a.id',
+			'table'			=> $this->table.' as a',
+			'join'			=> array(),
+			'order'			=> array('a.id' => 'DESC'),
+			'single'		=> false,
+			'output'		=> 'array' //array, object, json
+		);
+		
+		//DROPDOWN & SEARCHING
+		$is_dropdown = $this->input->post('is_dropdown');
+		$searching = $this->input->post('query');
+		$receive_id = $this->input->post('receive_id');
+		$received_id = $this->input->post('received_id');
+		$po_detail_id = $this->input->post('po_detail_id');
+		$tipe = $this->input->post('tipe');
+		
+		//if(!empty($is_dropdown)){
+			$params['order'] = array('a.id' => 'DESC');
+		//}
+		if(!empty($searching)){
+			$params['where'][] = "(a.kode_unik LIKE '%".$searching."%')";
+		}
+		
+		//add new
+		if($tipe == 'add'){
+			$params['where'][] = "(a.received_id = '' AND a.po_detail_id =  ".$po_detail_id.")";
+		}else{
+			if(empty($received_id)){
+				$params['where'][] = "(a.received_id = '' AND a.po_detail_id =  ".$po_detail_id.")";
+			}else{
+				$params['where'][] = array('a.received_id' => $received_id);
+			}
+		}
+		
+		//get data -> data, totalCount
+		$get_data = $this->m2->find_all($params);
+		  		
+		$newData = array();
+		
+		if(!empty($get_data['data'])){
+			foreach ($get_data['data'] as $s){
+				array_push($newData, $s);
+			}
+		}
+		
+		$get_data['data'] = $newData;
+		
+      	die(json_encode($get_data));
+	}
+	
 	/*SERVICES*/
 	public function save()
 	{
 		$this->table = $this->prefix.'receiving';	
-		$this->table2 = $this->prefix.'receive_detail';			
+		$this->table2 = $this->prefix.'receive_detail';				
 		$this->table3 = $this->prefix.'po';	
-		$this->table4 = $this->prefix.'po_detail';			
-		$session_user = $this->session->userdata('user_username');
+		$this->table4 = $this->prefix.'po_detail';				
+		$this->table_receive_kode_unik = $this->prefix.'receive_kode_unik';	
+		$session_user = $this->session->userdata('user_username');		
+		$id_user = $this->session->userdata('id_user');		
 		
 		if(empty($session_user)){
 			$r = array('success' => false, 'info' => 'Sesi Login sudah habis, Silahkan Login ulang!');
@@ -345,6 +416,8 @@ class ReceivingList extends MY_Controller {
 		$receive_status = $this->input->post('receive_status');
 		$storehouse_id = $this->input->post('storehouse_id');
 		$no_surat_jalan = $this->input->post('no_surat_jalan');
+		$form_type_receivingList = $this->input->post('form_type_receivingList', true);
+		$receive_id = $this->input->post('id', true);
 		
 		if(empty($receive_status)){
 			$receive_status = 'progress';
@@ -368,44 +441,96 @@ class ReceivingList extends MY_Controller {
 		$same_unik_kode = array();
 		$message_same_unik_kode = array();
 		
+		$temp_id = 'new-'.$id_user.'-'.$po_id;
+		
+		//get all detail
+		if($form_type_receivingList == 'edit' AND !empty($receive_id)){
+			$this->db->select('a.*');
+			$this->db->from($this->table_receive_kode_unik.' as a');
+			$this->db->join($this->table2.' as b',"b.id = a.received_id","LEFT");
+			$this->db->where("b.receive_id = '".$receive_id."'");
+			$get_kodeunik = $this->db->get();
+		}else{
+			$this->db->select('a.*');
+			$this->db->from($this->table_receive_kode_unik.' as a');
+			$this->db->where("temp_id LIKE '".$temp_id."%'");
+			$get_kodeunik = $this->db->get();
+		}
+		
+		$data_kodeunik = array();
+		$all_kodeunik = array();
+		if($get_kodeunik->num_rows() > 0){
+			foreach($get_kodeunik->result_array() as $dt){
+				if(!empty($dt['received_id'])){
+					$received_id = $dt['received_id'];
+				}else{
+					//$received_id_exp = explode("-", $dt['temp_id']);
+					//unset($received_id_exp[3]);
+					//$received_id = implode("-",$received_id_exp);
+					$received_id = $dt['temp_id'];
+				}
+				
+				if(empty($data_kodeunik[$received_id])){
+					$data_kodeunik[$received_id] = array();
+				}
+				
+				$data_kodeunik[$received_id][] = $dt;
+				
+			}
+		}
+		
+		
 		//receiveDetail
-		$receiveDetail = $this->input->post('receiveDetail');
+		$receiveDetail = $this->input->post('receiveDetail', true);
 		$receiveDetail = json_decode($receiveDetail, true);
+		
 		$total_receive_item = 0;
 		if(!empty($receiveDetail)){
 			$total_item = count($receiveDetail);
 			foreach($receiveDetail as $key => $dtDet){
 				$total_receive_item += $dtDet['receive_det_qty'];
+				//$dtDet['data_stok_kode_unik'] = trim($dtDet['data_stok_kode_unik']);
+				
+				if($form_type_receivingList == 'edit' AND !empty($receive_id)){
+					$received_id = $dtDet['id'];
+				}else{
+					//$received_id_exp = explode("-", $dtDet['temp_id']);
+					//unset($received_id_exp[3]);
+					//$received_id = implode("-",$received_id_exp);
+					$received_id = $dtDet['temp_id'];
+				}
 				
 				//UNIK KODE
 				if($dtDet['use_stok_kode_unik'] == 1){
-					$list_dt_kode = explode("\n",$dtDet['data_stok_kode_unik']);
-					foreach($list_dt_kode as $dt){
-						if(!empty($dt)){
-							if(!in_array($dt, $all_unik_kode)){
-								$all_unik_kode[] = $dt;
+					
+					if(!empty($data_kodeunik[$received_id])){
+						foreach($data_kodeunik[$received_id] as $dtD){
+							if(!in_array($dtD['kode_unik'], $all_unik_kode)){
+								$all_unik_kode[] = $dtD['kode_unik'];
 								if(empty($all_unik_kode_perkey[$key])){
 									$all_unik_kode_perkey[$key] = array();
 								}
-								$all_unik_kode_perkey[$key][] = $dt;
+								$all_unik_kode_perkey[$key][] = $dtD['kode_unik'];
 								
 							}else{
-								$same_unik_kode[] = $dt;
+								$same_unik_kode[] = $dtD['kode_unik'];
 								if(empty($message_same_unik_kode)){
-									$r = array('success' => false, 'info' => 'Unik Kode (SN/IMEI): <b>'.$dt.'</b> lebih dari 1 data<br/>Cek pada Item: '.$dtDet['item_name']); 
+									$r = array('success' => false, 'info' => 'Unik Kode (SN/IMEI): <b>'.$dtD['kode_unik'].'</b> lebih dari 1 data<br/>Cek pada Item: '.$dtDet['item_name']); 
 									die(json_encode($r));
 								}
 							}
 						}
-						
+					}else{
+						$r = array('success' => false, 'info' => 'Kode (SN/IMEI) pada Item: '.$dtDet['item_name'].' tidak boleh kosong!'); 
+						die(json_encode($r));
 					}
 					
 				}
 				
 				if(!empty($all_unik_kode_perkey[$key])){
-					$receiveDetail[$key]['data_stok_kode_unik'] = implode("\n", $all_unik_kode_perkey[$key]);
+					//$receiveDetail[$key]['data_stok_kode_unik'] = implode("\n", $all_unik_kode_perkey[$key]);
 					
-					if(!empty($dtDet['returd_qty']) AND $dtDet['receive_det_qty'] != count($all_unik_kode_perkey[$key])){
+					if($dtDet['receive_det_qty'] != count($all_unik_kode_perkey[$key])){
 						$r = array('success' => false, 'info' => 'Total Unik Kode (SN/IMEI) pada Item: '.$dtDet['item_name'].' tidak sesuai dengan Total Qty yang diterima'); 
 						die(json_encode($r));
 					}
@@ -414,7 +539,6 @@ class ReceivingList extends MY_Controller {
 				
 			}
 		}
-		
 		
 		$get_receive_number = $this->generate_receive_number();
 		
@@ -426,7 +550,7 @@ class ReceivingList extends MY_Controller {
 		$warning_update_stok = false;
 			
 		$r = '';
-		if($this->input->post('form_type_receivingList', true) == 'add')
+		if($form_type_receivingList == 'add')
 		{
 			
 			//CLOSING DATE
@@ -468,6 +592,10 @@ class ReceivingList extends MY_Controller {
 			
 			$update_stok = '';
 			if($receive_status == 'done'){
+				
+				if(!empty($all_unik_kode)){
+					$this->cek_unik_kode($all_unik_kode);
+				}
 				
 				//cek warehouse
 				$default_warehouse = $this->stock->get_primary_storehouse();
@@ -515,7 +643,7 @@ class ReceivingList extends MY_Controller {
 			}
       		
 		}else
-		if($this->input->post('form_type_receivingList', true) == 'edit'){
+		if($form_type_receivingList == 'edit'){
 			
 			
 			$var = array('fields'	=>	array(
@@ -566,6 +694,9 @@ class ReceivingList extends MY_Controller {
 			
 			if($old_data['receive_status'] == 'progress' AND $receive_status == 'done'){
 				
+				if(!empty($all_unik_kode)){
+					$this->cek_unik_kode($all_unik_kode);
+				}
 				
 				//cek warehouse
 				$default_warehouse = $this->stock->get_primary_storehouse();
@@ -599,6 +730,11 @@ class ReceivingList extends MY_Controller {
 			}
 			
 			if($old_data['receive_status'] == 'done' AND $receive_status == 'progress'){
+				
+				if(!empty($all_unik_kode)){
+					$this->cek_unik_kode($all_unik_kode, true);
+				}
+				
 				$do_update_rollback_stok = true;
 				$do_update_status_po = true;
 				
@@ -657,16 +793,48 @@ class ReceivingList extends MY_Controller {
 			
 			$r = array('success' => true, 'id' => $id);
 			
-			$form_type = $this->input->post('form_type_receivingList', true);
-			
+			$form_type = $form_type_receivingList;
+			//$update_stok = 'update';
+					
 			//from add
-			//if($this->input->post('form_type_receivingList', true) == 'add')
-			//{
-				$q_det = $this->m2->receiveDetail($receiveDetail, $id, $form_type);
+			if($form_type == 'add')
+			{
+				$q_det = $this->m2->receiveDetail($receiveDetail, $id, $form_type, $data_kodeunik);
+				if($q_det == false){
+					$r = array('success' => false, 'info' => 'Add Detail Receiving Gagal!'); 
+					die(json_encode($r));
+				}
+			}
 				
-				$old_status = '';
-				if(!empty($old_data['receive_status'])){
-					$old_status = $old_data['receive_status'];
+			$old_status = '';
+			if(!empty($old_data['receive_status'])){
+				$old_status = $old_data['receive_status'];
+			}
+				
+			if($form_type != 'add' OR ($receive_status == 'done' AND $old_status != 'done')){
+				
+				//update kode unik
+				$this->db->select('a.*');
+				$this->db->from($this->table_receive_kode_unik.' as a');
+				$this->db->join($this->table2.' as b',"b.id = a.received_id","LEFT");
+				$this->db->where("b.receive_id = '".$id."'");
+				$get_kodeunik = $this->db->get();
+				$data_kodeunik = array();
+				if($get_kodeunik->num_rows() > 0){
+					foreach($get_kodeunik->result_array() as $dt){
+						if(!empty($dt['received_id'])){
+							$received_id = $dt['received_id'];
+						}else{
+							$received_id = $dt['temp_id'];
+						}
+						
+						if(empty($data_kodeunik[$received_id])){
+							$data_kodeunik[$received_id] = array();
+						}
+						
+						$data_kodeunik[$received_id][] = $dt;
+						
+					}
 				}
 				
 				if($receive_status == 'done' AND $old_status != 'done'){
@@ -681,7 +849,6 @@ class ReceivingList extends MY_Controller {
 						}
 					}
 					
-					$update_stok = 'update';
 					if($form_type == 'add'){
 						$update_stok = 'update_add';
 					}
@@ -698,17 +865,18 @@ class ReceivingList extends MY_Controller {
 						
 					}
 					
-					$r['receiveDetail_done'] = $receiveDetail;
+					//$r['receiveDetail_done'] = $receiveDetail;
+					
 				}
-			//}
-				
-			$q_det = $this->m2->receiveDetail($receiveDetail, $id, $update_stok);
-			if($q_det == false){
-				$r = array('success' => false, 'info' => 'Input Receiving Gagal!'); 
-				die(json_encode($r));
+					
+				$q_det = $this->m2->receiveDetail($receiveDetail, $id, $update_stok, $data_kodeunik);
+				if($q_det == false){
+					$r = array('success' => false, 'info' => 'Update Detail Receiving Gagal!'); 
+					die(json_encode($r));
+				}
 			}
 			
-			$r['det_info'] = $q_det;
+			//$r['det_info'] = $q_det;
 			
 			if($warning_update_stok){
 				$r['is_warning'] = 1;
@@ -900,6 +1068,59 @@ class ReceivingList extends MY_Controller {
 		return $total_qty;
 	}
 	
+	public function cek_unik_kode($all_unik_kode = '', $is_rollback = false){
+		$this->table = $this->prefix.'item_kode_unik';	
+		
+		if(!empty($all_unik_kode)){
+			
+			$all_unik_kode_sql = implode("','", $all_unik_kode);
+			if($is_rollback == true){
+				$this->table = $this->prefix.'item_kode_unik_log';	
+				
+				$this->db->select('b.kode_unik');
+				$this->db->from($this->prefix."item_kode_unik_log as a");
+				$this->db->join($this->prefix."item_kode_unik as b","b.id = a.kode_unik","LEFT");
+				$this->db->where("b.kode_unik IN ('".$all_unik_kode_sql."') AND is_deleted = 0 AND is_active = 1");
+				$this->db->group_by("b.kode_unik");
+				$get_cek = $this->db->get();
+				if($get_cek->num_rows() > 0){
+					$r = array('success' => false, 'info' => $get_cek->num_rows().' Unik Kode (SN/IMEI) sudah digunakan transaksi<br/>Silahkan Gunakan Retur Pembelian'); 
+					die(json_encode($r));
+				}
+				
+				return true;				
+			}
+			
+			$this->db->select('id, kode_unik');
+			$this->db->from($this->prefix."item_kode_unik");
+			$this->db->where("kode_unik IN ('".$all_unik_kode_sql."') AND is_deleted = 0 AND is_active = 1");
+			$get_cek = $this->db->get();
+			if($get_cek->num_rows() > 0){
+				
+				$i = 0;
+				$all_imei = '';
+				foreach($get_cek->result() as $dt){
+					$i++;
+					if($i < 10){
+						
+						if($all_imei == ''){
+							$all_imei = $dt->kode_unik;
+						}else{
+							$all_imei .= ', '.$dt->kode_unik;
+						}
+						
+						break;
+					}
+				}
+				
+				$r = array('success' => false, 'info' => $get_cek->num_rows().' Unik Kode (SN/IMEI) sudah ada, Cek SN/IMEI berikut<br/>'.$all_imei); 
+				die(json_encode($r));
+			}
+			
+			
+		}
+	}
+	
 	public function get_total_price($receive_id){
 		$this->table = $this->prefix.'receive_detail';	
 		
@@ -962,7 +1183,7 @@ class ReceivingList extends MY_Controller {
 		
 		$session_user = $this->session->userdata('user_username');					
 		$user_fullname = $this->session->userdata('user_fullname');				
-		$client_id = $this->session->userdata('client_id');								
+		$client_id = $this->session->userdata('client_id');				
 		
 		//get client
 		$this->db->from($this->table_client);
@@ -1062,5 +1283,233 @@ class ReceivingList extends MY_Controller {
 		
 		$this->load->view('../../inventory/views/printReceiving', $data_post);
 		
+	}
+	
+	
+	public function saveKodeUnik(){
+		
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
+		
+		$this->table = $this->prefix.'receiving';				
+		$this->table2 = $this->prefix.'receive_detail';				
+		$this->table3 = $this->prefix.'receive_kode_unik';				
+		$this->table_items = $this->prefix.'items';				
+		$this->table_varian_item = $this->prefix.'varian_item';				
+		
+		$session_user = $this->session->userdata('user_username');
+		$session_client_id = $this->session->userdata('client_id');
+		
+		$receive_id = $this->input->post('receive_id');
+		$received_id = $this->input->post('received_id');
+		$temp_id = $this->input->post('temp_id');
+		$po_detail_id = $this->input->post('po_detail_id');
+		$kode_unik_id = $this->input->post('kode_unik_id');
+		$varian_name = $this->input->post('varian_name');
+		$kode_unik = $this->input->post('kode_unik');
+		$tipe = $this->input->post('tipe');
+		
+		$varian_name = strtoupper($varian_name);
+		
+		//check data main if been validated
+		$storehouse_id = 0;
+		$receive_date = 0;
+		$dt_sto = array();
+		$this->db->from($this->table);
+		$this->db->where("id = ".$receive_id);
+		//$this->db->where("receive_status IN ('done')");
+		$get_dt = $this->db->get();
+		if($get_dt->num_rows() > 0){
+			
+			$dt_sto = $get_dt->row();
+			$storehouse_id = $dt_sto->storehouse_id;
+			$receive_date = $dt_sto->receive_date;
+			if($dt_sto->receive_status == 'done'){
+				$r = array('success' => false, 'info' => 'Tidak Bisa Update, Status Receiving sudah selesai!'); 
+				die(json_encode($r));	
+			}
+				
+		}
+		
+		//$temp_id = '';
+		if(!empty($receive_id) AND !empty($received_id)){
+			//$temp_id = $received_id;
+			//$received_id = '';
+			$temp_id = '';
+		}
+		
+		if(empty($receive_id) AND !empty($received_id)){
+			$received_id = '';
+		}
+			
+		
+		if($tipe == 'edit'){
+			if((empty($receive_id) AND empty($temp_id)) OR empty($kode_unik) OR empty($session_client_id)){
+				$r = array('success' => false, 'info' => 'Simpan Kode Unik Gagal!');
+				die(json_encode($r));
+			}else
+			if((!empty($receive_id) AND !empty($received_id)) AND (empty($kode_unik) OR empty($session_client_id))){
+				$r = array('success' => false, 'info' => 'Simpan Kode Unik Gagal!');
+				die(json_encode($r));
+			}	
+		}else{
+			if(empty($temp_id) AND (empty($kode_unik) OR empty($session_client_id))){
+				$r = array('success' => false, 'info' => 'Simpan Kode Unik Gagal!');
+				die(json_encode($r));
+			}
+		}
+		
+		
+		if((empty($receive_id) AND !empty($temp_id)) OR (!empty($receive_id) AND !empty($received_id)) AND !empty($kode_unik)){
+			
+			$available_info = '';
+			$this->db->select("a.*");
+			$this->db->from($this->table3." as a");
+			if($tipe == 'edit'){
+				if(empty($received_id) AND !empty($temp_id)){
+					//$tempID_exp = explode("-",$temp_id);
+					//unset($tempID_exp[3]);
+					//$tempID_imp = implode("-",$tempID_exp);
+					$this->db->where("(a.received_id = '' AND a.temp_id = '".$temp_id."')");
+				}else{
+					$this->db->where("a.received_id = ".$received_id);
+				}
+				
+			}else{
+				//$tempID_exp = explode("-",$temp_id);
+				//unset($tempID_exp[3]);
+				//$tempID_imp = implode("-",$tempID_exp);
+				$this->db->where("(a.received_id = '' AND a.temp_id = '".$temp_id."')");
+			}
+			$this->db->where("a.kode_unik = '".$kode_unik."'");
+		
+			$get_same_kode_unik= $this->db->get();
+			if($get_same_kode_unik->num_rows() > 0){
+				foreach($get_same_kode_unik->result() as $dtI){
+					
+					if(empty($available_info)){
+						$available_info = 'SN/IMEI: '.$kode_unik.' sudah ada!';
+					}
+					
+				}
+			}
+			
+			if(!empty($available_info)){
+				$r = array('success' => false, 'info'	=> $available_info);
+				die(json_encode($r));
+			}
+			
+		}
+		
+		$var = array('fields'	=>	array(
+				'received_id'		=> 	$received_id,
+				'po_detail_id'		=> 	$po_detail_id,
+				'temp_id'		=> 	$temp_id,
+				'kode_unik' 	=> 	$kode_unik,
+				'varian_name' 	=> 	$varian_name,
+			),
+			'table'			=>  $this->table3,
+			'primary_key'	=>  'id'
+		);
+		
+		//ADD/Edit		
+		$this->lib_trans->begin();
+			if(!empty($kode_unik_id)){
+				$edit = $this->m2->save($var, $kode_unik_id);
+			}else{
+				$edit = $this->m2->save($var);
+				$kode_unik_id = $this->m->get_insert_id();
+			}
+		$this->lib_trans->commit();
+		
+		if($edit)
+		{  
+				
+			$r = array('success' => true, 'kode_unik_id' => $kode_unik_id);
+			
+			$new_varian = false;
+			$update_varian_id = 0;
+			
+			$this->db->select("a.*");
+			$this->db->from($this->table_varian_item." as a");
+			$this->db->where("a.varian_name = '".$varian_name."'");
+			$get_varian_name = $this->db->get();
+			if($get_varian_name->num_rows() > 0){
+				$dt_varian = $get_varian_name->row();
+				if($dt_varian->is_active == 0 OR $dt_varian->is_deleted == 1){
+					$update_varian_id = $dt_varian->id;
+				}
+			}else{
+				$new_varian = true;
+			}	
+			
+			$data_varian = array(
+				'varian_name' 	=> 	$varian_name,
+				'is_active' 	=> 	1,
+				'is_deleted' 	=> 	0,
+			);
+			
+			if($new_varian == true){
+				$this->db->update($this->table_varian_item,$data_varian);
+			}
+			
+			if(!empty($update_varian_id)){
+				$this->db->update($this->table_varian_item,$data_varian,"id=".$update_varian_id);
+			}
+			
+		}  
+		else
+		{  
+			$r = array('success' => false, 'info' => 'Simpan Kode Unik Gagal!');
+		}
+		
+		die(json_encode(($r==null or $r=='')? array('success'=>false) : $r));
+	}
+	
+	public function deleteKodeUnik()
+	{
+		$get_opt = get_option_value(array("as_server_backup"));
+		cek_server_backup($get_opt);
+		
+		$this->table_sto = $this->prefix.'receiving';
+		$this->table_receive_kodeunik = $this->prefix.'receive_kode_unik';
+		
+		$receive_id = $this->input->post('receive_id', true);	
+		$received_id = $this->input->post('received_id', true);	
+		$po_detail_id = $this->input->post('po_detail_id', true);	
+		$tipe = $this->input->post('tipe');
+		$get_id = $this->input->post('id', true);	
+		
+		$id = json_decode($get_id, true);
+		//old data id
+		$sql_Id = $id;
+		if(is_array($id)){
+			$sql_Id = implode("','", $id);
+		}
+
+		
+		//check data main if been done
+		$this->db->where("id IN ('".$receive_id."')");
+		$this->db->where("receive_status = 'done'");
+		$get_dt = $this->db->get($this->table_sto);
+		if($get_dt->num_rows() > 0){
+			$r = array('success' => false, 'info' => 'Tidak bisa hapus data, Status Receiving sudah selesai!'); 
+			die(json_encode($r));			
+		}
+		
+		//delete data
+		$this->db->where("id IN ('".$sql_Id."')");
+		$q = $this->db->delete($this->table_receive_kodeunik);
+		
+		$r = '';
+		if($q)  
+        {  
+            $r = array('success' => true); 
+        }  
+        else
+        {  
+            $r = array('success' => false, 'info' => 'Hapus SN/IMEI Gagal!'); 
+        }
+		die(json_encode($r));
 	}
 }

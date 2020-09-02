@@ -7,6 +7,7 @@ class Backend extends MY_Controller {
 		parent::__construct();
 		$this->load->model('auth/mdl_config', 'mdl_config');
 		$this->load->model('mdl_backend', 'mdl_backend');
+		$this->prefix = config_item('db_prefix2');
 	}
 
 	public function index()
@@ -57,12 +58,32 @@ class Backend extends MY_Controller {
 		'print_qc_then_order','supervisor_pin_mode','default_discount_payment','print_qc_order_when_payment',
 		'use_item_sku','reservation_cashier','salesorder_cashier','autohold_create_billing',
 		'hide_button_invoice','hide_button_halfpayment','hide_button_mergebill','hide_button_splitbill',
-		'hide_button_logoutaplikasi','min_noncash','autobackup_on_settlement','no_hold_billing',
+		'hide_button_logoutaplikasi','hide_button_downpayment','min_noncash','management_systems','autobackup_on_settlement','no_hold_billing',
 		'print_preview_billing','opsi_no_print_when_payment','must_choose_customer',
 		'hide_detail_taxservice','hide_detail_takeaway','hide_detail_compliment','hold_table_timer','use_block_table',
 		'printMonitoring_qc','printMonitoring_kitchen','printMonitoring_bar','printMonitoring_other',
 		'delay_for_safe_printing','calculator_virtual','cashier_display_menu_image','cashier_menu_bg_text_color',
-		'mode_table_layout_cashier','table_multi_order','mode_cashier_express','cashier_credit_ar');
+		'mode_table_layout_cashier','table_multi_order','mode_cashier_express','cashier_credit_ar','send_billing_to_email',
+		'tandai_pajak_billing','override_pajak_billing','nontrx_sales_auto','nontrx_backup_onsettlement','nontrx_override_on','nontrx_button_onoff',
+		'allow_app_all_user','opsi_no_print_settlement','standalone_cashier');
+		
+		//update-2008.001
+		$ip_addr = get_client_ip();
+		$opt_printer = array(
+			'printer_id_cashierReceipt_default',
+			'printer_id_cashierReceipt_'.$ip_addr,
+			'printer_id_qcReceipt_default',
+			'printer_id_qcReceipt_'.$ip_addr,
+			'printer_id_kitchenReceipt_default',
+			'printer_id_kitchenReceipt_'.$ip_addr,
+			'printer_id_barReceipt_default',
+			'printer_id_barReceipt_'.$ip_addr,
+			'printer_id_otherReceipt_default',
+			'printer_id_otherReceipt_'.$ip_addr
+			
+		);
+		
+		$opt_var = array_merge($opt_var,$opt_printer);
 		
 		$get_opt = get_option_value($opt_var);
 		
@@ -131,6 +152,80 @@ class Backend extends MY_Controller {
 				
 			}
 			
+			//printer-check
+			//update-2008.001
+			$all_printer_id = array();
+			
+			//cashierReceipt
+			$printer_id_cashierReceipt = $get_opt['printer_id_cashierReceipt_default'];
+			if(!empty($get_opt['printer_id_cashierReceipt_'.$ip_addr])){
+				$printer_id_cashierReceipt = $get_opt['printer_id_cashierReceipt_'.$ip_addr];
+			}
+			
+			if(!in_array($printer_id_cashierReceipt, $all_printer_id)){
+				$all_printer_id[] = $printer_id_cashierReceipt;
+			}
+			
+			//qcReceipt
+			$printer_id_qcReceipt = $get_opt['printer_id_qcReceipt_default'];
+			if(!empty($get_opt['printer_id_qcReceipt_'.$ip_addr])){
+				$printer_id_qcReceipt = $get_opt['printer_id_qcReceipt_'.$ip_addr];
+			}
+			
+			if(!in_array($printer_id_qcReceipt, $all_printer_id)){
+				$all_printer_id[] = $printer_id_qcReceipt;
+			}
+			
+			//kitchenReceipt
+			$printer_id_kitchenReceipt = $get_opt['printer_id_kitchenReceipt_default'];
+			if(!empty($get_opt['printer_id_kitchenReceipt_'.$ip_addr])){
+				$printer_id_kitchenReceipt = $get_opt['printer_id_kitchenReceipt_'.$ip_addr];
+			}
+			
+			if(!in_array($printer_id_kitchenReceipt, $all_printer_id)){
+				$all_printer_id[] = $printer_id_kitchenReceipt;
+			}
+			
+			//barReceipt
+			$printer_id_barReceipt = $get_opt['printer_id_barReceipt_default'];
+			if(!empty($get_opt['printer_id_barReceipt_'.$ip_addr])){
+				$printer_id_barReceipt = $get_opt['printer_id_barReceipt_'.$ip_addr];
+			}
+			
+			if(!in_array($printer_id_barReceipt, $all_printer_id)){
+				$all_printer_id[] = $printer_id_barReceipt;
+			}
+			
+			//otherReceipt
+			$printer_id_otherReceipt = $get_opt['printer_id_otherReceipt_default'];
+			if(!empty($get_opt['printer_id_otherReceipt_'.$ip_addr])){
+				$printer_id_otherReceipt = $get_opt['printer_id_otherReceipt_'.$ip_addr];
+			}
+			
+			if(!in_array($printer_id_otherReceipt, $all_printer_id)){
+				$all_printer_id[] = $printer_id_otherReceipt;
+			}
+			
+			
+			$rawbt_check = 0;
+			if(!empty($all_printer_id)){
+				$all_printer_id_sql = implode(",", $all_printer_id);
+				$this->db->from($this->prefix.'printer');		
+				$this->db->where("id IN (".$all_printer_id_sql.") AND print_method = 'RAWBT'");		
+				$get_all_printer = $this->db->get();
+
+				if($get_all_printer->num_rows() > 0){
+					$rawbt_check = 1;
+				}
+			}
+			
+			echo "var opt_rawbt_check = '".$rawbt_check."'; \n";
+			
+			$spv_access_notactive_mode_express = array();
+			if(!empty($get_opt['mode_cashier_express'])){
+				$spv_access_notactive_mode_express = array('open_close_cashier','cancel_order','cancel_billing','unmerge_billing','set_compliment_item','clear_compliment_item');
+			}
+			
 			foreach($get_opt as $key => $dt){
 				
 				if($key == 'auto_logout_time'){
@@ -146,12 +241,18 @@ class Backend extends MY_Controller {
 					
 					$expl_dt_trim = array();
 					foreach($expl_dt as $dtx){
-						$expl_dt_trim[] = trim($dtx);
+						if(!in_array($dtx,$spv_access_notactive_mode_express)){
+							$expl_dt_trim[] = trim($dtx);
+						}
 					}
 					echo "var opt_".$key." = [\"".implode('","', $expl_dt_trim)."\"]; \n";
 					
 				}else{
-					echo "var opt_".$key." = '".$dt."'; \n";
+					
+					if(!in_array($key, $opt_printer)){
+						echo "var opt_".$key." = '".$dt."'; \n";
+					}
+					
 				}
 				
 			}
@@ -161,6 +262,7 @@ class Backend extends MY_Controller {
 			update_option($update_var);
 		}
 		
+		$get_opt_printer = get_option_value($opt_printer);
 		
 		//ENVIRONTMENT JS
 		echo '
@@ -227,10 +329,10 @@ class Backend extends MY_Controller {
         $userData				= $this->mdl_config->userData($this->session->userdata('id_user'));
 		
 		//FROM APP
-		$fromApps = false;
+		$fromApps = 0;
 		$modules_apps = array();
 		if(!empty($this->session->userdata('from_apps'))){
-			$fromApps = true;
+			$fromApps = 1;
 			$desktopConfig->window_mode = 'lite';
 			$dataModules = $this->mdl_config->getMenuModules($this->session->userdata('role_id'),1); 
 			
@@ -241,17 +343,30 @@ class Backend extends MY_Controller {
 					alert(\'Aplikasi ini hanya untuk Kasir\');
 				';
 			}else{
-				$modules_apps = array('refreshModule','logoutModule','systemNotify','billingCashierApp','UserProfile');
+				//update-2008.0001 - billingCashierApp
+				$modules_apps = array('refreshModule','logoutModule','systemNotify','billingCashier','UserProfile');
 				if($this->session->userdata('role_id') == 1){
-					$modules_apps = array('refreshModule','logoutModule','systemNotify','billingCashierApp','UserProfile','weposUpdate','clientInfo','setupAplikasi','setupAplikasiFree');
+					$modules_apps = array('refreshModule','logoutModule','systemNotify','billingCashier','UserProfile','weposUpdate','clientInfo','setupAplikasi','setupAplikasiFree');
 				}
 			}
 			
 			
+			//update-2008.001
 			$quickModules = array();
 			$widgetModules = array();
 			$shortcutModules = array();
 			$shortcutModulesApp = array();
+			
+			if(!empty($get_opt['allow_app_all_user'])){
+				$shortcutModules	= $this->mdl_config->getShortcutModules($this->session->userdata('id_user'));
+				if(!empty($shortcutModules)){
+					foreach($shortcutModules as $dtm){
+						if(!in_array($dtm->module_controller,$modules_apps)){
+							$modules_apps[] = $dtm->module_controller;
+						}
+					}
+				}
+			}
 			
 		}else{
 			$dataModules		= $this->mdl_config->getMenuModules($this->session->userdata('role_id')); 
@@ -731,6 +846,10 @@ class Backend extends MY_Controller {
 				}
 			}
 		}
+		
+		//update-2008.001
+		echo "var opt_from_apps = $fromApps;
+			";
 		
 		$main_app = '';
 		echo "

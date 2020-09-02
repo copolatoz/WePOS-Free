@@ -27,13 +27,19 @@ class DataBilling extends MY_Controller {
 			'payment_id_debit',
 			'payment_id_credit',
 			'jam_operasional_from','jam_operasional_to','jam_operasional_extra',
-			'hide_hold_bill_yesterday'
+			'hide_hold_bill_yesterday',
+			'nontrx_override_on'
 		);
 		$get_opt = get_option_value($opt_value);
 		
 		$hide_hold_bill_yesterday = 0;
 		if(!empty($get_opt['hide_hold_bill_yesterday'])){
 			$hide_hold_bill_yesterday = $get_opt['hide_hold_bill_yesterday'];
+		}
+		
+		$nontrx_override_on = 0;
+		if(!empty($get_opt['nontrx_override_on'])){
+			$nontrx_override_on = $get_opt['nontrx_override_on'];
 		}
 		
 		$no_midnight = 0;
@@ -50,6 +56,9 @@ class DataBilling extends MY_Controller {
 			'payment_time' => 'a.payment_date',
 			'table_no' => 'a.table_no',
 			'billing_no_show' => 'a.billing_no',
+			'txmark_no_show' => 'a.txmark_no',
+			'tax_total_show' => 'a.tax_total',
+			'payment_note2' => 'a.payment_type_name',
 			'updatedby' => 'a.updatedby'
 		);		
 		
@@ -162,6 +171,11 @@ class DataBilling extends MY_Controller {
 			
 			if($billing_status == 'cancel'){
 				$params['where'][] = "(a.merge_id IS NULL OR a.merge_id = 0)";
+			}
+			
+			//update-2007.001
+			if($nontrx_override_on == 1 AND $billing_status == 'paid'){
+				$params['where'][] = "(a.txmark = 1)";
 			}
 			
 		}else{
@@ -280,7 +294,7 @@ class DataBilling extends MY_Controller {
 				$qdate_till = $ret_dt['qdate_till'];
 				$qdate_till_max = $ret_dt['qdate_till_max'];
 				
-				//update-2002.003
+				//update-2003.001
 				$qdate_from_mk = strtotime($qdate_from);
 				
 				if(!empty($use_payment_date)){
@@ -318,7 +332,7 @@ class DataBilling extends MY_Controller {
 					
 				}
 				
-				//update-2002.003
+				//update-2003.001
 				if(empty($searching)){
 					if(!empty($hide_hold_bill_yesterday)){
 						$lastest_billing_no = date("ymd", $qdate_from_mk).'0000';
@@ -666,6 +680,9 @@ class DataBilling extends MY_Controller {
 				$newData[$detail->billing_id]['order_total_show'] = 'Rp '.priceFormat($newData[$detail->billing_id]['order_total']);
 								
 				$total_qty_order = ($newData[$detail->billing_id]['total_qty_deliver']+$newData[$detail->billing_id]['total_qty_order']);
+				if(empty($total_qty_order)){
+					$total_qty_order = 1;
+				}
 				$percent_status_order = ($newData[$detail->billing_id]['total_qty_deliver'] / $total_qty_order) * 100;
 				$newData[$detail->billing_id]['percent_status_order'] = $percent_status_order;
 				
@@ -877,6 +894,8 @@ class DataBilling extends MY_Controller {
 					$s['order_total'] = 0;
 					$s['product_price'] = 0;
 					$s['product_price_real'] = 0;
+					$s['tax_total'] = 0;
+					$s['service_total'] = 0;
 				}
 				
 
@@ -1326,7 +1345,7 @@ class DataBilling extends MY_Controller {
 								a.order_status, a.order_notes, a.is_active, a.retur_type, a.retur_qty, a.retur_reason,
 								a.is_promo, a.promo_id, a.promo_tipe, a.promo_percentage, a.promo_price, a.promo_desc,
 								a.is_kerjasama, a.supplier_id, a.persentase_bagi_hasil, a.total_bagi_hasil, 
-								a.buyget_item, a.free_item, a.ref_order_id,
+								a.buyget_item, a.free_item, a.ref_order_id, a.is_buyget,
 								b.product_name, b.product_chinese_name, b.has_varian, b.product_desc, b.product_type, b.product_image, 
 								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code, b.product_code",
 			'primary_key'	=> 'a.id',
@@ -1357,6 +1376,8 @@ class DataBilling extends MY_Controller {
 		if(!empty($searching)){
 			$params['where'][] = "(a.product_name  LIKE '%".$searching."%' OR a.product_name LIKE '%".$searching."%')";
 		}
+		
+		$params['where'][] = "(a.ref_order_id = 0)";
 		
 		//get data -> data, totalCount
 		$get_data = $this->m->find_all($params);
@@ -1572,6 +1593,8 @@ class DataBilling extends MY_Controller {
 		if(!empty($searching)){
 			$params['where'][] = "(a.product_name  LIKE '%".$searching."%' OR a.product_name LIKE '%".$searching."%')";
 		}
+		
+		$params['where'][] = "(a.ref_order_id = 0)";
 		
 		//get data -> data, totalCount
 		$get_data = $this->m->find_all($params);
@@ -2036,6 +2059,8 @@ class DataBilling extends MY_Controller {
 		if(!empty($searching)){
 			$params['where'][] = "(a.product_name  LIKE '%".$searching."%' OR a.product_name LIKE '%".$searching."%')";
 		}
+		
+		$params['where'][] = "(a.ref_order_id = 0)";
 		
 		//get data -> data, totalCount
 		$get_data = $this->m->find_all($params);

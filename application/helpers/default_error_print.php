@@ -5,14 +5,13 @@ $objCI =& get_instance();
 $order_apps = $objCI->input->get_post('order_apps', true);	
 if(!empty($order_apps)){
 	$r = array('success' => false, 'info' => $error, 'print' => array());
-	echo json_encode($r); die();
+	echo json_encode($r); 
+	//die();
 }
 
-$error = str_replace("<br/>","'\n+'",$error);
-$error = str_replace("<br>","'\n+'",$error);
 if(empty($error)){
-	die();
-}
+	//die();
+}else{
 ?>
 <!DOCTYPE html>
 <html>
@@ -24,10 +23,17 @@ if(empty($error)){
 	</head>
 <body>
 <div class="report_area" style="padding:0px; margin:0px auto; text-align:left; border:0px solid #ccc;">
-<?php echo $error; ?>
+<?php 
+echo $error; 
+$error = str_replace("<br/>","'\n+'",$error);
+$error = str_replace("<br>","'\n+'",$error);
+?>
 </div>
 <script type="text/javascript">
 	alert('<?php echo $error;?>');
 </script>
 </body>
 </html>
+<?php
+}
+?>
