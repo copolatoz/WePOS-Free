@@ -18,6 +18,8 @@
 		
 		if(!empty($only_txmark)){
 			$show_tax = true;
+			$set_width += 180;
+			$total_cols += 2;
 		}
 
 		$payment_data_content = '';
@@ -173,6 +175,13 @@
 						<td class="xcenter" width="<?php echo count($payment_data)*100; ?>" colspan="<?php echo count($payment_data); ?>">PAYMENT</td>	
 						<?php
 					}
+					
+					if(!empty($only_txmark)){
+					?>
+					<td class="xcenter" width="80" rowspan="2">POST TAX</td>
+					<td class="xcenter" width="100" rowspan="2">POST SALES</td>
+					<?php
+					}
 					?>
 				</tr>
 				<tr class="tbl-header">
@@ -224,6 +233,9 @@
 					$grand_discount_billing_total_before = 0;
 					$grand_discount_total_after = 0;
 					$grand_discount_billing_total_after = 0;
+					
+					$grand_total_post_nontrx = 0;
+					$grand_total_post_sales = 0;
 					
 					foreach($report_data as $det){
 						
@@ -310,6 +322,26 @@
 										
 										$grand_total_payment[$key_id] += $det['total_payment_'.$key_id];
 									}
+								}
+							}
+							
+							
+							if(!empty($only_txmark)){
+								$color_nontrx_total = 'green';
+								$color_sales_total = 'green';
+								if($det['total_post_nontrx'] != $det['tax_total']){
+									$color_nontrx_total = 'red';
+								}
+								if($det['total_post_sales'] != $det['net_sales_total']){
+									$color_sales_total = 'red';
+								}
+								?>
+								<td class="xright"><font color="<?php echo $color_nontrx_total; ?>"><b><?php echo priceFormat($det['total_post_nontrx']); ?></b></font></td>
+								<td class="xright"><font color="<?php echo $color_sales_total; ?>"><b><?php echo priceFormat($det['total_post_sales']); ?></b></font></td>
+								<?php
+								if(!empty($det['total_post_nontrx'])){
+									$grand_total_post_nontrx += $det['total_post_nontrx'];
+									$grand_total_post_sales += $det['total_post_sales'];
 								}
 							}
 							?>
@@ -419,6 +451,20 @@
 							}
 						}
 						
+						if(!empty($only_txmark)){
+							$color_total = 'green';
+							$color_total_sales = 'green';
+							if($total_tax != $grand_total_post_nontrx){
+								$color_total = 'red';
+							}
+							if($grand_net_sales_total != $grand_total_post_sales){
+								$color_total_sales = 'red';
+							}
+							?>
+							<td class="xright"><font color="<?php echo $color_total; ?>"><b><?php echo priceFormat($grand_total_post_nontrx); ?></b></font></td>
+							<td class="xright"><font color="<?php echo $color_total_sales; ?>"><b><?php echo priceFormat($grand_total_post_sales); ?></b></font></td>
+							<?php
+						}
 						?>
 											
 					</tr>

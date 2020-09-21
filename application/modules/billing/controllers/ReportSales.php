@@ -17,6 +17,9 @@ class ReportSales extends MY_Controller {
 		$this->table = $this->prefix.'billing';
 		$this->table2 = $this->prefix.'billing_detail';
 		
+		//update-2009.002
+		$this->table_trx = $this->prefix.'billing_trx';
+		
 		$session_user = $this->session->userdata('user_username');					
 		$user_fullname = $this->session->userdata('user_fullname');					
 		
@@ -116,7 +119,8 @@ class ReportSales extends MY_Controller {
 			$get_opt['cashier_pembulatan_keatas'] = 0;
 		}
 		
-		//update-2007.001
+		//update-2009.002
+		$all_bil_id_trx = array();
 		if(!empty($get_opt['nontrx_override_on'])){
 			if($only_txmark == 0){
 				$only_txmark = 1;
@@ -310,6 +314,21 @@ class ReportSales extends MY_Controller {
 							
 						}
 						
+					}
+				}
+				
+				//update-2009.002
+				if(!empty($only_txmark)){
+					$this->db->from($this->table_trx);
+					$this->db->where('id IN ('.$all_bil_id_txt.')');
+					$get_billing_trx = $this->db->get();
+					if($get_billing_trx->num_rows() > 0){
+						foreach($get_billing_trx->result_array() as $dtTrx){
+							if(!in_array($dtTrx['id'], $all_bil_id_trx)){
+								$all_bil_id_trx[] = $dtTrx['id'];
+							}		
+							
+						}
 					}
 				}
 			}
@@ -612,6 +631,18 @@ class ReportSales extends MY_Controller {
 							}
 						}
 					}
+					
+					//update-2009.002
+					$s['post_nontrx'] = 0;
+					$s['post_nontrx_txt'] = '<font color="red"><b>Blm Terkirim</b></font>';
+					$s['post_sales_txt'] = '<font color="red"><b>Blm Terkirim</b></font>';
+					if(!empty($only_txmark)){
+						if(in_array($s['id'], $all_bil_id_trx)){
+							$s['post_nontrx'] = 1;
+							$s['post_nontrx_txt'] = '<font color="green"><b>'.priceFormat($s['tax_total']).'</b></font>';
+							$s['post_sales_txt'] = '<font color="green"><b>'.priceFormat($s['net_sales_total']).'</b></font>';
+						}
+					}
 									
 					$newData[$s['id']] = $s;
 					//array_push($newData, $s);
@@ -687,6 +718,9 @@ class ReportSales extends MY_Controller {
 		
 		$this->table = $this->prefix.'billing';
 		$this->table2 = $this->prefix.'billing_detail';
+		
+		//update-2009.002
+		$this->table_trx = $this->prefix.'billing_trx';
 		
 		$session_user = $this->session->userdata('user_username');					
 		$user_fullname = $this->session->userdata('user_fullname');					
@@ -787,7 +821,8 @@ class ReportSales extends MY_Controller {
 			$get_opt['cashier_pembulatan_keatas'] = 0;
 		}
 		
-		//update-2007.001
+		//update-2009.002
+		$all_bil_id_trx = array();
 		if(!empty($get_opt['nontrx_override_on'])){
 			if($only_txmark == 0){
 				$only_txmark = 1;
@@ -1004,6 +1039,21 @@ class ReportSales extends MY_Controller {
 							
 						}
 						
+					}
+				}
+				
+				//update-2009.002
+				if(!empty($only_txmark)){
+					$this->db->from($this->table_trx);
+					$this->db->where('id IN ('.$all_bil_id_txt.')');
+					$get_billing_trx = $this->db->get();
+					if($get_billing_trx->num_rows() > 0){
+						foreach($get_billing_trx->result_array() as $dtTrx){
+							if(!in_array($dtTrx['id'], $all_bil_id_trx)){
+								$all_bil_id_trx[] = $dtTrx['id'];
+							}		
+							
+						}
 					}
 				}
 			}
@@ -1461,7 +1511,24 @@ class ReportSales extends MY_Controller {
 															
 						}
 					}
-				
+					
+					//update-2009.002
+					if(!empty($only_txmark)){
+						
+						if(empty($all_group_date[$payment_date]['total_post_nontrx'])){
+							$all_group_date[$payment_date]['total_post_nontrx'] = 0;
+						}
+						
+						if(empty($all_group_date[$payment_date]['total_post_sales'])){
+							$all_group_date[$payment_date]['total_post_sales'] = 0;
+						}
+						
+						if(in_array($s['id'], $all_bil_id_trx)){
+							$all_group_date[$payment_date]['total_post_nontrx'] += $s['tax_total'];
+							$all_group_date[$payment_date]['total_post_sales'] += $s['net_sales_total'];
+						}
+					}
+					
 					$newData[$s['id']] = $s;
 					//array_push($newData, $s);
 					
@@ -1520,6 +1587,12 @@ class ReportSales extends MY_Controller {
 						
 						$detail['total_profit'] = $detail['net_sales_total']-$detail['total_hpp'];
 						$detail['total_profit_show'] = priceFormat($detail['total_profit']);
+						
+						//update-2009.002
+						if(!empty($only_txmark)){
+							$detail['total_post_nontrx_show'] += priceFormat($detail['total_post_nontrx']);
+							$detail['total_post_sales_show'] += priceFormat($detail['total_post_sales']);
+						}
 						
 						$newData[$key] = $detail;
 						

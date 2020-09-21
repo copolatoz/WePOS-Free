@@ -16,8 +16,11 @@
 			extract($filter_column);
 		}
 		
+		//update-2009.002
 		if(!empty($only_txmark)){
 			$show_tax = true;
+			$set_width += 180;
+			$total_cols += 2;
 		}
 
 		$payment_data_content = '';
@@ -190,6 +193,13 @@
 					<td class="xcenter" width="150" rowspan="2">SHIFT/KASIR</td>
 					<?php
 					}
+					
+					if(!empty($only_txmark)){
+					?>
+					<td class="xcenter" width="80" rowspan="2">POST TAX</td>
+					<td class="xcenter" width="100" rowspan="2">POST SALES</td>
+					<?php
+					}
 					?>
 					
 				</tr>
@@ -239,6 +249,10 @@
 					$grand_discount_billing_total_before = 0;
 					$grand_discount_total_after = 0;
 					$grand_discount_billing_total_after = 0;
+					
+					$total_post_nontrx = 0;
+					$grand_total_post_nontrx = 0;
+					$grand_total_post_sales = 0;
 					
 					foreach($report_data as $det){
 						
@@ -411,6 +425,18 @@
 							<td class="xleft"><?php echo $det['nama_shift'].'/'.$det['nama_kasir']; ?></td>
 							<?php
 							}
+							
+							if(!empty($only_txmark)){
+								?>
+								<td class="xright"><?php echo $det['post_nontrx_txt']; ?></td>
+								<td class="xright"><?php echo $det['post_sales_txt']; ?></td>
+								<?php
+								if(!empty($det['post_nontrx'])){
+									$total_post_nontrx++;
+									$grand_total_post_nontrx += $det['tax_total'];
+									$grand_total_post_sales += $det['net_sales_total'];
+								}
+							}
 							?>
 						</tr>
 						<?php	
@@ -547,6 +573,21 @@
 						?>
 						<td class="xright xbold">&nbsp;</td>
 						<?php
+						}
+						
+						if(!empty($only_txmark)){
+							$color_total = 'green';
+							$color_total_sales = 'green';
+							if($total_tax != $grand_total_post_nontrx){
+								$color_total = 'red';
+							}
+							if($grand_net_sales_total != $grand_total_post_sales){
+								$color_total_sales = 'red';
+							}
+							?>
+							<td class="xright"><font color="<?php echo $color_total; ?>"><b><?php echo priceFormat($grand_total_post_nontrx); ?></b></font></td>
+							<td class="xright"><font color="<?php echo $color_total_sales; ?>"><b><?php echo priceFormat($grand_total_post_sales); ?></b></font></td>
+							<?php
 						}
 						?>
 						

@@ -86,7 +86,7 @@ function do_thumb($data, $folder, $thumb_folder, $prefix_thumb = "", $limit_thum
 }
 
 /*OPTIONS*/
-if( ! function_exists('get_option_value')){
+if(!function_exists('get_option_value')){
 	function get_option_value($data = array(), $result = 'array'){
 		$prefix = config_item('db_prefix');
 		if(empty($scope)){
@@ -136,7 +136,7 @@ if( ! function_exists('get_option_value')){
 	
 }
 
-if( ! function_exists('get_option')){
+if(!function_exists('get_option')){
 
 	function get_option($data, $echoed = true){
 		
@@ -226,7 +226,7 @@ if( ! function_exists('get_option')){
 	
 }
 
-if( ! function_exists('update_option')){
+if(!function_exists('update_option')){
 
 	function update_option($data = array()){
 		
@@ -328,7 +328,7 @@ if( ! function_exists('update_option')){
 	
 }
 
-if( ! function_exists('replace_to_printer_command')){
+if(!function_exists('replace_to_printer_command')){
 	function replace_to_printer_command($text = '', $tipe_printer = 'EPSON', $tipe_pin = 32){
 		
 		/*
@@ -362,7 +362,7 @@ if( ! function_exists('replace_to_printer_command')){
 			"[set_tab1_APS]"	=> "\x1b\x44\x05\x13",
 			"[set_tab2_APS]"	=> "\x1b\x44\x04\x13",
 			"[list_order_tipe1]"	=> "\x1b\x44\x05\x15",
-			"[list_order_tipe2]"	=> "\x1b\x44\x01\x15",
+			"[list_order_tipe2]"	=> "\x1b\x44\x01\x15"
 		);
 		
 		//EPSON-DEFAULT
@@ -482,7 +482,7 @@ if( ! function_exists('replace_to_printer_command')){
 	}
 }
 
-if( ! function_exists('printer_command_align_right')){
+if(!function_exists('printer_command_align_right')){
 	function printer_command_align_right($text = '', $length_set = 0, $is_html = 0){
 		
 		$text_show = $text;
@@ -504,7 +504,7 @@ if( ! function_exists('printer_command_align_right')){
 	}
 }
 
-if( ! function_exists('get_client_ip')){
+if(!function_exists('get_client_ip')){
 	function get_client_ip() {
         if (!empty($_SERVER['HTTP_CLIENT_IP'])) {   //check ip from share internet
             $ip = $_SERVER['HTTP_CLIENT_IP'];
@@ -523,7 +523,7 @@ if( ! function_exists('get_client_ip')){
 }
 
 //GET STATUS CLOSING
-if( ! function_exists('is_closing')){
+if(!function_exists('is_closing')){
 
 	function is_closing($data = array()){
 		
@@ -1092,7 +1092,7 @@ if(!function_exists('printing_process_error')){
 }
 
 
-if( ! function_exists('cek_server_backup')){
+if(!function_exists('cek_server_backup')){
 	function cek_server_backup($get_opt = array()) {
 		if(!empty($get_opt)){
 		   if(empty($get_opt['as_server_backup'])){
@@ -1112,7 +1112,7 @@ if( ! function_exists('cek_server_backup')){
 }
 
 
-if( ! function_exists('check_report_jam_operasional')){
+if(!function_exists('check_report_jam_operasional')){
 	function check_report_jam_operasional($get_opt = array(), $mktime_dari = 0, $mktime_sampai = 0) {
 		
 		if(!empty($get_opt)){
@@ -1156,7 +1156,7 @@ if( ! function_exists('check_report_jam_operasional')){
 	}
 }
 
-if( ! function_exists('check_maxview_cashierReport')){
+if(!function_exists('check_maxview_cashierReport')){
 	function check_maxview_cashierReport($get_opt = array(), $mktime_dari = 0, $mktime_sampai = 0) {
 		
 		if(empty($scope)){
@@ -1218,7 +1218,7 @@ if( ! function_exists('check_maxview_cashierReport')){
 }
 
 
-if( ! function_exists('no2alphabet')){
+if(!function_exists('no2alphabet')){
 	function no2alphabet($no = 1) {
 		if($no == 0){
 			$no = 1;
@@ -1226,6 +1226,121 @@ if( ! function_exists('no2alphabet')){
 		
 		$huruf = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 		return $huruf[$no];
+	}
+}
+
+if(!function_exists('realisasi_nontrx')){
+	function realisasi_nontrx($tgl_cek_mk = 0) {
+		
+		if(empty($scope)){
+			$scope =& get_instance();
+		}
+		
+		if(empty($tgl_cek_mk)){
+			$tgl_cek_mk = strtotime(date("d-m-Y"));
+		}
+		
+		$bulan = date("n",$tgl_cek_mk);
+		$bulan2 = date("m",$tgl_cek_mk);
+		$billingno_prefix = date("ymd",$tgl_cek_mk);
+		$billingno_prefix_bulan = date("ym",$tgl_cek_mk);
+		$tahun = date("Y",$tgl_cek_mk);
+		$hari_no = date("N",$tgl_cek_mk);
+		
+		$prefix = config_item('db_prefix2');
+		$table_billing = $prefix.'billing';
+		$table_nontrx_target = $prefix.'nontrx_target';
+		
+		//nontrx - fixdate
+		$scope->db->from($table_nontrx_target);
+		$scope->db->where("nontrx_bulan = ".$bulan);
+		$scope->db->where("is_deleted = 0");
+		$get_nontrx_target = $scope->db->get();
+		if($get_nontrx_target->num_rows() > 0){
+			
+			$data_nontrx = $get_nontrx_target->row();
+			if($data_nontrx->nontrx_curr_tanggal != date("Y-m-d", $current_date)){
+				$update_tanggal = array(
+					'nontrx_curr_tanggal'	=> date("Y-m-d", $current_date)
+				);
+				$scope->db->update($table_nontrx_target,$update_tanggal,"nontrx_bulan = ".$bulan." AND is_deleted = 0");
+				
+			}
+		}
+		
+		//hari
+		$nontrx_hari_realisasi = 0;
+		$total_billing_hari = 0;
+		$scope->db->select("SUM(1) as total_billing, SUM(tax_total) as nontrx_hari_realisasi");
+		$scope->db->from($table_billing);
+		$scope->db->where("billing_no LIKE '".$billingno_prefix."%'");
+		$scope->db->where("billing_status", 'paid');
+		$scope->db->where("is_deleted = 0");
+		$scope->db->where("txmark = 1");
+		$get_billing = $scope->db->get();
+		if($get_billing->num_rows() > 0){
+			$data_nontrx = $get_billing->row();
+			$nontrx_hari_realisasi = $data_nontrx->nontrx_hari_realisasi;
+			$total_billing_hari = $data_nontrx->total_billing;
+		}
+		
+		//minggu
+		$nontrx_minggu_realisasi = 0;
+		$total_billing_minggu = 0;
+		if($hari_no == 1){
+			$nontrx_minggu_realisasi = $nontrx_hari_realisasi;
+		}else{
+			
+			$last_day = $tgl_cek_mk;
+			for($i=0;$i<=6;$i++){
+				$last_day = $tgl_cek_mk - ($i*86400);
+				if(date("N", $last_day) == 1){
+					$i = 7;
+				}
+			}
+			
+			$date_week_from = date("Y-m-d", $last_day);
+			$billing_no_from = date("ymd", $last_day);
+			$date_week_till = date("Y-m-d", $tgl_cek_mk);
+			$billing_no_till = date("ymd", ($tgl_cek_mk+86400));
+			$scope->db->select("SUM(1) as total_billing, SUM(tax_total) as nontrx_minggu_realisasi");
+			$scope->db->from($table_billing);
+			$scope->db->where("billing_no >= '".$billing_no_from."0001' AND billing_no < '".$billing_no_till."0001'");
+			$scope->db->where("billing_status", 'paid');
+			$scope->db->where("is_deleted = 0");
+			$scope->db->where("txmark = 1");
+			$get_billing = $scope->db->get();
+			if($get_billing->num_rows() > 0){
+				$data_nontrx = $get_billing->row();
+				$nontrx_minggu_realisasi = $data_nontrx->nontrx_minggu_realisasi;
+				$total_billing_minggu = $data_nontrx->total_billing;
+			}
+		}
+		
+		//bulan
+		$nontrx_bulan_realisasi = 0;
+		$total_billing_bulan = 0;
+		$scope->db->select("SUM(1) as total_billing, SUM(tax_total) as nontrx_bulan_realisasi");
+		$scope->db->from($table_billing);
+		$scope->db->where("billing_no LIKE '".$billingno_prefix_bulan."%'");
+		$scope->db->where("billing_status", 'paid');
+		$scope->db->where("is_deleted = 0");
+		$scope->db->where("txmark = 1 AND (txmark_no IS NOT NULL OR txmark_no != '')");
+		$get_billing = $scope->db->get();
+		if($get_billing->num_rows() > 0){
+			$data_nontrx = $get_billing->row();
+			$nontrx_bulan_realisasi = $data_nontrx->nontrx_bulan_realisasi;
+			$total_billing_bulan = $data_nontrx->total_billing;
+		}
+		
+		$update_realisasi = array(
+			'nontrx_bulan_realisasi'	=> $nontrx_bulan_realisasi,
+			'nontrx_minggu_realisasi'	=> $nontrx_minggu_realisasi,
+			'nontrx_hari_realisasi'		=> $nontrx_hari_realisasi,
+		);
+		$scope->db->update($table_nontrx_target,$update_realisasi,"nontrx_bulan = ".$bulan." AND is_deleted = 0");
+		
+		return $update_realisasi;
 	}
 }
 ?>

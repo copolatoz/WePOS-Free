@@ -16,8 +16,22 @@ class Model_TableInv extends DB_Model {
 		$this->table_inv 	= $this->prefix.'table_inventory';
 		$this->table 	= $this->prefix.'table';
 		
-		$date_now = date("Y-m-d");
-		$date_time_now = date("Y-m-d H:i:s");
+		$opt_value = array(
+			'current_date'
+		);
+		
+		$get_opt = get_option_value($opt_value);
+		
+		//autodelete_print_monitoring
+		$current_date = 0;
+		if(!empty($get_opt['current_date'])){
+			$current_date = $get_opt['current_date'];
+		}else{
+			$current_date = strtotime("now");
+		}
+		
+		$date_now = date("Y-m-d", $current_date);
+		$date_time_now = date("Y-m-d H:i:s", $current_date);
 		$session_user = $this->session->userdata('user_username');	
 		
 		$available_table = array();
@@ -43,6 +57,7 @@ class Model_TableInv extends DB_Model {
 					$all_table[] = array(
 						'tanggal'	=> $date_now,
 						'table_id'	=> $dt->id,
+						'is_active'	=> 1,
 						'created'	=> $date_time_now,
 						'createdby'	=> $session_user,
 						'updated'	=> $date_time_now,
