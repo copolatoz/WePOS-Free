@@ -324,9 +324,9 @@ class SetupAplikasi extends MY_Controller {
 			'autoclosing_generate_accounting'		=> 0,
 			'autoclosing_closing_accounting'		=> 0,
 			'autoclosing_skip_open_jurnal'			=> 0,
-			'account_payable_non_accounting'		=> 0,
-			'account_receivable_non_accounting'		=> 0,
-			'cashflow_non_accounting'				=> 0,
+			'account_payable_non_accounting'		=> 1,
+			'account_receivable_non_accounting'		=> 1,
+			'cashflow_non_accounting'				=> 1,
 			
 			'reservation_cek_stok'					=> 0,
 			'reservation_cashier'					=> 0,
