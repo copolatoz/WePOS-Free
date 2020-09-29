@@ -1259,9 +1259,9 @@ if(!function_exists('realisasi_nontrx')){
 		if($get_nontrx_target->num_rows() > 0){
 			
 			$data_nontrx = $get_nontrx_target->row();
-			if($data_nontrx->nontrx_curr_tanggal != date("Y-m-d", $current_date)){
+			if($data_nontrx->nontrx_curr_tanggal != date("Y-m-d", $tgl_cek_mk)){
 				$update_tanggal = array(
-					'nontrx_curr_tanggal'	=> date("Y-m-d", $current_date)
+					'nontrx_curr_tanggal'	=> date("Y-m-d", $tgl_cek_mk)
 				);
 				$scope->db->update($table_nontrx_target,$update_tanggal,"nontrx_bulan = ".$bulan." AND is_deleted = 0");
 				

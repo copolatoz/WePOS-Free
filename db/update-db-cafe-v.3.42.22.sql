@@ -512,4 +512,8 @@ MODIFY `is_active` tinyint(1) DEFAULT '1';
 ALTER TABLE pos_ooo_menu
 MODIFY `is_active` tinyint(1) DEFAULT '1';
 #
+ALTER TABLE pos_reservation
+MODIFY `reservation_time` time DEFAULT '00:00:00',
+MODIFY `preparing_time` time DEFAULT '00:00:00';
+#
 CREATE VIEW `pos_billing_transaksi` AS (SELECT billing_no AS no_billing,payment_date AS tanggal_billing,total_billing AS subtotal,discount_total AS diskon, service_total AS service_charge, tax_total AS pajak, grand_total FROM pos_billing_trx);
