@@ -11,7 +11,7 @@ untuk versi Retail/Toko: https://github.com/copolatoz/wepos-retail
 
 *untuk auto update: silahkan daftarkan merchant/cafe/resto untuk mendapatkan merchant-key
 
-#Cara Instalasi Aplikasi:
+#Cara Instalasi Aplikasi: (installation )
 1. Install XAMPP 5.5.24 atau 5.6.32
 2. copy-paste folder hasil download aplikasi 'wepos-free' ke xampp/htdocs/
 
