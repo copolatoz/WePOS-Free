@@ -128,6 +128,12 @@ class Model_BillingCashierPrint extends DB_Model {
 			'print_preview_billing'
 			
 		);
+		
+		if($rawbt_check == 1){
+			$opt_value[] = 'merchant_key';
+			$opt_value[] = 'is_cloud';
+		}
+
 		$get_opt = get_option_value($opt_value);
 		
 		//update-2003.001
@@ -447,11 +453,7 @@ class Model_BillingCashierPrint extends DB_Model {
 						$r['success'] = true;
 						$r['info'] = '';
 						$r['rawbt_print'] = 1;
-						//$param_url = 'tipe='.$tipe.'&id='.$id.'&print_type='.$print_type.'&printer_id='.$printer_id;
-						//$param_url .= '&initialize_printing='.$initialize_printing.'&bill_preview='.$bill_preview.'&printer_tipe='.$printer_tipe;
-						//$param_url .= '&do_print='.$do_print.'&new_no='.$new_no.'&order_apps='.$order_apps;
-						//$param_url .= '&is_void='.$is_void.'&void_id='.$void_id.'&order_detail_id='.$order_detail_id;
-						//$r['url_print'] = BASE_URL.'cashier/rawbt/doPrint/trx-'.$billingData->billing_no.'.txt?'.$param_url;
+						
 						$is_voidx = 0;
 						if(empty($is_void)){
 							$is_voidx = 0;
@@ -462,6 +464,12 @@ class Model_BillingCashierPrint extends DB_Model {
 							$order_detail_idx = 0;
 						}
 						$r['url_print'] = BASE_URL.'cashier/rawbt/doPrint/trx-'.$billingData->billing_no.'-'.$tipe.'-'.$id.'-'.$is_voidx.'-'.$void_id.'-'.$order_detail_idx.'.txt';
+						
+						//update-2009.001
+						if(!empty($get_opt['merchant_key']) AND !empty($get_opt['is_cloud'])){
+							$r['url_print'] = BASE_URL.'cashier/rawbt/doPrint/trx-'.$billingData->billing_no.'-'.$tipe.'-'.$id.'-'.$is_voidx.'-'.$void_id.'-'.$order_detail_idx.'/'.$get_opt['merchant_key'].'.txt';
+						}
+						
 						echo json_encode($r);
 						die();
 					}
@@ -1510,7 +1518,6 @@ class Model_BillingCashierPrint extends DB_Model {
 					"{payment_type}"=> $payment_type_show,
 					"{customer}"=> $customer_show,
 					"{customer_code}"=> $customer_code_show,
-					//"\n{dp_total}"=> $total_dp_show,
 					"{dp_total}"=> $total_dp_show,
 					"{notes}"=> $billingData->billing_notes,
 					"{guest}"=> $billingData->total_guest,
@@ -1564,8 +1571,12 @@ class Model_BillingCashierPrint extends DB_Model {
 					$cashierReceipt_layout = empty_value_printer_text($cashierReceipt_layout, '{return}');
 				}
 				
-				if(!empty($billingData->customer_id)){
+				if(empty($billingData->customer_id)){
 					$cashierReceipt_layout = empty_value_printer_text($cashierReceipt_layout, '{customer}');
+				}
+				
+				if(empty($billingData->customer_id)){
+					$cashierReceipt_layout = empty_value_printer_text($cashierReceipt_layout, '{customer_code}');
 				}
 				
 				$cashierReceipt_layout = str_replace("{hide_empty}","", $cashierReceipt_layout);
@@ -3517,11 +3528,19 @@ class Model_BillingCashierPrint extends DB_Model {
 		
 		$cutting_only = $this->input->post('cutting_only', true);
 		
-		$get_opt = get_option_value(array(
+		//update-2009.001
+		$opt_value = array(
 			'printer_id_'.$printSetting.'_default',
 			'printer_id_'.$printSetting.'_'.$ip_addr,
-			'print_preview_billing'
-		));
+			'print_preview_billing',
+		);
+		
+		if($rawbt_check == 1){
+			$opt_value[] = 'merchant_key';
+			$opt_value[] = 'is_cloud';
+		}
+
+		$get_opt = get_option_value($opt_value);
 		
 		//update-2008.001
 		if(!empty($dtParams)){
@@ -3582,7 +3601,12 @@ class Model_BillingCashierPrint extends DB_Model {
 			$r['info'] = '';
 			$r['rawbt_print'] = 1;
 			$r['url_print'] = BASE_URL.'cashier/rawbt/testPrinter/'.$printSetting.'.txt';
-		
+			
+			//update-2009.001
+			if(!empty($get_opt['merchant_key']) AND !empty($get_opt['is_cloud'])){
+				$r['url_print'] = BASE_URL.'cashier/rawbt/testPrinter/'.$printSetting.'/'.$get_opt['merchant_key'].'.txt';
+			}
+			
 			echo json_encode($r);
 			die();
 		}
@@ -4079,6 +4103,12 @@ class Model_BillingCashierPrint extends DB_Model {
 			'jam_operasional_from','jam_operasional_to','jam_operasional_extra','jumlah_shift','settlement_per_shift',
 			'nontrx_override_on'
 		);
+		
+		if($rawbt_check == 1){
+			$opt_value[] = 'merchant_key';
+			$opt_value[] = 'is_cloud';
+		}
+
 		$get_opt = get_option_value($opt_value);
 		
 		//update-2007.001
@@ -4279,6 +4309,12 @@ class Model_BillingCashierPrint extends DB_Model {
 					$pershiftx = $pershift;
 				}
 				$r['url_print'] = BASE_URL.'cashier/rawbt/printSettlement/settlement-'.$get_datex.'-'.$reprintx.'-'.$show_txmarkx.'-'.$pershiftx.'.txt';
+				
+				//update-2009.001
+				if(!empty($get_opt['merchant_key']) AND !empty($get_opt['is_cloud'])){
+					$r['url_print'] = BASE_URL.'cashier/rawbt/printSettlement/settlement-'.$get_datex.'-'.$reprintx.'-'.$show_txmarkx.'-'.$pershiftx.'/'.$get_opt['merchant_key'].'.txt';
+				}
+				
 				echo json_encode($r);
 				die();
 			}

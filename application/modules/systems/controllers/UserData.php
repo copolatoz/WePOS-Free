@@ -409,6 +409,7 @@ class UserData extends MY_Controller {
 			
 		}
 		
+		$user_shortcuts = array();
 		if(!empty($id_user) AND $type_check == 'desktopShortcuts'){
 			$userQuickStartShortcuts =	$this->m->userDesktopShortcuts($id_user);
 			if(!empty($userQuickStartShortcuts)){

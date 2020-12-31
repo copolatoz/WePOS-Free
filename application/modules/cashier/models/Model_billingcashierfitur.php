@@ -3689,113 +3689,137 @@ class Model_BillingCashierFitur extends DB_Model {
 		die(json_encode(($r==null or $r=='')? array('success'=>false) : $r));
 	}
 	
-	//update-2007.001
-	public function override_nontrx($billing_id = '', $tax_total = 0, $grand_total = 0, $is_void = false, $force_txmark = false){
+	//update-2011.001
+	public function override_nontrx($billing_id = '', $tax_total = 0, $grand_total = 0, $is_void = false, $get_opt = array()){
 		
 		$this->table = $this->prefix.'billing';	
 		
-		if(empty($billing_id) OR empty($tax_total)){
+		if(empty($get_opt)){
+			$get_opt_var = array('tandai_pajak_billing','nontrx_sales_auto','nontrx_override_on','nontrx_allow_zero','current_date');
+			$get_opt = get_option_value($get_opt_var);
+			
+		}
+		
+		$force_txmark = false;
+		if(!empty($get_opt['nontrx_override_on'])){
+			$force_txmark = true;
+		}
+		
+		if(empty($billing_id)){
 			return false;
 		}
 		
-		//update-2008.001
-		$this->table_billing_detail = $this->prefix.'billing_detail';	
-		$this->db->select("*");
-		$this->db->from($this->table_billing_detail);
-		//$this->db->where("billing_id = ".$billing_id." AND order_status = 'done' AND tax_total = 0");
-		$this->db->where("billing_id = ".$billing_id." AND (tax_total = 0 OR is_takeaway = 1 OR is_compliment = 1)");
-		$get_billing_detail_null = $this->db->get();
-		if($get_billing_detail_null->num_rows() > 0){
+		if(!empty($get_opt['nontrx_allow_zero']) OR $force_txmark == true){
+			//skip tax_total = 0
+		}else{
 			
-			//curr no -> reorder no
-			$update_billing_data = array();
-			$reorder_date = array();
-			$mk_from_date = 0;
-			$mk_till_date = 0;
-			
-			$this->db->select('*');
-			$this->db->from($this->table);
-			$this->db->where("id IN (".$billing_id.")");
-			$get_billing = $this->db->get();
-			if($get_billing->num_rows() > 0){
-				
-				foreach($get_billing->result() as $dt){
-					
-					$billing_no = substr($dt->billing_no, 0, 6);
-					
-					if(!in_array($billing_no, $reorder_date)){
-						$reorder_date[] = $billing_no;
-					}
-					
-				}
+			if(empty($tax_total)){
+				return false;
 			}
 			
-			$update_billing_data = array(
-				'txmark'	=> 0,
-				'txmark_no'	=> ''
-			);
-			$this->db->update($this->table, $update_billing_data, "id = ".$billing_id);
+			$this->table_billing_detail = $this->prefix.'billing_detail';	
+			$this->db->select("*");
+			$this->db->from($this->table_billing_detail);
+			//$this->db->where("billing_id = ".$billing_id." AND order_status = 'done' AND tax_total = 0");
+			$this->db->where("billing_id = ".$billing_id." AND (tax_total = 0 OR is_takeaway = 1 OR is_compliment = 1)");
+			$get_billing_detail_null = $this->db->get();
+			if($get_billing_detail_null->num_rows() > 0){
 				
-			//reorder billing no per-date
-			if(!empty($reorder_date)){
-				$sql_in_date = '';
-				foreach($reorder_date as $dt){
-					if(empty($sql_in_date)){
-						$sql_in_date = "billing_no LIKE '".$dt."%'";
-					}else{
-						$sql_in_date .= " OR billing_no LIKE '".$dt."%'";
-					}
-				}
+				//curr no -> reorder no
+				$update_billing_data = array();
+				$reorder_date = array();
+				$mk_from_date = 0;
+				$mk_till_date = 0;
 				
-				
-				$reorder_no = array();
-				$update_billing_no = array();
-				$this->db->select();
+				$this->db->select('*');
 				$this->db->from($this->table);
-				$this->db->where("txmark = 1 AND is_deleted = 0 AND billing_status = 'paid' AND (".$sql_in_date.")");
-				$this->db->order_by("id","ASC");
-				$get_billing2 = $this->db->get();
-				if($get_billing2->num_rows() > 0){
+				$this->db->where("id IN (".$billing_id.")");
+				$get_billing = $this->db->get();
+				if($get_billing->num_rows() > 0){
 					
-					foreach($get_billing2->result() as $dt_billing){
+					foreach($get_billing->result() as $dt){
 						
-						$billing_no = substr($dt_billing->billing_no, 0, 6);
-						if(empty($reorder_no[$billing_no])){
-							$reorder_no[$billing_no] = 0;
+						$billing_no = substr($dt->billing_no, 0, 6);
+						
+						if(!in_array($billing_no, $reorder_date)){
+							$reorder_date[] = $billing_no;
 						}
 						
-						$reorder_no[$billing_no]++;
+					}
+				}
+				
+				$update_billing_data = array(
+					'txmark'	=> 0,
+					'txmark_no'	=> ''
+				);
+				$this->db->update($this->table, $update_billing_data, "id = ".$billing_id);
+					
+				//reorder billing no per-date
+				if(!empty($reorder_date)){
+					$sql_in_date = '';
+					foreach($reorder_date as $dt){
+						if(empty($sql_in_date)){
+							$sql_in_date = "billing_no LIKE '".$dt."%'";
+						}else{
+							$sql_in_date .= " OR billing_no LIKE '".$dt."%'";
+						}
+					}
+					
+					
+					$reorder_no = array();
+					$update_billing_no = array();
+					$this->db->select();
+					$this->db->from($this->table);
+					$this->db->where("txmark = 1 AND is_deleted = 0 AND billing_status = 'paid' AND (".$sql_in_date.")");
+					$this->db->order_by("id","ASC");
+					$get_billing2 = $this->db->get();
+					if($get_billing2->num_rows() > 0){
 						
-						$max_str = 4;
-						$tot_str = strlen($reorder_no[$billing_no]);
-						$repeat_zero = str_repeat("0",($max_str-$tot_str));
-						$new_bill_no = $billing_no.$repeat_zero.$reorder_no[$billing_no];
+						foreach($get_billing2->result() as $dt_billing){
+							
+							$billing_no = substr($dt_billing->billing_no, 0, 6);
+							if(empty($reorder_no[$billing_no])){
+								$reorder_no[$billing_no] = 0;
+							}
+							
+							$reorder_no[$billing_no]++;
+							
+							$max_str = 4;
+							$tot_str = strlen($reorder_no[$billing_no]);
+							$repeat_zero = str_repeat("0",($max_str-$tot_str));
+							$new_bill_no = $billing_no.$repeat_zero.$reorder_no[$billing_no];
+							
+							$data_billing = array(
+								'id'		=> $dt_billing->id,
+								'txmark_no'	=> $new_bill_no
+							);
+							
+							$update_billing_no[] = $data_billing;
+						}
 						
-						$data_billing = array(
-							'id'		=> $dt_billing->id,
-							'txmark_no'	=> $new_bill_no
-						);
-						
-						$update_billing_no[] = $data_billing;
+					}
+					
+					if(!empty($update_billing_no)){
+						//update txmark_no
+						$this->db->update_batch($this->table, $update_billing_no, "id");
 					}
 					
 				}
 				
-				if(!empty($update_billing_no)){
-					//update txmark_no
-					$this->db->update_batch($this->table, $update_billing_no, "id");
-				}
-				
+				return false;
 			}
 			
-			return false;
 		}
 		
 		$nontrx_target_default = array();
 		$nontrx_target_current = array();
 		
-		$get_opt_var = array('current_date');
-		$get_opt = get_option_value($get_opt_var);
+		//update-2011.001
+		if(empty($get_opt['current_date'])){
+			$get_opt_var = array('current_date');
+			$get_opt = get_option_value($get_opt_var);
+		}
+		
 		$current_date = $get_opt['current_date'];
 		
 		//default & today

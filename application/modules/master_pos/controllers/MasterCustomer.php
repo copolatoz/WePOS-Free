@@ -16,18 +16,24 @@ class MasterCustomer extends MY_Controller {
 		
 		//is_active_text
 		$sortAlias = array(
-			'is_active_text' => 'is_active',
-			'customer_status_text' => 'customer_status',
-			'limit_kredit_show' => 'limit_kredit'
+			'is_active_text' => 'a.is_active',
+			'customer_status_text' => 'a.customer_status',
+			'limit_kredit_show' => 'a.limit_kredit'
 		);		
 		
 		// Default Parameter
 		$params = array(
-			'fields'		=> '*',
-			'primary_key'	=> 'id',
-			'table'			=> $this->table,
-			'where'			=> array('is_deleted' => 0),
-			'order'			=> array('id' => 'DESC'),
+			'fields'		=> 'a.*, b.sales_code, b.sales_name, b.sales_price, b.sales_percentage, b.sales_type',
+			'primary_key'	=> 'a.id',
+			'table'			=> $this->table.' as a',
+			'join'			=> array(
+									'many', 
+									array(  
+										array($this->prefix.'sales as b','b.id = a.sales_id','LEFT')
+									) 
+								),
+			'where'			=> array('a.is_deleted' => 0),
+			'order'			=> array('a.id' => 'DESC'),
 			'sort_alias'	=> $sortAlias,
 			'single'		=> false,
 			'output'		=> 'array' //array, object, json
@@ -44,11 +50,11 @@ class MasterCustomer extends MY_Controller {
 		}
 		
 		if(!empty($is_dropdown)){
-			$params['order'] = array('customer_name' => 'ASC');
+			$params['order'] = array('a.customer_name' => 'ASC');
 		}
 		
 		if(!empty($searching)){
-			$params['where'][] = "(customer_name LIKE '%".$searching."%' OR customer_email LIKE '%".$searching."%' OR customer_code LIKE '%".$searching."%')";
+			$params['where'][] = "(a.customer_name LIKE '%".$searching."%' OR a.customer_email LIKE '%".$searching."%' OR a.customer_code LIKE '%".$searching."%')";
 		}
 		
 		//get data -> data, totalCount
@@ -91,6 +97,11 @@ class MasterCustomer extends MY_Controller {
 				
 				$s['source_from'] = ucwords($s['source_from']);
 				$s['limit_kredit_show'] = priceFormat($s['limit_kredit'],0);
+				
+				$s['sales_code_name'] = '';
+				if(!empty($s['sales_id'])){
+					$s['sales_code_name'] = $s['sales_code'].' / '.$s['sales_name'];
+				}
 				
 				array_push($newData, $s);
 			}

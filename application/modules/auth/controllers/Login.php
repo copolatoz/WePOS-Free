@@ -15,7 +15,7 @@ class Login extends MX_Controller {
 		}
 		
 		$opt_val = array(
-			'use_login_pin', 'view_multiple_store','is_cloud','merchant_key'
+			'use_login_pin', 'view_multiple_store','is_cloud','merchant_key','app_name','app_name_short','app_release','wepos_version'
 		);
 		
 		$get_opt = get_option_value($opt_val);
@@ -30,11 +30,16 @@ class Login extends MX_Controller {
 		
 		if($this->session->userdata('id_user') != '' && $this->session->userdata('client_id')!=''){ redirect('backend'); }
 		
+		$data = array();
 		$data['title']				=	'Login'.$from_apps_txt.' | '.config_item('program_name').' &mdash; '.$get_opt['merchant_key'];
 		$data['meta_description'] 	=	config_item('program_name');
 		$data['meta_keywords']		=	config_item('program_name');
 		$data['meta_author']		=	config_item('program_author');
 		$data['program_name']		=	config_item('program_name');
+		$data['copyright']			=	config_item('copyright');
+		if(!empty($get_opt['app_name_short']) AND !empty($get_opt['wepos_version']) AND !empty($get_opt['app_release'])){
+			$data['copyright'] = $get_opt['app_name_short'].' v'.$get_opt['wepos_version'].' &copy; '.$get_opt['app_release'];
+		}
 		
 		$theme = config_item('theme'); 
 		$button_color = '#666';
@@ -317,13 +322,25 @@ class Login extends MX_Controller {
 		die(json_encode($r));
 	}
 	
-	public function logout()
+	public function logout($mkey = '')
 	{
 		
 		$this->db->close();
 		$is_cloud = $this->session->userdata('is_cloud');
 		$from_apps = $this->session->userdata('from_apps');
 		$this->unreg_session();
+		
+		if(!empty($mkey)){
+			$exp_mkey = explode("-",$mkey);
+			if(!empty($exp_mkey[1])){
+				$is_cloud = $exp_mkey[0]."-".$exp_mkey[1];
+			}
+			
+			if(!empty($exp_mkey[2])){
+				$from_apps = $exp_mkey[2];
+			}
+			
+		}
 		
 		if(!empty($is_cloud)){
 			if(!empty($from_apps)){

@@ -6,8 +6,8 @@ header("Expires: 0");
 header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
 header("Cache-Control: private",false);
 
-$set_width = 550;
-$total_cols = 4;
+$set_width = 800;
+$total_cols = 9;
 ?>
 <html>
 <body>
@@ -31,9 +31,14 @@ $total_cols = 4;
 			</tr>
 			<tr>
 				<td class="tbl_head_td_first_xcenter" width="100">NO</td>
-				<td class="tbl_head_td_xcenter" width="150">PAYMENT DATE</td>
-				<td class="tbl_head_td_xcenter" width="150">BILLING NO.</td>
-				<td class="tbl_head_td_xcenter" width="150">TOTAL GUEST</td>
+				<td class="tbl_head_td_xcenter" width="100">DATE</td>
+				<td class="tbl_head_td_xcenter" width="50">IN</td>
+				<td class="tbl_head_td_xcenter" width="50">OUT/PAY</td>
+				<td class="tbl_head_td_xcenter" width="100">BILLING NO.</td>
+				<td class="tbl_head_td_xcenter" width="100">GRAND TOTAL</td>
+				<td class="tbl_head_td_xcenter" width="70">GUEST</td>
+				<td class="tbl_head_td_xcenter" width="100">TABLE NO</td>
+				<td class="tbl_head_td" width="180">KETERANGAN</td>
 			</tr>
 		</thead>
 		<tbody>
@@ -44,33 +49,48 @@ $total_cols = 4;
 				$no = 1;
 				$total_guest = 0;
 				$total_billing = 0;
+				$grand_total = 0;
 				foreach($report_data as $det){
 					
 					$date_bill_mk = strtotime($det['payment_date']);
 					$date_bill = date("d-m-Y", $date_bill_mk);
-					
+					$date_created_mk = strtotime($det['created']);
+					$in_bill = date("H:i", $date_created_mk);
+					$out_bill = date("H:i", $date_bill_mk);
 					?>
 					<tr>
 						<td class="tbl_data_td_first_xcenter"><?php echo $no; ?></td>
-						<td class="tbl_data_td"> <?php echo $date_bill; ?></td>
-						<td class="tbl_data_td"><?php echo $det['billing_no']; ?></td>
-						<td class="tbl_data_td_xright"><?php echo $det['total_guest']; ?></td>
+						<td class="tbl_data_td_xcenter"><?php echo $date_bill; ?></td>
+						<td class="tbl_data_td_xcenter"><?php echo $in_bill; ?></td>
+						<td class="tbl_data_td_xcenter"><?php echo $out_bill; ?></td>
+						<td class="tbl_data_td_xcenter"><?php echo $det['billing_no']; ?></td>
+						<td class="tbl_data_td_xright">&nbsp;<?php echo priceFormat($det['grand_total']); ?></td>
+						<td class="tbl_data_td_xcenter">&nbsp;<?php echo priceFormat($det['total_guest']); ?></td>
+						<td class="tbl_data_td_xcenter"><?php echo $det['table_no']; ?></td>
+						<td class="tbl_data_td"><?php echo $det['billing_notes']; ?></td>
 					</tr>
 					<?php
-						
+					
 					$total_billing++;
 					$total_guest +=  $det['total_guest'];
+					$grand_total +=  $det['grand_total'];
 					$no++;
 				}
 				
 				?>
 				<tr>
-					<td class="tbl_summary_td_first_xright" colspan="<?php echo 3; ?>">TOTAL</td>
-					<td class="tbl_summary_td_xright"><?php echo $total_guest; ?></td>
+					<td class="tbl_summary_td_first_xright" colspan="<?php echo 5; ?>">TOTAL</td>
+					<td class="tbl_summary_td_xright">&nbsp;<?php echo priceFormat($grand_total); ?></td>
+					<td class="tbl_summary_td_xcenter">&nbsp;<?php echo priceFormat($total_guest); ?></td>
+					<td class="tbl_summary_td_xright">&nbsp;</td>
+					<td class="tbl_summary_td_xright">&nbsp;</td>
 				</tr>
 				<tr>
-					<td class="tbl_summary_td_first_xright" colspan="<?php echo 3; ?>">AVERAGE</td>
-					<td class="tbl_summary_td_xright"><?php echo priceFormat($total_guest/$total_billing,1); ?></td>
+					<td class="tbl_summary_td_first_xright" colspan="<?php echo 5; ?>">AVERAGE</td>
+					<td class="tbl_summary_td_xright">&nbsp;<?php echo priceFormat($grand_total/$total_guest,2); ?></td>
+					<td class="tbl_summary_td_xcenter">&nbsp;<?php echo priceFormat($total_guest/$total_billing,2); ?></td>
+					<td class="tbl_summary_td_xright">&nbsp;</td>
+					<td class="tbl_summary_td_xright">&nbsp;</td>
 				</tr>
 				<?php
 			}else{
@@ -87,12 +107,13 @@ $total_cols = 4;
 			<td colspan="<?php echo $total_cols; ?>">&nbsp;</td>
 		</tr>
 		<tr>
-			<td colspan="2">Printed: <?php echo date("d-m-Y H:i:s");?></td>
-			<td class="xcenter">
+			<td colspan="3">Printed: <?php echo date("d-m-Y H:i:s");?></td>
+			<td colspan="<?php echo $total_cols-7; ?>">&nbsp;</td>
+			<td class="xcenter" colspan="2">
 					Prepared by:<br/><br/><br/><br/>
 					----------------------------
 			</td>
-			<td class="xcenter">
+			<td class="xcenter" colspan="2">
 				
 					Approved by:<br/><br/><br/><br/>
 					----------------------------

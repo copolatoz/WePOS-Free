@@ -13,7 +13,7 @@
 
 
 /*GET BILLING*/
-if( ! function_exists('getBilling')){
+if(!function_exists('getBilling')){
 	function getBilling($billing_id = ''){
 		
 		$scope =& get_instance();
@@ -252,7 +252,7 @@ if( ! function_exists('getBilling')){
 				'table_id'	=> $billingData->table_id,
 				'is_all_takeaway'	=> $all_takeaway,
 			);
-			$return_inv = updateTable($data_create);
+			$return_inv = updateTable($data_create, $billingData);
 		}
 		
 		if($is_new AND !empty($billingData)){
@@ -263,7 +263,7 @@ if( ! function_exists('getBilling')){
 	}
 }	
 
-if( ! function_exists('get_current_date')){
+if(!function_exists('get_current_date')){
 	function get_current_date($show_error = true){
 		$billing_date = date('ymd');
 		$billing_time = date('G');
@@ -362,7 +362,7 @@ if( ! function_exists('get_current_date')){
 	}
 }
 
-if( ! function_exists('generate_billing_no')){
+if(!function_exists('generate_billing_no')){
 	function generate_billing_no(){
 		
 		$scope =& get_instance();
@@ -527,7 +527,7 @@ if( ! function_exists('generate_billing_no')){
 	}
 }	
 
-if( ! function_exists('calculateBilling')){	
+if(!function_exists('calculateBilling')){	
 	function calculateBilling($billing_id = ''){
 		
 		$scope =& get_instance();
@@ -1019,7 +1019,7 @@ if( ! function_exists('calculateBilling')){
 }
 
 
-if( ! function_exists('logBilling')){	
+if(!function_exists('logBilling')){	
 	function logBilling($billingData = array(), $type = '',  $info = ''){
 		
 		$scope =& get_instance();
@@ -1045,9 +1045,9 @@ if( ! function_exists('logBilling')){
 	}
 }
 
-if( ! function_exists('updateTable')){	
+if(!function_exists('updateTable')){	
 	
-	function updateTable($data_create = array()){
+	function updateTable($data_create = array(), $billingData = array()){
 		
 		$scope =& get_instance();
 		
@@ -1089,16 +1089,17 @@ if( ! function_exists('updateTable')){
 		
 		$r = array('success' => false);
 		
-		if(empty($billing_id) OR empty($table_id)){
+		if(!empty($billingData)){
+			$billing_id = $billingData->billing_id;
+			$table_id = $billingData->table_id;
+			$table_no = $billingData->table_no;
+		}else{
+			$billingData = getBilling($billing_id);	
+		}
+		
+		if(empty($billing_id)){
 			$r = array('success' => false, 'info' => 'Please Pilih Table/Meja!');
 		}else{
-			
-			$billingData = array();
-			$scope->db->where("id", $billing_id);
-			$getBilling = $scope->db->get($scope->table);
-			if($getBilling->num_rows() > 0){
-				$billingData = $getBilling->row();
-			}
 			
 			//CLOSING DATE
 			$var_closing = array(
@@ -1384,34 +1385,6 @@ if( ! function_exists('updateTable')){
 			$scope->table = $scope->prefix.'table';
 			$scope->table_inventory = $scope->prefix.'table_inventory';	
 			
-			// Default Parameter
-			/*$params = array(
-				'fields'		=> "a.id, a.id as invid, a.table_id, a.billing_no, a.tanggal, a.status, a.total_billing, b.*, 
-									c.floorplan_name, c.list_no, c2.room_name, c2.room_no, 
-									d.id as billing_id, d.billing_status, d.total_guest, d.table_id as billing_table",
-				'primary_key'	=> 'a.id',
-				'table'			=> $scope->table_inventory.' as a',
-				'join'			=> array(
-										'many', 
-										array( 
-											array($scope->table.' as b','b.id = a.table_id','LEFT'),
-											array($scope->floorplan.' as c','c.id = b.floorplan_id','LEFT'),
-											array($scope->room.' as c2','c2.id = b.room_id','LEFT'),
-											array($scope->billing.' as d','d.billing_no = a.billing_no','LEFT')
-										)
-									),
-				'where'			=> array('b.is_deleted' => 0),
-				'order'			=> array('c.list_no' => 'ASC', 'b.id' => 'ASC', 'b.table_no' => 'ASC'),
-				'single'		=> false,
-				'output'		=> 'array' //array, object, json
-			);
-			
-			$params['where'][] = "a.tanggal = '".$date_today."'";
-			
-			//get data -> data, totalCount
-			$get_data = $scope->find_all($params);
-			*/
-			
 			$scope->db->select('a.id, a.id as invid, a.table_id, a.billing_no, a.tanggal, a.status, a.total_billing, b.*, 
 									c.floorplan_name, c.list_no, c2.room_name, c2.room_no, 
 									d.id as billing_id, d.billing_status, d.total_guest, d.table_id as billing_table');
@@ -1536,7 +1509,7 @@ if( ! function_exists('updateTable')){
 }
 
 //PEMBULATAN
-if( ! function_exists('hitungPembulatan')){	
+if(!function_exists('hitungPembulatan')){	
 	
 	function hitungPembulatan($data_pembulatan = array()){
 		

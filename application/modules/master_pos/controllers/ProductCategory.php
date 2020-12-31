@@ -255,7 +255,7 @@ class ProductCategory extends MY_Controller {
         }  
         else
         {  
-            $r = array('success' => false, 'info' => 'Delete Product Category Failed!'); 
+            $r = array('success' => false, 'info' => 'Hapus Product Category Gagal!'); 
         }
 		die(json_encode($r));
 	}

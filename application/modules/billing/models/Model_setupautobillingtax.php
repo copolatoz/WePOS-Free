@@ -43,6 +43,7 @@ class Model_setupautobillingtax extends DB_Model {
 		if(!empty($id)){
 			$this->db->where("id != '".$id."'");
 		}
+		$this->db->where("is_deleted = 0");
 		$get_other = $this->db->get();
 		if($get_other->num_rows() > 0){
 			$r = array('success' => false, 'info' => 'Set Auto: '.$nontrx_bulan_text.' '.$nontrx_tahun.' sudah ada!');
@@ -68,14 +69,14 @@ class Model_setupautobillingtax extends DB_Model {
 			);	
 			
 			//SAVE
-			$insert_id = false;
+			$id = 0;
 			$this->lib_trans->begin();
 				$q = $this->m->add($var);
-				$insert_id = $this->m->get_insert_id();
+				$id = $this->m->get_insert_id();
 			$this->lib_trans->commit();			
 			if($q)
 			{  
-				$r = array('success' => true, 'id' => $insert_id); 				
+				$r = array('success' => true, 'id' => $id); 				
 			}  
 			else
 			{  
@@ -117,10 +118,13 @@ class Model_setupautobillingtax extends DB_Model {
 		if(!empty($is_default)){
 			
 			//update default
-			$var_default = $var['fields'];
-			$this->db->update($this->table,$var_default,"is_default = 1");
+			//$var_default = $var['fields'];
+			//$this->db->update($this->table,$var_default,"is_default = 1");
+			$var_default = array('is_default' => 1);
+			$this->db->update($this->table,$var_default,"id = ".$id);
 			
-			
+			$var_default = array('is_default' => 0);
+			$this->db->update($this->table,$var_default,"is_default = 1 AND id != ".$id);
 			
 		}
 		die(json_encode(($r==null or $r=='')? array('success'=>false) : $r));

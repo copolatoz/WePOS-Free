@@ -3,8 +3,7 @@ class DataBilling extends MY_Controller {
 	
 	public $table;
 		
-	function __construct()
-	{
+	function __construct(){
 		parent::__construct();
 		$this->prefix_apps = config_item('db_prefix');
 		$this->prefix = config_item('db_prefix2');
@@ -12,8 +11,7 @@ class DataBilling extends MY_Controller {
 		$this->load->model('model_billingdetail', 'm2');
 	}
 
-	public function gridData()
-	{
+	public function gridData(){
 		$this->table = $this->prefix.'billing';
 		$this->table2 = $this->prefix.'billing_detail';		
 		$session_user = $this->session->userdata('user_username');	
@@ -142,7 +140,6 @@ class DataBilling extends MY_Controller {
 		if(!empty($table_id)){
 			$params['where'][] = "(a.table_id = ".$table_id.")";
 		}
-		
 		if(!empty($report_paid_order)){
 			$params['order'] = array('a.id' => $report_paid_order);
 		}
@@ -299,7 +296,7 @@ class DataBilling extends MY_Controller {
 				
 				if(!empty($use_payment_date)){
 					//07:00:00
-					//$params['where'][] = "(a.payment_date >= '".$qdate_from." 00:00:01' AND a.payment_date <= '".$qdate_till_max." 06:00:00')";
+					//$params['where'][] = "(a.payment_date >= '".$qdate_from." 00:00:00' AND a.payment_date <= '".$qdate_till_max." 23:59:59')";
 					$params['where'][] = "(a.payment_date >= '".$qdate_from."' AND a.payment_date <= '".$qdate_till_max."')";
 				}else{
 				
@@ -337,9 +334,8 @@ class DataBilling extends MY_Controller {
 					if(!empty($hide_hold_bill_yesterday)){
 						$lastest_billing_no = date("ymd", $qdate_from_mk).'0000';
 						$params['where'][] = "(a.billing_no >= '".$lastest_billing_no."')";
-					}
-				}
-					
+					}				
+				}						
 			}
 		}
 		
@@ -707,8 +703,7 @@ class DataBilling extends MY_Controller {
       	die(json_encode($get_data));
 	}
 
-	public function gridData_billingDetail()
-	{
+	public function gridData_billingDetail(){
 		$this->table = $this->prefix.'billing';
 		$this->table2 = $this->prefix.'billing_detail';
 		$this->product_img_url = RESOURCES_URL.'product/thumb/';
@@ -736,7 +731,8 @@ class DataBilling extends MY_Controller {
 								a.buyget_item, a.free_item, a.package_item, a.ref_order_id, a.use_stok_kode_unik, a.data_stok_kode_unik, a.product_price_real,
 								a.is_kerjasama, a.supplier_id, a.persentase_bagi_hasil, a.total_bagi_hasil,
 								b.product_name, b.product_chinese_name, b.has_varian, b.product_desc, b.product_type, b.product_image, 
-								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code, b.product_code",
+								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code, 
+								b.product_code, b.has_list_price",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table2.' as a',
 			'join'			=> array(
@@ -748,7 +744,9 @@ class DataBilling extends MY_Controller {
 										array($this->prefix.'items as e','e.id = b.id_ref_item','LEFT')
 									) 
 								),
-			'where'			=> array("a.order_qty > 0", 'a.is_deleted' => 0, 'a.billing_id' => $billing_id),
+			//update-2010.001
+			//'where'			=> array("a.order_qty > 0", 'a.is_deleted' => 0, 'a.billing_id' => $billing_id),
+			'where'			=> array("a.order_qty != 0", 'a.is_deleted' => 0, 'a.billing_id' => $billing_id),
 			'order'			=> array('a.id' => 'ASC'),
 			'sort_alias'	=> $sortAlias,
 			'single'		=> false,
@@ -802,10 +800,8 @@ class DataBilling extends MY_Controller {
 				$s['order_total_show'] = 'Rp '.priceFormat($s['order_total']);		
 				
 				if(empty($s['product_code'])){
-
 					$s['product_code'] = $s['item_code'];
 				}
-
 				
 				$s['product_detail_info'] = $s['product_code'].'<br/>'.$s['product_name'];
 				
@@ -856,7 +852,6 @@ class DataBilling extends MY_Controller {
 					$s['discount_price'] = $s['promo_price'];
 					//$s['discount_total'] = ($s['order_qty']*$s['discount_price']);
 				}
-
 					
 				//BUY AND GET
 				if($s['is_buyget'] == 1){
@@ -903,9 +898,7 @@ class DataBilling extends MY_Controller {
 				if(in_array($s['id'], $product_package)){
 					$s['order_status'] = 'done';
 				}
-
-					
-
+				
 				$s['order_status_text'] = '<b style="color:orange;">'.ucwords($s['order_status']).'</b>';
 				if($s['order_status'] == 'done'){
 					$s['order_status_text'] = '<b style="color:green;">Print To<br/>';
@@ -1130,7 +1123,6 @@ class DataBilling extends MY_Controller {
 				//$qdate_till = date("Y-m-d 23:59:59",strtotime($date_till));
 				//$qdate_from_plus1 = date("Y-m-d",strtotime($qdate_till)+ONE_DAY_UNIX);
 				//$params['where'][] = "(b.payment_date >= '".$qdate_from."' AND b.payment_date <= '".$qdate_till."')";
-				
 				$qdate_from = $ret_dt['qdate_from'];
 				$qdate_till = $ret_dt['qdate_till'];
 				$qdate_till_max = $ret_dt['qdate_till_max'];
@@ -1319,8 +1311,7 @@ class DataBilling extends MY_Controller {
       	die(json_encode($get_data));
 	}
 	
-	public function gridData_billingDetail_split()
-	{
+	public function gridData_billingDetail_split(){
 		$this->table = $this->prefix.'billing';
 		$this->table2 = $this->prefix.'billing_detail_split';
 		$this->product_img_url = RESOURCES_URL.'product/thumb/';
@@ -1347,7 +1338,8 @@ class DataBilling extends MY_Controller {
 								a.is_kerjasama, a.supplier_id, a.persentase_bagi_hasil, a.total_bagi_hasil, 
 								a.buyget_item, a.free_item, a.ref_order_id, a.is_buyget,
 								b.product_name, b.product_chinese_name, b.has_varian, b.product_desc, b.product_type, b.product_image, 
-								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code, b.product_code",
+								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code, 
+								b.product_code, b.has_list_price",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table2.' as a',
 			'join'			=> array(
@@ -1359,7 +1351,9 @@ class DataBilling extends MY_Controller {
 										array($this->prefix.'items as e','e.id = b.id_ref_item','LEFT')
 									) 
 								),
-			'where'			=> array("a.order_qty > 0", 'a.is_deleted' => 0, 'a.billing_id' => $billing_id),
+			//update-2010.001
+			//'where'			=> array("a.order_qty > 0", 'a.is_deleted' => 0, 'a.billing_id' => $billing_id),
+			'where'			=> array('a.is_deleted' => 0, 'a.billing_id' => $billing_id),
 			'order'			=> array('a.id' => 'ASC'),
 			'sort_alias'	=> $sortAlias,
 			'single'		=> false,
@@ -1376,7 +1370,6 @@ class DataBilling extends MY_Controller {
 		if(!empty($searching)){
 			$params['where'][] = "(a.product_name  LIKE '%".$searching."%' OR a.product_name LIKE '%".$searching."%')";
 		}
-		
 		$params['where'][] = "(a.ref_order_id = 0)";
 		
 		//get data -> data, totalCount
@@ -1435,7 +1428,6 @@ class DataBilling extends MY_Controller {
 					$s['product_price_show'] = 'Rp <strike>'.priceFormat($s['product_normal_price_promo']).'</strike> <font color="orange">'.$s['promo_price_show'].'</font>';
 					$s['product_detail_info'] = $s['product_name'].$additional_text.' <font color="orange">Promo</font><br/>X @ Rp.'.priceFormat($s['product_price']);
 					
-
 
 				}
 						
@@ -1531,8 +1523,7 @@ class DataBilling extends MY_Controller {
 	}
 	
 	//DISCOUNT
-	public function gridData_billingDetail_discount()
-	{
+	public function gridData_billingDetail_discount(){
 		$this->table = $this->prefix.'billing';
 		$this->table2 = $this->prefix.'billing_detail';
 		$this->table_discount = $this->prefix.'discount';
@@ -1564,7 +1555,8 @@ class DataBilling extends MY_Controller {
 								a.buyget_item, a.free_item, a.ref_order_id, a.use_stok_kode_unik, a.data_stok_kode_unik,
 								a.is_kerjasama, a.supplier_id, a.persentase_bagi_hasil, a.total_bagi_hasil,
 								b.product_name, b.product_chinese_name, b.has_varian, b.product_desc, b.product_type, b.product_image, 
-								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code, b.product_code",
+								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code, 
+								b.product_code, b.has_list_price",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table2.' as a',
 			'join'			=> array(
@@ -1593,7 +1585,6 @@ class DataBilling extends MY_Controller {
 		if(!empty($searching)){
 			$params['where'][] = "(a.product_name  LIKE '%".$searching."%' OR a.product_name LIKE '%".$searching."%')";
 		}
-		
 		$params['where'][] = "(a.ref_order_id = 0)";
 		
 		//get data -> data, totalCount
@@ -1720,7 +1711,6 @@ class DataBilling extends MY_Controller {
 				
 				//$s['product_detail_info'] .= $additional_text.'<br/>X @ Rp.'.priceFormat($s['product_price']);				
 				
-					
 				//PROMO UPDATE
 				if($s['is_promo'] == 1){
 					
@@ -1737,7 +1727,6 @@ class DataBilling extends MY_Controller {
 					$s['product_price_show'] = 'Rp <strike>'.priceFormat($s['product_normal_price_promo']).'</strike> <font color="orange">'.$s['promo_price_show'].'</font>';
 					$s['product_detail_info'] = $s['product_name'].$additional_text.' <font color="orange">Promo</font><br/>X @ Rp.'.priceFormat($s['product_price']);
 					
-
 
 				}
 						
@@ -1997,8 +1986,7 @@ class DataBilling extends MY_Controller {
 	}
 	
 	//Compliment
-	public function gridData_billingDetail_compliment()
-	{
+	public function gridData_billingDetail_compliment(){
 		$this->table = $this->prefix.'billing';
 		$this->table2 = $this->prefix.'billing_detail';
 		$this->table_discount = $this->prefix.'discount';
@@ -2030,7 +2018,8 @@ class DataBilling extends MY_Controller {
 								a.buyget_item, a.free_item, a.ref_order_id, a.use_stok_kode_unik, a.data_stok_kode_unik,
 								a.is_kerjasama, a.supplier_id, a.persentase_bagi_hasil, a.total_bagi_hasil,
 								b.product_name, b.product_chinese_name, b.has_varian, b.product_desc, b.product_type, b.product_image, 
-								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code, b.product_code",
+								b.category_id, b.product_group, b.use_tax, b.use_service, c.product_category_name, d.varian_name, e.item_code, 
+								b.product_code, b.has_list_price",
 			'primary_key'	=> 'a.id',
 			'table'			=> $this->table2.' as a',
 			'join'			=> array(
@@ -2042,7 +2031,9 @@ class DataBilling extends MY_Controller {
 										array($this->prefix.'items as e','e.id = b.id_ref_item','LEFT')
 									) 
 								),
-			'where'			=> array("a.order_qty > 0", 'a.is_deleted' => 0, 'a.billing_id' => $billing_id),
+			//update-2010.001
+			//'where'			=> array("a.order_qty > 0", 'a.is_deleted' => 0, 'a.billing_id' => $billing_id),
+			'where'			=> array("a.order_qty != 0", 'a.is_deleted' => 0, 'a.billing_id' => $billing_id),
 			'order'			=> array('a.id' => 'ASC'),
 			'sort_alias'	=> $sortAlias,
 			'single'		=> false,
@@ -2059,7 +2050,6 @@ class DataBilling extends MY_Controller {
 		if(!empty($searching)){
 			$params['where'][] = "(a.product_name  LIKE '%".$searching."%' OR a.product_name LIKE '%".$searching."%')";
 		}
-		
 		$params['where'][] = "(a.ref_order_id = 0)";
 		
 		//get data -> data, totalCount
@@ -2478,9 +2468,11 @@ class DataBilling extends MY_Controller {
 										array($this->prefix.'items as e','e.id = b.id_ref_item','LEFT')
 									) 
 								),
-			'where'			=> array("a.order_qty > 0", 'a.is_deleted' => 0, 'a.billing_id' => $id),
+			//update-2010.001					
+			//'where'			=> array("a.order_qty > 0", 'a.is_deleted' => 0, 'a.billing_id' => $id),
+			'where'			=> array("a.order_qty != 0", 'a.is_deleted' => 0, 'a.billing_id' => $id),
 			'order'			=> array('a.id' => 'ASC'),
-			'limit'			=> 9999,
+			'limit'			=> 99999,
 			'sort_alias'	=> $sortAlias,
 			'single'		=> false,
 			'output'		=> 'array' //array, object, json
@@ -2537,10 +2529,7 @@ class DataBilling extends MY_Controller {
 					}
 				}
 				
-				//$s['product_detail_info'] .= $additional_text.'<br/>X @ Rp.'.priceFormat($s['product_price']);				
-				
-				
-					
+				//$s['product_detail_info'] .= $additional_text.'<br/>X @ Rp.'.priceFormat($s['product_price']);
 				//PROMO UPDATE
 				if($s['is_promo'] == 1){
 					
@@ -2555,9 +2544,6 @@ class DataBilling extends MY_Controller {
 					$s['product_name_show'] = $s['product_name'].' <font color="orange">Promo</font>';
 					$s['product_price_show'] = 'Rp <strike>'.priceFormat($s['product_normal_price_promo']).'</strike> <font color="orange">'.$s['promo_price_show'].'</font>';
 					$s['product_detail_info'] = $s['product_name'].$additional_text.' <font color="orange">Promo</font><br/>X @ Rp.'.priceFormat($s['product_price']);
-					
-
-
 				}
 						
 				//BUY AND GET

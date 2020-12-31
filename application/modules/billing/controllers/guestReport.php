@@ -48,7 +48,7 @@ class guestReport extends MY_Controller {
 			'do'	=> '',
 			'report_data'	=> array(),
 			'report_place_default'	=> '',
-			'report_name'	=> 'GUEST REPORT',
+			'report_name'	=> 'GUEST & TABLE REPORT',
 			'date_from'	=> $date_from,
 			'date_till'	=> $date_till,
 			'user_fullname'	=> $user_fullname,
@@ -142,7 +142,7 @@ class guestReport extends MY_Controller {
 		}
 		
 		$useview = 'print_guestReport';
-		$data_post['report_name'] = 'GUEST REPORT';
+		$data_post['report_name'] = 'GUEST & TABLE REPORT';
 		
 		if($do == 'excel'){
 			$useview = 'excel_guestReport';

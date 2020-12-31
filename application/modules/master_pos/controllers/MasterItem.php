@@ -639,6 +639,12 @@ class MasterItem extends MY_Controller {
 			$use_stok_kode_unik = 0;
 		}
 		
+		//uupdate-2011.001
+		$qty_unit = $this->input->post('qty_unit');
+		if(empty($qty_unit)){
+			$qty_unit = 1;
+		}
+		
 		$total_bagi_hasil = 0;
 		if($is_kerjasama == 1){
 			
@@ -749,7 +755,8 @@ class MasterItem extends MY_Controller {
 					'is_kerjasama'	=>	$is_kerjasama,
 					'persentase_bagi_hasil'	=>	$persentase_bagi_hasil,
 					'total_bagi_hasil'	=>	$total_bagi_hasil,
-					'use_stok_kode_unik'	=>	$use_stok_kode_unik
+					'use_stok_kode_unik'	=>	$use_stok_kode_unik,
+					'qty_unit'		=>	$qty_unit
 				),
 				'table'		=>  $this->table
 			);				
@@ -834,7 +841,8 @@ class MasterItem extends MY_Controller {
 					'is_kerjasama'	=>	$is_kerjasama,
 					'persentase_bagi_hasil'	=>	$persentase_bagi_hasil,
 					'total_bagi_hasil'	=>	$total_bagi_hasil,
-					'use_stok_kode_unik'	=>	$use_stok_kode_unik
+					'use_stok_kode_unik'	=>	$use_stok_kode_unik,
+					'qty_unit'		=>	$qty_unit
 				),
 				'table'			=>  $this->table,
 				'primary_key'	=>  'id'
@@ -966,7 +974,8 @@ class MasterItem extends MY_Controller {
 				'supplier_id'	=>	$supplier_id,
 				'is_kerjasama'	=>	$is_kerjasama,
 				'persentase_bagi_hasil'	=>	$persentase_bagi_hasil,
-				'total_bagi_hasil'	=>	$total_bagi_hasil
+				'total_bagi_hasil'	=>	$total_bagi_hasil,
+				'qty_unit'		=>	$qty_unit
 			);
 			
 			if(!empty($id_items)){
@@ -1001,6 +1010,48 @@ class MasterItem extends MY_Controller {
 				
 			}
 			
+			
+		}else{
+			
+			//unlink = set not active
+			if($this->input->post('form_type_masterItem', true) == 'edit'){
+				$id_items = $id;
+			
+				$get_item = array();
+				$this->db->from($this->table);
+				$this->db->where("id = '".$id_items."'");
+				$this->db->where("is_deleted = 0");
+				$get_item_dt = $this->db->get();
+				if($get_item_dt->num_rows() > 0){
+					$get_item = $get_item_dt->row();
+					$item_no = $get_item->item_no;
+				}
+				
+				$data_product = array(
+					'product_no' 	=>  $item_no,
+					'product_name' 	=>  $item_name,
+					'product_desc'	=>	$item_desc,
+					'product_price'	=>	$sales_price,
+					'normal_price'	=>	$sales_price,
+					'product_hpp'	=>	$item_price,
+					'unit_id'		=>	$unit_id,
+					'product_type'	=>	'item',
+					'product_group'	=>	'other',
+					'use_tax'		=>	$sales_use_tax,
+					'use_service'	=>	$sales_use_service,
+					'updated'		=>	date('Y-m-d H:i:s'),
+					'updatedby'		=>	$session_user,
+					'is_active'		=>	0,
+					'from_item'		=>	1,
+					'supplier_id'	=>	$supplier_id,
+					'is_kerjasama'	=>	$is_kerjasama,
+					'persentase_bagi_hasil'	=>	$persentase_bagi_hasil,
+					'total_bagi_hasil'	=>	$total_bagi_hasil,
+					'qty_unit'		=>	$qty_unit
+				);
+				
+				$this->db->update($this->prefix.'product',$data_product, "id_ref_item = ".$id_items);
+			}
 			
 		}
 		
@@ -1127,7 +1178,7 @@ class MasterItem extends MY_Controller {
 				"{SKU}"		=> $item_sku,
 				"{Cat}"		=> $item_category_code,
 				"{SubCat}"	=> $item_subcategory_code,
-				"{SubCat1}"	=> $item_subcategory_code,
+				//"{SubCat1}"	=> $item_subcategory_code,
 			);
 			
 			$item_code_format = strtr($item_code_format, $repl_attr);
@@ -1200,7 +1251,7 @@ class MasterItem extends MY_Controller {
 			"{SKU}"		=> $item_sku,
 			"{Cat}"		=> $item_category_code,
 			"{SubCat}"	=> $item_subcategory_code,
-			"{SubCat1}"	=> $item_subcategory_code,
+			//"{SubCat1}"	=> $item_subcategory_code,
 		);
 		
 		$item_code_format = strtr($item_code_format, $repl_attr);
@@ -1372,7 +1423,7 @@ class MasterItem extends MY_Controller {
 				
 				$get_opt = get_option_value($opt_value);
 				
-				$item_code_format = '{Cat}{SubCat1}{ItemNo}';
+				$item_code_format = '{Cat}{SubCat}{ItemNo}';
 				$item_code_separator = '.';
 				
 				$no_unit = 0;

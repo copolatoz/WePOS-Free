@@ -355,6 +355,7 @@ class Model_returdetail extends DB_Model {
 					unset($dt['item_name']);
 					unset($dt['unit_id']);
 					unset($dt['unit_name']);
+					unset($dt['sales_price_show']);
 					unset($dt['returd_price_show']);
 					unset($dt['returd_total_show']);
 					unset($dt['nomor']);

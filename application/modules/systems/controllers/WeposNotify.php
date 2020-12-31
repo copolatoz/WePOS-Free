@@ -311,8 +311,8 @@ class WeposNotify extends MY_Controller {
 			}
 		}
 		
-		//NOTIFY SO ----------------------------------------------------------
-		$notify_text_so = '';
+		//NOTIFY reservation ----------------------------------------------------------
+		$notify_text_reservation = '';
 		if(!empty($all_reservation)){
 			
 			$no_err = 0;
@@ -321,14 +321,14 @@ class WeposNotify extends MY_Controller {
 					$no_err++;
 					
 					if($no_err == 1){
-						$notify_text_so .= '<br/>---CEK SO DONE NOT IN STOK---';
+						$notify_text_reservation .= '<br/>---CEK reservation DONE NOT IN STOK---';
 					}
-					$notify_text_so .= '<br/>'.$dt.' --> NOT FOUND!';
+					$notify_text_reservation .= '<br/>'.$dt.' --> NOT FOUND!';
 				}
 			}
 			
 			if($no_err == 0){
-				//echo '<br/>---CEK SO DONE NOT IN STOK => AMAN!!---<br/><br/>';
+				//echo '<br/>---CEK reservation DONE NOT IN STOK => AMAN!!---<br/><br/>';
 			}else{
 				//echo '<br/><br/>';
 			}
@@ -345,37 +345,37 @@ class WeposNotify extends MY_Controller {
 					if($detail_reservation_stok[$key] != $val){
 						$no_err++;
 						if($no_err == 1){
-							$notify_text_so .= '<br/><br/>---CEK SO DETAIL ITEM => STOK ITEM---';
+							$notify_text_reservation .= '<br/><br/>---CEK reservation DETAIL ITEM => STOK ITEM---';
 						}
-						$notify_text_so .= '<br/>ITEM DETAIL: '.$all_reservation_no_detail[$key].' / #'.$key.' --> TIDAK SAMA DENGAN DI STOK!';
+						$notify_text_reservation .= '<br/>ITEM DETAIL: '.$all_reservation_no_detail[$key].' / #'.$key.' --> TIDAK SAMA DENGAN DI STOK!';
 						
 					}
 					
 				}else{
 					$no_err++;
 					if($no_err == 1){
-						$notify_text_so .= '<br/><br/>---CEK SO DETAIL ITEM => STOK ITEM---';
+						$notify_text_reservation .= '<br/><br/>---CEK reservation DETAIL ITEM => STOK ITEM---';
 					}
-					$notify_text_so .= '<br/>DETAIL: '.$all_reservation_no_detail[$key].' / #'.$key.' --> TIDAK ADA DI STOK!';
+					$notify_text_reservation .= '<br/>DETAIL: '.$all_reservation_no_detail[$key].' / #'.$key.' --> TIDAK ADA DI STOK!';
 					
 				}
 				
 			}
 			
 			if($no_err == 0){
-				//echo '<br/>---CEK SO DETAIL ITEM => STOK ITEM => AMAN!!---<br/><br/>';
+				//echo '<br/>---CEK reservation DETAIL ITEM => STOK ITEM => AMAN!!---<br/><br/>';
 			}else{
 				//echo '<br/><br/>';
 			}
 		}
 		
 		if(!empty($all_reservation_total)){
-			$notify_text_so .= '<br/>---CEK SO TOTAL => DETAIL---';
+			$notify_text_reservation .= '<br/>---CEK reservation TOTAL => DETAIL---';
 			foreach($all_reservation_total as $reservation_id => $total){
 				
 				if(!empty($all_reservation_total_detail[$reservation_id])){
 					if($all_reservation_total_detail[$reservation_id] != $total){
-						$notify_text_so .= '<br/>#'.$all_reservation_no[$reservation_id].' -> '.priceFormat($total).' != '.priceFormat($all_reservation_total_detail[$reservation_id]);
+						$notify_text_reservation .= '<br/>#'.$all_reservation_no[$reservation_id].' -> '.priceFormat($total).' != '.priceFormat($all_reservation_total_detail[$reservation_id]);
 					}
 				}
 				
@@ -455,20 +455,20 @@ class WeposNotify extends MY_Controller {
 			 
 		}
 		
-		if(!empty($notify_text_so)){
+		if(!empty($notify_text_reservation)){
 			  
 			$set_log = array(
 				'log_date'	=> date("Y-m-d"),
 				'log_type'	=> 'inventory',
-				'log_info'	=> 'Inventory: Sales Order',
-				'log_data'	=> $notify_text_so,
+				'log_info'	=> 'Inventory: Reservation',
+				'log_data'	=> $notify_text_reservation,
 				'createdby'	=> $session_user,
 				'created'	=> date("Y-m-d H:i:s")
 			);
 			  
 			//cek on table_notify_log
 			$this->db->from($this->notify_log);
-			$this->db->where("log_info = 'Inventory: Sales Order' AND log_date = '".date("Y-m-d")."'");
+			$this->db->where("log_info = 'Inventory: Reservation' AND log_date = '".date("Y-m-d")."'");
 			$get_log = $this->db->get();
 			if($get_log->num_rows() > 0){
 				//update
@@ -638,24 +638,17 @@ class WeposNotify extends MY_Controller {
 			
 			//next-autobackup-sales
 			
+			$day_min15_mk = $today_mktime-(15*ONE_DAY_UNIX);
+			$day_min15 = date("Y-m-d", $day_min15_mk);
+			
+			//REMOVE NOTIF
+			$this->db->query("DELETE FROM ".$this->prefix_pos."notify_log WHERE log_date <= '".$day_min15."'");
+		
 		}else{
 			if($current_date <= $tgl_cek_mk){
 				$update_option = array('current_date' => $tgl_cek_mk);
 				update_option($update_option);
 				$current_date = $tgl_cek_mk;
-			}
-		}
-		
-		//check perpanjang berlangganan
-		if(!empty($get_opt['produk_expired'])){
-			if($get_opt['produk_expired'] != 'unlimited'){
-				$produk_expired = strtotime($get_opt['produk_expired']);
-				$produk_expired_alert = $produk_expired - (7*ONE_DAY_UNIX);
-				if($today_mktime >= $produk_expired_alert){
-					$sisa_hari = ceil(($produk_expired - $today_mktime)/ONE_DAY_UNIX);
-					$r = array('success' => false, 'info' => 'Masa berlaku aplikasi WePOS.id anda akan berakhir<br/>pada tanggal: <b>'.$get_opt['produk_expired'].', <font color="red">'.$sisa_hari.' Hari lagi</font></b><br/><br/>Silakan lakukan perpanjangan aplikasi</br>via website: <b>https://wepos.id</b><br/><br/>untuk pertanyaan seputar masa aktif hubungi<br/>CS: <b>0877-2229-4411</b> atau <b>0812-2254-9676</b></br>');
-					die(json_encode($r));
-				}
 			}
 		}
 		
@@ -672,6 +665,31 @@ class WeposNotify extends MY_Controller {
 			
 		}
 		
+		//check perpanjang berlangganan
+		if(!empty($get_opt['produk_expired'])){
+			if($get_opt['produk_expired'] != 'unlimited'){
+				$produk_expired = strtotime($get_opt['produk_expired']." 23:59:59");
+				$produk_expired_alert = $produk_expired - (7*ONE_DAY_UNIX);
+				if($today_mktime >= $produk_expired_alert){
+					$sisa_hari = ($produk_expired - $today_mktime)/ONE_DAY_UNIX;
+					$sisa_jam = ($produk_expired - $today_mktime) % ONE_DAY_UNIX;
+					
+					if($sisa_hari > 3){
+						$sisa_hari = ceil($sisa_hari);
+						$sisa_hari_text = $sisa_hari.' Hari';
+					}else{
+						$sisa_hari = floor($sisa_hari);
+						$sisa_jam = ceil($sisa_jam/3600);
+						$sisa_hari_text = $sisa_hari.' Hari, '.$sisa_jam.' Jam';
+					}
+					
+					if($sisa_hari >= 0){
+						$r = array('success' => false, 'info' => 'Masa berlaku aplikasi WePOS.id anda akan berakhir<br/>pada tanggal: <b>'.$get_opt['produk_expired'].', <font color="red">'.$sisa_hari_text.' lagi</font></b><br/><br/>Silakan lakukan perpanjangan aplikasi</br>via website: <b>https://wepos.id</b><br/><br/>untuk pertanyaan seputar masa aktif hubungi<br/>CS: <b>0812-2254-9676</b></br>');
+						die(json_encode($r));
+					}
+				}
+			}
+		}
 		
 		$r = array('success' => true, 'info' => 'Bersihkan Data - Selesai');
 		die(json_encode($r));

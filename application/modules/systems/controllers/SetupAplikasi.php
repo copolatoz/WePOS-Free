@@ -32,10 +32,11 @@ class SetupAplikasi extends MY_Controller {
 			'use_pembulatan','pembulatan_dinamis','cashier_pembulatan_keatas','cashier_max_pembulatan','autohold_create_billing','billing_log',
 			'table_available_after_paid','hide_takeaway_order_apps','default_discount_payment','save_order_note','must_choose_customer',
 			'order_timer','hide_button_invoice','hide_button_halfpayment','hide_button_mergebill','hide_button_splitbill','hide_button_logoutaplikasi','hide_button_downpayment',
-			'cashier_credit_ar','min_noncash','no_hold_billing','print_preview_billing','default_tipe_billing',
+			'cashier_credit_ar','min_noncash','no_hold_billing','print_preview_billing','default_tipe_billing','default_tipe_billing_so',
 			'maxday_cashier_report','jam_operasional_from','jam_operasional_to','jam_operasional_extra',
 			'hide_detail_taxservice','hide_detail_takeaway','hide_detail_compliment','use_block_table',
 			'hold_table_timer','hold_table_max_timer','hold_table_warning_timer',
+			'input_qty_under_zero','input_harga_manual','input_tanggal_manual_so',
 		
 			'print_order_peritem_kitchen','print_order_peritem_bar','print_order_peritem_other','print_chinese_text','show_multiple_print_qc',
 			'multiple_print_qc','show_multiple_print_billing','multiple_print_billing',
@@ -66,10 +67,13 @@ class SetupAplikasi extends MY_Controller {
 			'account_payable_non_accounting','account_receivable_non_accounting','cashflow_non_accounting',
 			'tujuan_penerimaan_dp_reservation','jenis_penerimaan_dp_reservation', 'reservation_cashier', 'default_discount_id_reservation',
 			
-			'tandai_pajak_billing','override_pajak_billing','nontrx_sales_auto','nontrx_backup_onsettlement','nontrx_button_onoff',
+			'tandai_pajak_billing','override_pajak_billing','nontrx_sales_auto','nontrx_backup_onsettlement',
+			'nontrx_button_onoff','nontrx_allow_zero','nontrx_override_on',
 			'allow_app_all_user','reset_billing_yesterday','billing_no_simple','standalone_cashier',
-			'custom_print_APS','all_status_order_printed','opsi_no_print_settlement',
+			'all_status_order_printed','opsi_no_print_settlement',
 			
+			'use_product_sku','product_sku_from_code','auto_product_code','product_code_separator','product_code_format','product_no_length',
+			'mode_qty_unit','mode_harga_grosir','link_customer_dan_sales','use_stok_imei',
 		);
 		
 		$get_opt = get_option_value($opt_val);
@@ -80,6 +84,21 @@ class SetupAplikasi extends MY_Controller {
 		$get_opt['wepos_tipe_display'] = '-';
 		if(!empty($get_opt['wepos_tipe'])){
 			$get_opt['wepos_tipe_display'] = $get_opt['wepos_tipe'];
+		}
+		
+		$theme_print_billing_name = array(
+			0 => 'Default',
+			1 => 'Layout 1',
+			2 => 'Layout 2'
+		);
+		
+		if(empty($get_opt['theme_print_billing'])){
+			$get_opt['theme_print_billing'] = 0;
+		}
+		$get_opt['theme_print_billing_name'] = $theme_print_billing_name[$get_opt['theme_print_billing']];
+		
+		if(!empty($get_opt['ds_auto_terima'])){
+			$get_opt['ds_count_stock'] = 1;
 		}
 		
 		$spv_access_active = array();
@@ -125,10 +144,11 @@ class SetupAplikasi extends MY_Controller {
 			'use_pembulatan','pembulatan_dinamis','cashier_pembulatan_keatas','cashier_max_pembulatan','autohold_create_billing','billing_log',
 			'table_available_after_paid','hide_takeaway_order_apps','default_discount_payment','save_order_note','must_choose_customer',
 			'order_timer','hide_button_invoice','hide_button_halfpayment','hide_button_mergebill','hide_button_splitbill','hide_button_logoutaplikasi','hide_button_downpayment',
-			'cashier_credit_ar','min_noncash','no_hold_billing','print_preview_billing','default_tipe_billing',
+			'cashier_credit_ar','min_noncash','no_hold_billing','print_preview_billing','default_tipe_billing','default_tipe_billing_so',
 			'maxday_cashier_report','jam_operasional_from','jam_operasional_to','jam_operasional_extra',
 			'hide_detail_taxservice','hide_detail_takeaway','hide_detail_compliment','use_block_table',
 			'hold_table_timer','hold_table_max_timer','hold_table_warning_timer',
+			'input_qty_under_zero','input_harga_manual','input_tanggal_manual_so',
 			
 			'print_order_peritem_kitchen','print_order_peritem_bar','print_order_peritem_other','print_chinese_text','show_multiple_print_qc',
 			'multiple_print_qc','show_multiple_print_billing','multiple_print_billing',
@@ -159,10 +179,13 @@ class SetupAplikasi extends MY_Controller {
 			'account_payable_non_accounting','account_receivable_non_accounting','cashflow_non_accounting',
 			'tujuan_penerimaan_dp_reservation','jenis_penerimaan_dp_reservation', 'reservation_cashier', 'default_discount_id_reservation',
 			
-			'tandai_pajak_billing','override_pajak_billing','nontrx_sales_auto','nontrx_backup_onsettlement','nontrx_button_onoff',
+			'tandai_pajak_billing','override_pajak_billing','nontrx_sales_auto','nontrx_backup_onsettlement',
+			'nontrx_button_onoff','nontrx_allow_zero','nontrx_override_on',
 			'allow_app_all_user','reset_billing_yesterday','billing_no_simple','standalone_cashier',
-			'custom_print_APS','all_status_order_printed','opsi_no_print_settlement'
+			'all_status_order_printed','opsi_no_print_settlement',
 			
+			'use_product_sku','product_sku_from_code','auto_product_code','product_code_separator','product_code_format','product_no_length',
+			'mode_qty_unit','mode_harga_grosir','link_customer_dan_sales','use_stok_imei',
 		);
 		
 		$default_option = array(
@@ -175,7 +198,7 @@ class SetupAplikasi extends MY_Controller {
 			
 			'use_login_pin'					=> 0,
 			'supervisor_pin_mode'			=> 0,
-			'auto_logout_time'				=> 0, //3600000
+			'auto_logout_time'				=> 36000,
 			'input_chinese_text'			=> 0,
 			'management_systems'			=> 0,
 			'ipserver_management_systems' 	=> '',
@@ -216,6 +239,7 @@ class SetupAplikasi extends MY_Controller {
 			'min_noncash'					=> 0,
 			'no_hold_billing'				=> 0,
 			'default_tipe_billing'			=> 0,
+			'default_tipe_billing_so'		=> 0,
 			'print_preview_billing'			=> 0,
 			'maxday_cashier_report'			=> 1,
 			'jam_operasional_from'			=> '07:00',
@@ -228,6 +252,9 @@ class SetupAplikasi extends MY_Controller {
 			'use_block_table'				=> 0,
 			'hold_table_max_timer'			=> 0,
 			'hold_table_warning_timer'		=> 0,
+			'input_qty_under_zero'			=> 0,
+			'input_harga_manual'			=> 0,
+			'input_tanggal_manual_so'		=> 0,
 					
 			'print_order_peritem_kitchen'	=> 0,
 			'print_order_peritem_bar'		=> 0,
@@ -284,15 +311,15 @@ class SetupAplikasi extends MY_Controller {
 			'receiving_select_warehouse'	=> 0,
 			'stock_rekap_start_date'		=> '01-'.date("m-Y"),
 			'persediaan_barang'				=> 'average',
-			'auto_item_code'				=> 0,
+			'auto_item_code'				=> 1,
 			'item_code_separator'			=> '.',
-			'item_code_format'				=> '{Cat}.{SubCat}.{ItemNo}',
+			'item_code_format'				=> '{Cat}{SubCat}{ItemNo}',
 			'item_no_length'				=> 4,
 			'so_count_stock'				=> 0,
 			'ds_count_stock'				=> 0,
 			'ds_auto_terima'				=> 0,
-			'ds_detail_show_hpp'			=> 0,
 			'hide_empty_stock_on_report'	=> 0,
+			'ds_detail_show_hpp'			=> 0,
 			'use_item_sku'					=> 0,
 			'item_sku_from_code'			=> 0,
 			'autocut_stok_sales'			=> 0,
@@ -339,13 +366,27 @@ class SetupAplikasi extends MY_Controller {
 			'nontrx_sales_auto'						=> 0,
 			'nontrx_backup_onsettlement'			=> 0,
 			'nontrx_button_onoff'					=> 0,
+			'nontrx_allow_zero'						=> 0,
+			'nontrx_override_on'					=> 0,
+			
 			'allow_app_all_user'					=> 0,
 			'reset_billing_yesterday'				=> 0,
 			'billing_no_simple'						=> 0,
 			'standalone_cashier'					=> 0,
-			'custom_print_APS'						=> 0,
 			'all_status_order_printed'				=> 0,
 			'opsi_no_print_settlement'				=> 0,
+			
+			'use_product_sku'						=> 0,
+			'product_sku_from_code'					=> 0,
+			'auto_product_code'						=> 1,
+			'product_code_separator'				=> '.',
+			'product_code_format'					=> '{Cat}{ProdNo}',
+			'product_no_length'						=> 3,
+			
+			'mode_qty_unit'							=> 0,
+			'mode_harga_grosir'						=> 0,
+			'link_customer_dan_sales'				=> 0,
+			'use_stok_imei'							=> 0,
 			
 		);
 		
@@ -375,13 +416,16 @@ class SetupAplikasi extends MY_Controller {
 		if(empty($data_option['item_code_format']) AND !empty($data_option['auto_item_code'])){
 			$data_option['auto_item_code'] = 1;
 			$data_option['item_code_separator'] = '.';
-			$data_option['item_code_format'] = '{Cat}.{SubCat}.{ItemNo}';
+			$data_option['item_code_format'] = '{Cat}{SubCat}{ItemNo}';
 			$data_option['item_no_length'] = 4;
-			
-			$setupAplikasi['auto_item_code'] = 1;
-			$setupAplikasi['item_code_separator'] = '.';
-			$setupAplikasi['item_code_format'] = '{Cat}.{SubCat}.{ItemNo}';
-			$setupAplikasi['item_no_length'] = 4;
+		}
+		
+		//update-2011.001
+		if(empty($data_option['product_code_format'])){
+			$data_option['auto_product_code'] = 1;
+			$data_option['product_code_separator'] = '.';
+			$data_option['product_code_format'] = '{Cat}{ProdNo}';
+			$data_option['product_no_length'] = 3;
 		}	
 		
 		if(empty($data_option['jumlah_shift'])){
@@ -584,6 +628,21 @@ class SetupAplikasi extends MY_Controller {
 				
 			}
 			
+		}
+		
+		$theme_print_billing_name = array(
+			0 => 'Default',
+			1 => 'Layout 1',
+			2 => 'Layout 2'
+		);
+		
+		if(empty($setupAplikasi['theme_print_billing'])){
+			$setupAplikasi['theme_print_billing'] = 0;
+		}
+		$setupAplikasi['theme_print_billing_name'] = $theme_print_billing_name[$setupAplikasi['theme_print_billing']];
+		
+		if(!empty($setupAplikasi['ds_auto_terima'])){
+			$setupAplikasi['ds_count_stock'] = 1;
 		}
 		
 		//UPDATE OPTIONS

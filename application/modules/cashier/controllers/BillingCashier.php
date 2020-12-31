@@ -15,6 +15,7 @@ class BillingCashier extends MY_Controller {
 		$this->load->model('inventory/model_usagewaste', 'usagewaste');
 		$this->load->model('account_receivable/model_account_receivable', 'account_receivable');
 		$this->load->model('cashflow/model_penerimaan_kas', 'penerimaan_kas');
+		$this->load->model('master_pos/model_masterproductpriceqty', 'priceqty');
 		
 		/*helper billing*/
 		$this->load->helper('billing');
@@ -145,7 +146,7 @@ class BillingCashier extends MY_Controller {
 			$this->db->select("b.id, b.billing_no");
 			$this->db->from($this->table." as b");
 			$this->db->where("b.billing_status = 'hold'");
-			$this->db->where("b.created >= '".date("Y-m-d 00:00:07")."'");
+			$this->db->where("b.created >= '".date("Y-m-d 00:00:00")."'");
 			
 			$get_hold_billing = $this->db->get();
 			if($get_hold_billing->num_rows() > 0){
@@ -260,36 +261,6 @@ class BillingCashier extends MY_Controller {
 		
 	}
 	
-	public function getBillingDetailCounter(){
-		
-		$this->table = $this->prefix.'billing_detail';	
-		$session_user = $this->session->userdata('user_username');					
-				
-		if(empty($session_user)){
-			return false;
-		}
-		
-		$this->table = $this->prefix.'billing_detail';						
-		
-		$dateToday = date('Ymd');
-		$order_counter = 1;
-		
-		$this->db->select("order_counter");
-		$this->db->from($this->table);
-		$this->db->where('order_day_counter', $dateToday);
-		$this->db->order_by('order_counter', 'DESC');
-		$get_last = $this->db->get();
-		if($get_last->num_rows() > 0){
-			$data_billing_detail = $get_last->row();
-			$order_counter = $data_billing_detail->order_counter;
-			
-			$order_counter += 1;
-			
-		}
-		
-		return $order_counter;	
-	}
-	
 	public function cancelBillingPaid(){
 		$this->cancelBilling(true);
 	}
@@ -347,7 +318,7 @@ class BillingCashier extends MY_Controller {
 		if(!empty($cancel_billing_id)){
 			$cancelBilling = $this->doCancelBilling($cancel_billing_id, $is_paid, $cancel_notes);
 			if($cancelBilling == false){
-				$r = array('success' => false, 'info' => 'Void/Void/Cancel Billing, Gagal!');
+				$r = array('success' => false, 'info' => 'Void/Cancel Billing, Gagal!');
 				echo json_encode($r);
 				die();
 			}
@@ -388,7 +359,6 @@ class BillingCashier extends MY_Controller {
 		$get_opt = get_option_value($get_opt_var);
 		
 		cek_server_backup($get_opt);
-		
 		
 		//IF ONLY ROLE KASIR
 		$role_id_kasir = 0;		
@@ -528,7 +498,6 @@ class BillingCashier extends MY_Controller {
 					$get_billno_d = substr($data_billing->billing_no,4,2);
 					$billing_date = (2000+$get_billno_y)."-".$get_billno_m."-".$get_billno_d;
 					
-					
 					if($autocut_stok_sales_to_usage == 1){
 						
 						$update_stok = 'usage_rollback';
@@ -543,8 +512,6 @@ class BillingCashier extends MY_Controller {
 						);
 						
 						$ret_usage = $this->usagewaste->save_sales_usage($params);
-						
-
 						
 					}else{
 						
@@ -726,7 +693,7 @@ class BillingCashier extends MY_Controller {
 		$opt_value = array(
 			'wepos_tipe','retail_warehouse','autocut_stok_sales_to_usage','autocut_stok_sales',
 			'diskon_sebelum_pajak_service','cashier_credit_ar','no_hold_billing','as_server_backup',
-			//'tandai_pajak_billing','nontrx_sales_auto'
+			'tandai_pajak_billing','nontrx_sales_auto','nontrx_override_on','nontrx_allow_zero','current_date'
 		);
 		
 		$get_opt = get_option_value($opt_value);
@@ -870,7 +837,6 @@ class BillingCashier extends MY_Controller {
 							
 						}
 						
-						
 					}
 					
 					if($billingData->payment_id == 4 AND $cashier_credit_ar == 1){
@@ -909,9 +875,9 @@ class BillingCashier extends MY_Controller {
 						
 					}
 					
-					//update-2007.001
+					//update-2011.001
 					if(!empty($billingData->txmark)){
-						$this->mfitur->override_nontrx($billing_id, $billingData->tax_total, $billingData->grand_total, true);
+						$this->mfitur->override_nontrx($billing_id, $billingData->tax_total, $billingData->total_billing, true, $get_opt);
 					}
 					
 				}
@@ -1123,13 +1089,33 @@ class BillingCashier extends MY_Controller {
 		if($form_type_orderProduct == 'add' AND $is_express == 1 AND !empty($main_billing_id))
 		{
 			$this->db->from($this->table2);
-			$this->db->where("billing_id = ".$main_billing_id." AND product_id = ".$product_id);
+			$this->db->where("billing_id = ".$main_billing_id." AND product_id = ".$product_id." AND is_deleted = 0");
 			$get_old_detail = $this->db->get();
 			if($get_old_detail->num_rows() > 0){
 				$dt_old_detail = $get_old_detail->row();
 				$form_type_orderProduct = 'edit';
 				$id = $dt_old_detail->id;
 				$order_qty =  $dt_old_detail->order_qty+$order_qty;
+			}
+			
+			//update-2011.001
+			$has_list_price = $this->input->post('has_list_price');
+			if(!empty($has_list_price)){
+				
+				$dt_post_price = array(
+					'product_id' => $product_id,
+					'order_qty' => $order_qty,
+					'has_varian' => $has_varian,
+					'varian_id' => $varian_id,
+					'return_data' => true
+				);
+				
+				$get_cekPriceQty = $this->priceqty->cekPriceQty($dt_post_price);
+				
+				if(!empty($get_cekPriceQty['success'])){
+					$product_price = $get_cekPriceQty['product_price'];
+				}
+				
 			}
 			
 		}
@@ -1690,7 +1676,6 @@ class BillingCashier extends MY_Controller {
 				}
 			}
 			
-			
 			$this->lib_trans->begin();
 				$q = $this->mdetail->save($var, $id);
 			$this->lib_trans->commit();
@@ -2021,7 +2006,7 @@ class BillingCashier extends MY_Controller {
 			
 			if($is_express == 1){
 				$qty = $billingData->order_qty;
-				$keterangan = 'bypass';
+				$keterangan = 'Cancel Order (express)';
 			}else{
 				if($billingData->billing_status == 'paid'){
 					$r = array('success' => false, 'info' => 'Billing: '.$billingData->billing_no.' sudah dibayar!<br/>Tidak bisa cancel order, lakukan void billing atau hold billing'); 
@@ -2297,7 +2282,7 @@ class BillingCashier extends MY_Controller {
 		'diskon_sebelum_pajak_service','cashier_max_pembulatan','cashier_pembulatan_keatas','pembulatan_dinamis',
 		'wepos_tipe','retail_warehouse','autocut_stok_sales_to_usage','autocut_stok_sales','cashier_credit_ar','min_noncash',
 		'must_choose_customer','as_server_backup','jumlah_shift','shift_active',
-		'tandai_pajak_billing','nontrx_sales_auto','nontrx_override_on');
+		'tandai_pajak_billing','nontrx_sales_auto','nontrx_override_on','nontrx_allow_zero','current_date');
 		$get_opt = get_option_value($get_opt_var);
 		
 		cek_server_backup($get_opt);
@@ -2343,6 +2328,7 @@ class BillingCashier extends MY_Controller {
 		if(!empty($get_opt['autocut_stok_sales_to_usage'])){
 			$autocut_stok_sales_to_usage = $get_opt['autocut_stok_sales_to_usage'];
 		}
+		
 		//update-1912-002		
 		$autocut_stok_sales = 0;
 		if(!empty($get_opt['autocut_stok_sales'])){
@@ -2498,7 +2484,6 @@ class BillingCashier extends MY_Controller {
 			die();
 		}
 		
-		
 		$bank_id = $this->input->post('bank_id');
 		$card_no = $this->input->post('card_no');
 		
@@ -2523,7 +2508,6 @@ class BillingCashier extends MY_Controller {
 			die();
 		}
 		
-		
 		$discount_id = $this->input->post('discount_id');
 		$discount_notes = $this->input->post('discount_notes');		
 		$discount_percentage = $this->input->post('discount_percentage');
@@ -2535,7 +2519,6 @@ class BillingCashier extends MY_Controller {
 		
 		$total_dp = $this->input->post('total_dp');
 		$get_total -= $total_dp;
-		
 		
 		$compliment_total = $this->input->post('compliment_total');
 		$get_total -= $compliment_total;
@@ -2635,6 +2618,7 @@ class BillingCashier extends MY_Controller {
 			die();
 		}
 		
+		$all_item_id = array();
 		$all_unik_kode = array();
 		$all_unik_kode_perkey = array();
 		$all_unik_kode_peritemId = array();
@@ -2653,7 +2637,6 @@ class BillingCashier extends MY_Controller {
 		$all_product_gramasi = array();
 		$all_product_varian = array();
 		$all_product_qty = array();
-		
 		
 		//calc detail
 		$total_tax = 0;
@@ -2788,6 +2771,134 @@ class BillingCashier extends MY_Controller {
 					$dt['product_price'] = ($total_billing_order/$dt['order_qty']);
 				}
 				
+				//update 2019-02-11
+				//NO-PACKAGE
+				if($dtRow->product_type == 'item' AND !empty($dtRow->order_qty)){
+					if(empty($dtRow->varian_id)){
+						$dtRow->varian_id = 0;
+					}
+					$key_prod_varian = $dtRow->product_id.'_'.$dtRow->varian_id;
+					if(empty($all_product_order[$key_prod_varian])){
+						$all_product_order[$key_prod_varian] = array(
+							'product_id'	=> $dtRow->product_id,
+							'from_item'		=> $dtRow->from_item,
+							'id_ref_item'	=> $dtRow->id_ref_item,
+							'unit_id'		=> $dtRow->unit_id,
+							'varian_id'		=> $dtRow->varian_id,
+							'price_hpp'		=> 0,
+							'product_price'	=> 0,
+							'qty'			=> 0
+						);
+					}
+					
+					$all_product_order[$key_prod_varian]['qty'] += $total_qty;
+					$all_product_order[$key_prod_varian]['price_hpp'] += ($dtRow->product_price_hpp * $total_qty);
+					$all_product_order[$key_prod_varian]['product_price'] += 0;
+					
+					if(!in_array($dt['product_id'], $all_product_gramasi)){
+						$all_product_gramasi[] = $dt['product_id'];
+					}
+					
+					if(!in_array($key_prod_varian, $all_product_varian)){
+						$all_product_varian[] = $key_prod_varian;
+					}
+					
+					if(empty($all_product_qty[$key_prod_varian])){
+						$all_product_qty[$key_prod_varian] = 0;
+					}
+					
+					$all_product_qty[$key_prod_varian] += $total_qty;
+					
+				}
+				
+				//PACKAGE
+				if($dtRow->product_type == 'package' AND !empty($dtRow->order_qty)){
+					//get all product package / default product
+					if(empty($dtRow->varian_id)){
+						$dtRow->varian_id = 0;
+					}
+					$key_prod_varian = $dtRow->product_id.'_'.$dtRow->varian_id;
+					if(empty($all_product_order_package[$key_prod_varian])){
+						$all_product_order_package[$key_prod_varian] = array(
+							'product_id'	=> $dtRow->product_id,
+							'from_item'		=> $dtRow->from_item,
+							'id_ref_item'	=> $dtRow->id_ref_item,
+							'unit_id'		=> $dtRow->unit_id,
+							'varian_id'		=> $dtRow->varian_id,
+							'price_hpp'		=> 0,
+							'product_price'	=> 0,
+							'qty'			=> 0
+						);
+					}
+					
+					$all_product_order_package[$key_prod_varian]['qty'] += $total_qty;
+					$all_product_order_package[$key_prod_varian]['price_hpp'] += ($dtRow->product_price_hpp * $total_qty);
+					$all_product_order_package[$key_prod_varian]['product_price'] += 0;
+					
+					if(!in_array($key_prod_varian, $all_product_package_varian)){
+						$all_product_package_varian[] = $key_prod_varian;
+					}
+					
+					if(empty($all_product_package_qty[$key_prod_varian])){
+						$all_product_package_qty[$key_prod_varian] = 0;
+					}
+					
+					$all_product_package_qty[$key_prod_varian] += $total_qty;
+					
+					$this->db->select("a.product_id, a.product_qty, a.product_price");
+					$this->db->from($this->table_product_package." as a");
+					$this->db->where("a.package_id IN (".$dtRow->product_id.") AND a.varian_id = '".$dtRow->varian_id."'");
+					$get_package = $this->db->get();
+					if($get_package->num_rows() > 0){
+						foreach($get_package->result() as $dtRow){
+							
+							if(empty($all_product_gramasi_package[$key_prod_varian])){
+								$all_product_gramasi_package[$key_prod_varian] = array();
+								$all_product_gramasi_package_qty[$key_prod_varian] = array();
+							}
+							
+							//get all product gramasi 
+							if(!in_array($dtRow->product_id, $all_product_gramasi_package[$key_prod_varian])){
+								$all_product_gramasi_package[$key_prod_varian][] = $dtRow->product_id;
+								$all_product_gramasi_package_qty[$key_prod_varian][$dtRow->product_id] = 0;
+							}
+							
+							$all_product_gramasi_package_qty[$key_prod_varian][$dtRow->product_id] += $dtRow->product_qty;
+							
+						}
+						
+					}else{
+						
+						if(!in_array($dtRow->product_id, $all_product_package_empty)){
+							$all_product_package_empty[] = $dtRow->product_id;
+						}
+					}
+				}
+				
+				if(empty($all_item_id[$dtRow->product_id])){
+					$all_item_id[$dtRow->product_id] = array();
+				}
+				
+				if(empty($dtRow->item_id)){
+					$this->db->select("a.product_id, a.item_id");
+					$this->db->from($this->table_product_gramasi." as a");
+					$this->db->where("a.product_id = ".$dtRow->product_id." AND a.is_deleted = 0 AND a.is_active = 1");
+					$get_dt_item = $this->db->get();
+					if($get_dt_item->num_rows() > 0){
+						foreach($get_dt_item->result() as $dt){
+							if(!in_array($dt->item_id, $all_item_id[$dtRow->product_id])){
+								$all_item_id[$dtRow->product_id][] = $dt->item_id;
+							}
+						}
+					}
+				}else{
+					if(!empty($all_item_id[$dtRow->product_id])){
+						if(!in_array($dtRow->item_id, $all_item_id[$dtRow->product_id])){
+							$all_item_id[$dtRow->product_id][] = $dtRow->item_id;
+						}
+					}
+				}
+				
 				//UNIK KODE
 				$dtDet = (array) $dtRow;
 				if(!empty($dtDet['use_stok_kode_unik'])){
@@ -2797,22 +2908,13 @@ class BillingCashier extends MY_Controller {
 							if(!empty($dt)){
 								if(!in_array($dt, $all_unik_kode)){
 									$all_unik_kode[] = $dt;
-									if(empty($all_unik_kode_perkey[$key])){
-										$all_unik_kode_perkey[$key] = array();
+									
+									if(empty($all_unik_kode_perkey[$dtRow->product_id])){
+										$all_unik_kode_perkey[$dtRow->product_id] = array();
 									}
-									$all_unik_kode_perkey[$key][] = $dt;
+									$all_unik_kode_perkey[$dtRow->product_id][] = $dt;
 									
-									//if(empty($all_unik_kode_peritemId[$dtDet['item_id']])){
-									//	$all_unik_kode_peritemId[$dtDet['item_id']] = array();
-									//}
-									//$all_unik_kode_peritemId[$dtDet['item_id']][] = $dt;
-									
-									if(empty($all_unik_kode_peritemId[$dt])){
-										$all_unik_kode_peritemId[$dt] = '';
-									}
-									$all_unik_kode_peritemId[$dt] = $dtDet['item_id'];
-									
-									$item_name_kode[$dtDet['item_id']] = $dtDet['item_name'];
+									$item_name_kode[$dtRow->product_id] = $dtRow->product_name;
 									
 								}else{
 									$same_unik_kode[] = $dt;
@@ -2855,30 +2957,29 @@ class BillingCashier extends MY_Controller {
 				}
 			}
 			
-			$all_unik_kode_na = array();
-			if(!empty($all_unik_kode_peritemId)){
-				foreach($all_unik_kode_peritemId as $dt => $itemID){
+			if(!empty($all_unik_kode_perkey)){
+				foreach($all_unik_kode_perkey as $prodID => $dtImei){
 					
-					
-					if(in_array($dt, $all_unik_kode_db)){
-						//cek kode berdasarkan item id
-						$nok_item = false;
-						if(!empty($all_unik_kode_db_peritem[$dt])){
-							if($all_unik_kode_db_peritem[$dt] == $itemID){
-								//ok
-								$nok_item = true;
-							}else{
-								$nok_item = false;
+					if(!empty($dtImei)){
+						foreach($dtImei as $snImei){
+							$nok_item = false;
+							//cek imei valid di prodID
+							if(in_array($snImei, $all_unik_kode_db)){
+								//valid
+								if(in_array($all_unik_kode_db_peritem[$snImei], $all_item_id[$prodID])){
+									$nok_item = true;
+								}
+							}
+							
+							if($nok_item == false){
+								if(empty($item_name_kode[$prodID])){
+									$item_name_kode[$prodID] = '#'.$prodID;
+								}
+								$r = array('success' => false, 'info' => 'Unik Kode (SN/IMEI): '.$snImei.' tidak ada pada '.$item_name_kode[$prodID]); 
+								die(json_encode($r));
 							}
 						}
-						
-						if($nok_item == false){
-							$r = array('success' => false, 'info' => 'Unik Kode (SN/IMEI): '.$dt.' tidak ada pada '.$item_name_kode[$itemID]); 
-							die(json_encode($r));
-						}
-						
 					}
-					
 					
 				}
 			}
@@ -2889,7 +2990,13 @@ class BillingCashier extends MY_Controller {
 		}
 		
 		$datetime_now = date('Y-m-d H:i:s');
-			
+		
+		//update-2010.001
+		$payment_date = date('Y-m-d H:i:s');
+		//if(!empty($billingData->is_salesorder) AND !empty($billingData->billing_datetime)){
+		//	$payment_date = $billingData->billing_datetime;
+		//}
+				
 		$r = '';
 		$var = array('fields'	=>	array(
 				'table_id'		=>	$table_id,
@@ -2918,7 +3025,7 @@ class BillingCashier extends MY_Controller {
 				///'discount_price'	=>	$discount_price,
 				//'discount_total'	=>	$total_discount,
 				'billing_status'	=>	'paid',
-				'payment_date'		=>	$datetime_now,
+				'payment_date'		=>	$payment_date,
 				'single_rate'		=>	$single_rate,
 				'is_compliment'		=>	$is_compliment,
 				'is_half_payment'	=>	$is_half_payment,
@@ -2982,7 +3089,6 @@ class BillingCashier extends MY_Controller {
 						}
 					}
 				//}
-				
 				
 			}
 			
@@ -3065,13 +3171,9 @@ class BillingCashier extends MY_Controller {
 				//$updateCF = $this->penerimaan_kas->set_DP_Sales($id);
 			}
 			
-			//update-2007.001
+			//update-2011.001
 			if(!empty($get_opt['tandai_pajak_billing']) AND !empty($get_opt['nontrx_sales_auto'])){
-				if(!empty($get_opt['nontrx_override_on'])){
-					$this->mfitur->override_nontrx($billing_id, $total_tax, $grand_total, false, true);
-				}else{
-					$this->mfitur->override_nontrx($billing_id, $total_tax, $grand_total);
-				}
+				$this->mfitur->override_nontrx($billing_id, $total_tax, $billingData->total_billing, false, $get_opt);
 			}
 			
 			//SAVE TO LOG

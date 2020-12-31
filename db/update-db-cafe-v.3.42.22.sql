@@ -15,7 +15,7 @@ UPDATE apps_options SET option_value = 'WePOS.Cafe' WHERE option_var = 'app_name
 #
 UPDATE apps_options SET option_value = 'WePOS.Cafe' WHERE option_var = 'app_name_short';
 #
-UPDATE apps_options SET option_value = '2020' WHERE option_var = 'app_release';
+UPDATE apps_options SET option_value = '2021' WHERE option_var = 'app_release';
 #
 ALTER TABLE pos_stock_opname_detail
 ADD `use_stok_kode_unik` TINYINT(1) DEFAULT '0';
@@ -450,12 +450,6 @@ ALTER TABLE pos_item_category DROP INDEX item_category_code;
 #
 ALTER TABLE pos_bank DROP INDEX bank_code_idx;
 #
-UPDATE apps_modules SET module_breadcrumb = '3. Cashier & Reservation>Non-Tax/Compliment>Set Manual Non-Tax/Compliment', 
-start_menu_path = '3. Cashier & Reservation>Non-Tax/Compliment>Set Manual Non-Tax/Compliment', 
-module_name = 'Set Manual Non-Tax/Compliment', 
-module_description = 'Set Manual Non-Tax/Compliment'
-WHERE module_controller = 'reprintBillingTax';
-#
 UPDATE apps_modules SET is_active = 0
 WHERE module_controller IN ('cashierExpress','billingCashierApp');
 #
@@ -517,3 +511,36 @@ MODIFY `reservation_time` time DEFAULT '00:00:00',
 MODIFY `preparing_time` time DEFAULT '00:00:00';
 #
 CREATE VIEW `pos_billing_transaksi` AS (SELECT billing_no AS no_billing,payment_date AS tanggal_billing,total_billing AS subtotal,discount_total AS diskon, service_total AS service_charge, tax_total AS pajak, grand_total FROM pos_billing_trx);
+#
+CREATE TABLE `pos_product_price` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `product_id` int(11) NOT NULL,
+  `qty_from` float DEFAULT '0',
+  `qty_till` float DEFAULT '0',
+  `product_price` double DEFAULT NULL,
+  `createdby` varchar(50) DEFAULT NULL,
+  `created` timestamp NULL DEFAULT NULL,
+  `updatedby` varchar(50) DEFAULT NULL,
+  `updated` timestamp NULL DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `is_deleted` tinyint(1) DEFAULT '0',
+  `product_varian_id` int(11) DEFAULT '0',
+  `varian_id` int(11) DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB;
+#
+UPDATE apps_modules SET is_active = 0
+WHERE module_controller IN ('billingCashierApp','ppob','returPembelian','listStockImei');
+#
+ALTER TABLE pos_customer
+ADD `sales_id` int(11) DEFAULT '0';
+#
+UPDATE apps_options 
+SET option_value = REPLACE(option_value, '{order_data}', '{template_order_data}');
+#
+ALTER TABLE pos_product
+ADD `qty_unit` SMALLINT(6) DEFAULT 1,
+ADD `has_list_price` TINYINT(1) DEFAULT 0;
+#
+ALTER TABLE pos_items
+ADD `qty_unit` SMALLINT(6) DEFAULT 1;

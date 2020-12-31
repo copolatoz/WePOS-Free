@@ -65,7 +65,10 @@ class Backend extends MY_Controller {
 		'delay_for_safe_printing','calculator_virtual','cashier_display_menu_image','cashier_menu_bg_text_color',
 		'mode_table_layout_cashier','table_multi_order','mode_cashier_express','cashier_credit_ar','send_billing_to_email',
 		'tandai_pajak_billing','override_pajak_billing','nontrx_sales_auto','nontrx_backup_onsettlement','nontrx_override_on','nontrx_button_onoff',
-		'allow_app_all_user','opsi_no_print_settlement','standalone_cashier');
+		'allow_app_all_user','opsi_no_print_settlement','standalone_cashier',
+		'input_qty_under_zero','input_harga_manual','input_tanggal_manual_so','default_tipe_billing_so',
+		'use_product_sku','link_customer_dan_sales','mode_harga_grosir','mode_qty_unit',
+		'ds_auto_terima','use_stok_imei','is_inf');
 		
 		//update-2008.001
 		$ip_addr = get_client_ip();
@@ -107,8 +110,8 @@ class Backend extends MY_Controller {
 				$update_var['produk_expired'] = '';
 			}
 			if(empty($get_opt['wepos_version'])){
-				$get_opt['wepos_version'] = '3.42.21';
-				$update_var['wepos_version'] = '3.42.21';
+				$get_opt['wepos_version'] = '3.42.22';
+				$update_var['wepos_version'] = '3.42.22';
 			}
 			if(empty($get_opt['app_name'])){
 				$get_opt['app_name'] = 'WePOS.Cafe';
@@ -119,8 +122,8 @@ class Backend extends MY_Controller {
 				$update_var['app_name_short'] = 'WePOS.Cafe';
 			}
 			if(empty($get_opt['app_release'])){
-				$get_opt['app_release'] = '2019';
-				$update_var['app_release'] = '2019';
+				$get_opt['app_release'] = '2020';
+				$update_var['app_release'] = '2020';
 			}
 			if(!empty($get_opt['merchant_tipe'])){
 				if(strtoupper(md5($get_opt['merchant_tipe'])) != 'D2626F412DA748E711CA4F4AE9'){
@@ -149,7 +152,10 @@ class Backend extends MY_Controller {
 					}
 				}
 				
-				
+			}
+			
+			if(empty($get_opt['is_inf'])){
+				$get_opt['is_inf'] = 0;
 			}
 			
 			//printer-check
@@ -162,7 +168,7 @@ class Backend extends MY_Controller {
 				$printer_id_cashierReceipt = $get_opt['printer_id_cashierReceipt_'.$ip_addr];
 			}
 			
-			if(!in_array($printer_id_cashierReceipt, $all_printer_id)){
+			if(!in_array($printer_id_cashierReceipt, $all_printer_id) AND !empty($printer_id_cashierReceipt)){
 				$all_printer_id[] = $printer_id_cashierReceipt;
 			}
 			
@@ -172,7 +178,7 @@ class Backend extends MY_Controller {
 				$printer_id_qcReceipt = $get_opt['printer_id_qcReceipt_'.$ip_addr];
 			}
 			
-			if(!in_array($printer_id_qcReceipt, $all_printer_id)){
+			if(!in_array($printer_id_qcReceipt, $all_printer_id) AND !empty($printer_id_qcReceipt)){
 				$all_printer_id[] = $printer_id_qcReceipt;
 			}
 			
@@ -182,7 +188,7 @@ class Backend extends MY_Controller {
 				$printer_id_kitchenReceipt = $get_opt['printer_id_kitchenReceipt_'.$ip_addr];
 			}
 			
-			if(!in_array($printer_id_kitchenReceipt, $all_printer_id)){
+			if(!in_array($printer_id_kitchenReceipt, $all_printer_id) AND !empty($printer_id_kitchenReceipt)){
 				$all_printer_id[] = $printer_id_kitchenReceipt;
 			}
 			
@@ -192,7 +198,7 @@ class Backend extends MY_Controller {
 				$printer_id_barReceipt = $get_opt['printer_id_barReceipt_'.$ip_addr];
 			}
 			
-			if(!in_array($printer_id_barReceipt, $all_printer_id)){
+			if(!in_array($printer_id_barReceipt, $all_printer_id) AND !empty($printer_id_barReceipt)){
 				$all_printer_id[] = $printer_id_barReceipt;
 			}
 			
@@ -202,7 +208,7 @@ class Backend extends MY_Controller {
 				$printer_id_otherReceipt = $get_opt['printer_id_otherReceipt_'.$ip_addr];
 			}
 			
-			if(!in_array($printer_id_otherReceipt, $all_printer_id)){
+			if(!in_array($printer_id_otherReceipt, $all_printer_id) AND !empty($printer_id_otherReceipt)){
 				$all_printer_id[] = $printer_id_otherReceipt;
 			}
 			

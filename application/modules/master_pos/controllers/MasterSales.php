@@ -72,9 +72,9 @@ class MasterSales extends MY_Controller {
 		
 		if(!empty($is_dropdown)){
 			
-			$show_txt = '-- NO SALES --';
+			$show_txt = '-- PILIH SALES --';
 			if(!empty($show_all_text)){
-				$show_txt = '-- ALL SALES --';
+				$show_txt = '-- SEMUA SALES --';
 			}
 			
 			$s = array(
@@ -83,7 +83,8 @@ class MasterSales extends MY_Controller {
 				'sales_name_company_fee'	=> $show_txt,		
 				'sales_price'	=> 0,		
 				'sales_percentage'	=> 0,		
-				'sales_type'	=> ''		
+				'sales_type'	=> '',		
+				'sales_code_name'	=> '-- PILIH SALES --'		
 			);
 			array_push($newData, $s);
 		}
@@ -120,9 +121,12 @@ class MasterSales extends MY_Controller {
 					$jenis_fee = $s['sales_price'];
 				}
 				
-				$s['sales_name_company_fee'] = $s['sales_name'].' / '.$s['sales_company'].' ('.$sales_type_simple.' '.$jenis_fee.')';
+				$s['sales_name_company_fee'] = $s['sales_code'].' / '.$s['sales_name'].' - '.$s['sales_company'];
+				//$s['sales_name_company_fee'] = $s['sales_code'].' / '.$s['sales_name'].' - '.$s['sales_company'].' ('.$sales_type_simple.' '.$jenis_fee.')';
 				
 				$s['source_from'] = ucwords($s['source_from']);
+				
+				$s['sales_code_name'] = $s['sales_code'].' / '.$s['sales_name'];
 				
 				array_push($newData, $s);
 			}
@@ -140,6 +144,9 @@ class MasterSales extends MY_Controller {
 		$session_user = $this->session->userdata('user_username');
 		
 		$sales_code = $this->input->post('sales_code');
+		if($sales_code == '- AUTO -'){
+			$sales_code = '';
+		}
 		$sales_name = $this->input->post('sales_name');
 		$sales_percentage = $this->input->post('sales_percentage');
 		$sales_price = $this->input->post('sales_price');

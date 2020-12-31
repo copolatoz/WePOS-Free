@@ -127,6 +127,9 @@ class MasterSupplier extends MY_Controller {
 		
 		$supplier_name = $this->input->post('supplier_name');
 		$supplier_code = $this->input->post('supplier_code');
+		if($supplier_code == '- AUTO -'){
+			$supplier_code = '';
+		}
 		$supplier_contact_person = $this->input->post('supplier_contact_person');
 		$supplier_address = $this->input->post('supplier_address');
 		$supplier_city = $this->input->post('supplier_city');

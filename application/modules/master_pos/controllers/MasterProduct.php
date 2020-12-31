@@ -25,6 +25,8 @@ class MasterProduct extends MY_Controller {
 		//is_active_text
 		$sortAlias = array(
 			'is_active_text' => 'a.is_active',
+			'product_price_show' => 'a.product_price',
+			'product_name_show' => 'a.product_name',
 			'has_varian_text' => 'a.has_varian',
 			'product_color' => 'a.product_bg_color'
 		);		
@@ -33,7 +35,8 @@ class MasterProduct extends MY_Controller {
 		$get_opt = get_option_value(array('hide_compliment_order','display_kode_menu_dipencarian',
 		'cashier_menu_bg_text_color','cashier_display_menu_image',
 		'include_tax','include_service','diskon_sebelum_pajak_service',
-		'default_tax_percentage','default_service_percentage'));
+		'default_tax_percentage','default_service_percentage',
+		'mode_table_layout_cashier'));
   		
 		//get option tax and service
 		$include_tax = 0;
@@ -66,9 +69,9 @@ class MasterProduct extends MY_Controller {
 			$hide_compliment_order = 1;
 		}
 		
-		//update-1912-001
+		//update-2011.001
 		$display_kode_menu_dipencarian = 0;
-		if(!empty($get_opt['display_kode_menu_dipencarian'])){
+		if(!empty($get_opt['display_kode_menu_dipencarian']) AND !empty($get_opt['mode_table_layout_cashier'])){
 			$display_kode_menu_dipencarian = 1;
 		}
 		
@@ -119,9 +122,30 @@ class MasterProduct extends MY_Controller {
 		}
 		if(!empty($searching)){
 			$params['where'][] = "(a.product_name LIKE '%".$searching."%' OR b.product_category_name LIKE '%".$searching."%' OR a.product_code LIKE '%".$searching."%' OR c.item_code LIKE '%".$searching."%')";
+			
+			//update-2011.001
+			if($from_module == 'cashier' AND strlen($searching) >= 5){
+				$params['limit'] = 9999;
+			}
+			
 		}
 		if(!empty($category_id)){
-			$params['where'][] = "a.category_id = ".$category_id;
+			
+			if($category_id > 0){
+				
+				$params['where'][] = "a.category_id = ".$category_id;
+				
+				//update-2011.001
+				if($from_module == 'cashier'){
+					$params['limit'] = 9999;
+				}
+				
+			}else{
+				
+				$params['where'][] = "a.category_id > 0";
+				
+			}
+			
 		}
 		if(!empty($product_type)){
 			$params['where'][] = "a.product_type = '".$product_type."'";
@@ -1370,6 +1394,7 @@ class MasterProduct extends MY_Controller {
 			if($get_product->num_rows() > 0){
 							
 				$all_product_package = array();
+				$all_product_code = array();
 				
 				foreach($get_product->result() as $dtP){
 					if(!empty($dtP->product_image)){
@@ -1379,10 +1404,15 @@ class MasterProduct extends MY_Controller {
 					}
 					
 					if($dtP->product_type == 'package'){
-						if(!in_array($dtP->product_id, $all_product_package)){
-							$all_product_package[] = $dtP->product_id;
+						if(!in_array($dtP->id, $all_product_package)){
+							$all_product_package[] = $dtP->id;
 						}
 					}
+					
+					$all_product_code[] = array(
+						'id'			=> $dtP->id,
+						'product_code'	=> 'DEL-'.$dtP->id
+					);
 					
 				}
 				
@@ -1390,12 +1420,16 @@ class MasterProduct extends MY_Controller {
 					$all_product_package_txt = implode(",", $all_product_package);
 					$del_package = $this->db->update($this->table2, $data_update, "package_id IN (".$all_product_package_txt.") OR product_id IN (".$all_product_package_txt.")");
 				}
+				
+				if(!empty($all_product_code)){		
+					$this->db->update_batch($this->table, $all_product_code, "id");
+				}
 			}
             $r = array('success' => true); 
         }  
         else
         {  
-            $r = array('success' => false, 'info' => 'Delete Product Failed!'); 
+            $r = array('success' => false, 'info' => 'Hapus Product Gagal!'); 
         }
 		die(json_encode($r));
 	}
@@ -1408,7 +1442,7 @@ class MasterProduct extends MY_Controller {
 		$product_category_code = $this->input->post('product_category_code');
 		$tipe = $this->input->post('tipe');
 		
-		$r = array('success' => false, 'info' => 'Update Code Failed!'); 
+		$r = array('success' => false, 'info' => 'Update Kode Gagal!'); 
 		if(empty($id) OR empty($product_code) OR empty($tipe)){
 			die(json_encode($r));
 		}
@@ -1430,15 +1464,37 @@ class MasterProduct extends MY_Controller {
 	
 		}else{
 			
-			$product_code_format = '{Cat}{ItemNo}';
+			//update-2011.001
+			$opt_value = array(
+				'product_code_format',
+				'product_code_separator',
+				'product_no_length',
+				'product_sku_from_code'
+			);
+			
+			$get_opt = get_option_value($opt_value);
+			
+			$product_code_format = '{Cat}{ProdNo}';
+			if(!empty($get_opt['product_code_format'])){
+				$product_code_format = $get_opt['product_code_format'];
+			}
+			
+			$product_code_separator = '';
+			if(!empty($get_opt['product_code_separator'])){
+				$product_code_separator = $get_opt['product_code_separator'];
+			}
+			
 			$product_no_length = 5;
+			if(!empty($get_opt['product_no_length'])){
+				$product_no_length = $get_opt['product_no_length'];
+			}
 			
 			$repl_attr = array(
 				"{Cat}"		=> $product_category_code
 			);
 			
 			$product_code_format = strtr($product_code_format, $repl_attr);
-			$get_exp = explode("{ItemNo}", $product_code_format);
+			$get_exp = explode($product_code_separator."{ProdNo}", $product_code_format);
 			$first_format = '';
 			$product_no = 0;
 			if(!empty($get_exp[0])){
@@ -1470,13 +1526,14 @@ class MasterProduct extends MY_Controller {
 		$product_name = $this->input->post('product_name');
 		$product_sku = $this->input->post('product_sku');
 		$product_type = $this->input->post('product_type');
-
+		
 		if($product_type == 'package'){
 			$product_prefix = 'PKT-';
 		}else{
-			$product_prefix = 'SKU-';
+			$product_prefix = 'SKU';
 		}
 		
+		//update-2011.001
 		$opt_value = array(
 			'product_code_format',
 			'product_code_separator',
@@ -1486,8 +1543,29 @@ class MasterProduct extends MY_Controller {
 		
 		$get_opt = get_option_value($opt_value);
 		
-		$product_code_format = '{Cat}{ItemNo}';
+		$product_code_format = '{Cat}{ProdNo}';
+		if(!empty($get_opt['product_code_format'])){
+			$product_code_format = $get_opt['product_code_format'];
+		}
+		
+		$product_code_separator = '';
+		if(!empty($get_opt['product_code_separator'])){
+			$product_code_separator = $get_opt['product_code_separator'];
+		}
+		
 		$product_no_length = 5;
+		if(!empty($get_opt['product_no_length'])){
+			$product_no_length = $get_opt['product_no_length'];
+		}
+		
+		$product_sku_from_code = 0;
+		if(!empty($get_opt['product_sku_from_code'])){
+			$product_sku_from_code = $get_opt['product_sku_from_code'];
+		}
+		
+		if($product_sku_from_code == 1){
+			$product_sku = '';
+		}
 		
 		$repl_attr = array(
 			"{SKU}"		=> $product_sku,
@@ -1495,7 +1573,7 @@ class MasterProduct extends MY_Controller {
 		);
 		
 		$product_code_format = strtr($product_code_format, $repl_attr);
-		$get_exp = explode("{ItemNo}", $product_code_format);
+		$get_exp = explode($product_code_separator."{ProdNo}", $product_code_format);
 		$first_format = '';
 		if(!empty($get_exp[0])){
 			$first_format = $get_exp[0];
@@ -1520,7 +1598,7 @@ class MasterProduct extends MY_Controller {
 			}else{
 				
 				$this->db->from($this->table);
-				$this->db->where("product_code LIKE '".$product_prefix.$first_format."%'");
+				$this->db->where("product_code LIKE '".$first_format."%'");
 				$this->db->where("is_deleted = 0");
 				$this->db->order_by('product_no', 'DESC');
 				$this->db->order_by('product_code', 'DESC');
@@ -1550,7 +1628,7 @@ class MasterProduct extends MY_Controller {
 			}
 			
 			$repl_attr = array(
-				"{ItemNo}"		=> $product_code
+				"{ProdNo}"		=> $product_code_separator.$product_code
 			);
 			
 			$product_code_format = strtr($product_code_format, $repl_attr);
@@ -1585,17 +1663,21 @@ class MasterProduct extends MY_Controller {
 		}
 		
 		$repl_productno = array(
-			"{ItemNo}"		=> $product_code
+			"{ProdNo}"		=> $product_code_separator.$product_code
 		);
 		
 		$product_code = strtr($product_code_format, $repl_productno);	
 		
-		return array('product_no' => $product_no, 'product_code' => $product_code);				
+		if($product_sku_from_code == 1){
+			$product_sku = $product_code;
+			//$update_code['product_sku'] = $product_sku;
+		}
+		
+		return array('product_no' => $product_no, 'product_sku_from_code' => $product_sku_from_code, 'product_sku' => $product_sku, 'product_code' => $product_code);				
 	}
 	
-	public function importDataProduct()
-
-	{
+	public function importDataProduct(){
+		
 		$this->table = $this->prefix.'product';		
 		$session_user = $this->session->userdata('user_username');
 		
@@ -1706,31 +1788,6 @@ class MasterProduct extends MY_Controller {
 						
 						if(!empty($product_name)){
 							if(empty($id)){
-								//INSERT									
-								
-								/*$var = array(
-									'fields'	=>	array(
-										'product_code'	=> 	$product_code,
-										'product_name'	=> 	$product_name,
-										'product_desc'	=>	$product_desc,
-										'product_price'	=>	$product_price,
-										'normal_price'	=>	$normal_price,
-										'product_hpp'	=>	$product_hpp,
-										'product_type'	=>	$product_type,
-										'product_group' =>	$product_group,
-										'use_tax'		=>	$use_tax,
-										'use_service'	=>	$use_service,
-										'category_id'	=>	$category_id,
-										'created'		=>	$update_date,
-										'createdby'		=>	$session_user,
-										'updated'		=>	$update_date,
-										'updatedby'		=>	$session_user,
-									),
-									'table'		=>  $this->table
-								);	
-								
-								$q = $this->m->save($var);
-								*/
 								
 								$all_new_data[] = array(
 										'product_code'	=> 	$product_code,
@@ -1752,29 +1809,6 @@ class MasterProduct extends MY_Controller {
 									);
 								
 							}else{
-								//UPDATE
-								
-								/*$var = array(
-									'fields'	=>	array(
-										'product_name'	=> 	$product_name,
-										'product_desc'	=>	$product_desc,
-										'product_price'	=>	$product_price,
-										'normal_price'	=>	$normal_price,
-										'product_hpp'	=>	$product_hpp,
-										'product_type'	=>	$product_type,
-										'product_group' =>	$product_group,
-										'use_tax'		=>	$use_tax,
-										'use_service'	=>	$use_service,
-										'category_id'	=>	$category_id,
-										'updated'		=>	$update_date,
-										'updatedby'		=>	$session_user,
-									),
-									'table'			=>  $this->table,
-									'primary_key'	=>  'id'
-								);	
-								
-								$q = $this->m->save($var, $id);
-								*/
 								
 								if(!in_array($id, $available_id)){
 									//new

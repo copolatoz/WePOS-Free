@@ -1,16 +1,22 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/html">
 <head>
+    <title><?php echo $title; ?></title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-	<meta name="viewport" content="width=device-width, initial-scale=0.9, minimum-scale=0.9, maximum-scale=1, viewport-fit=cover" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover" />
+	<meta http-equiv="X-UA-Compatible" content="chrome=1">
+	<meta name="theme-color" content="#00afef" />
 	<meta name="description" content="<?php echo $meta_description; ?>">
     <meta name="author" content="<?php echo $meta_author; ?>">
     <meta name="keywords" content="<?php echo $meta_keywords; ?>">
 
-    <link rel="shortcut icon" href="<?php echo base_url(); ?>apps.min/helper/login/favicon.ico" />
-	<link rel="apple-touch-icon" sizes="180x180" href="<?php echo base_url(); ?>apps.min/helper/login/icon-180x180.png">
+	<link rel="manifest" href="<?php echo base_url(); ?>manifest.json">
+	<link rel="shortcut icon" href="<?php echo base_url(); ?>apps.min/helper/login/icons-192.png" />
+	<link rel="icon" type="image/png" href="<?php echo base_url(); ?>apps.min/helper/login/icons-192.png">
+	<link rel="apple-touch-icon" sizes="192x192" href="<?php echo base_url(); ?>apps.min/helper/login/icons-192.png">
+	
 	<link href="<?php echo BASE_URL; ?>assets/themes/frontend/css/modern.css" rel="stylesheet">
     <link href="<?php echo BASE_URL; ?>assets/themes/frontend/css/site-red.css" rel="stylesheet" type="text/css">
 	
@@ -21,9 +27,8 @@
 	<script>
 		var appUrl 		= "<?php echo BASE_URL; ?>";
 		var programName	= "<?php echo config_item('program_name'); ?>";
-		var copyright	= "<?php echo config_item('copyright'); ?>";
+		var copyright	= "<?php echo $copyright; ?>";
 	</script>
-    <title><?php echo $title; ?></title>
 </head>
 <body class="modern-ui login_bg" >
 	

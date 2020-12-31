@@ -293,8 +293,11 @@ class ReturPenjualan extends MY_Controller {
 					$s['returd_qty_before'] = $s['order_qty']-$retur_before;
 					$s['returd_qty'] = 0;
 					$s['returd_qty_sisa'] = $s['returd_qty_before']-$s['returd_qty'];
+					$s['sales_price'] = $s['product_price'];
+					$s['sales_price'] = $s['product_price'];
 					$s['returd_price'] = $s['product_price'];
 					$s['returd_price_show'] = priceFormat($s['returd_price']);
+					$s['sales_price_show'] = priceFormat($s['returd_price']);
 					$s['returd_hpp'] = $s['product_price_hpp'];
 					$s['returd_hpp_show'] = priceFormat($s['returd_hpp']);
 					$s['returd_tax'] = $returd_tax;

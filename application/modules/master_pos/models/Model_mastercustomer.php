@@ -17,6 +17,9 @@ class Model_mastercustomer extends DB_Model {
 		
 		$customer_name = $this->input->post('customer_name');
 		$customer_code = $this->input->post('customer_code');
+		if($customer_code == '- AUTO -'){
+			$customer_code = '';
+		}
 		$customer_contact_person = $this->input->post('customer_contact_person');
 		$customer_address = $this->input->post('customer_address');
 		$customer_city = $this->input->post('customer_city');
@@ -30,6 +33,18 @@ class Model_mastercustomer extends DB_Model {
 		$is_active = $this->input->post('is_active');
 		if(empty($is_active)){
 			$is_active = 0;
+		}
+		
+		//update-2011.001
+		$link_customer_dan_sales = $this->input->post('link_customer_dan_sales');
+		$sales_id = $this->input->post('sales_id');
+		if(empty($sales_id)){
+			$sales_id = 0;
+		}
+		
+		if(!empty($link_customer_dan_sales) AND empty($sales_id)){
+			$r = array('success' => false, 'info' => 'Pilih sales!');
+			die(json_encode($r));
 		}
 		
 		//update-2003.001
@@ -129,7 +144,8 @@ class Model_mastercustomer extends DB_Model {
 					'updatedby'		=>	$session_user,
 					'is_active'		=>	$is_active,
 					'limit_kredit'	=>	$limit_kredit,
-					'termin'		=>	$termin
+					'termin'		=>	$termin,
+					'sales_id'		=>	$sales_id,
 				),
 				'table'		=>  $this->table
 			);	
@@ -169,7 +185,8 @@ class Model_mastercustomer extends DB_Model {
 					'updatedby'		=>	$session_user,
 					'is_active'		=>	$is_active,
 					'limit_kredit'	=>	$limit_kredit,
-					'termin'		=>	$termin
+					'termin'		=>	$termin,
+					'sales_id'		=>	$sales_id,
 				),
 				'table'			=>  $this->table,
 				'primary_key'	=>  'id'

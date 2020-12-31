@@ -4131,6 +4131,10 @@ class BackupTrx extends MY_Controller {
 		$return_data = array('success' => true);
 		$return_data['prefix'] = $current_billno_prefix;
 		
+		//update-2011.001
+		$opt_value = array('nontrx_allow_zero');
+		$get_opt = get_option_value($opt_value);
+		
 		//cek last billing nonTrx
 		$billingTrxData = array();
 		$this->db->select('id');
@@ -4191,10 +4195,14 @@ class BackupTrx extends MY_Controller {
 		$total_billing_detail = $get_billing_detail->num_rows();
 		if($total_billing_detail > 0){
 			foreach($get_billing_detail->result_array() as $dt){
-				//update-2008.001
-				if((($dt['is_takeaway'] == 1 OR $dt['is_compliment'] == 1) AND $dt['tax_total'] == 0) OR ($dt['tax_total'] == 0 AND $dt['order_status'] == 'done')){
-					if(!in_array($dt['billing_id'], $billingDataNoTaxID)){
-						$billingDataNoTaxID[] = $dt['billing_id'];
+				//update-2011.001
+				if(empty($get_opt['nontrx_allow_zero'])){
+					if((($dt['is_takeaway'] == 1 OR $dt['is_compliment'] == 1) AND $dt['tax_total'] == 0) OR ($dt['tax_total'] == 0 AND $dt['order_status'] == 'done')){
+						if(!in_array($dt['billing_id'], $billingDataNoTaxID)){
+							$billingDataNoTaxID[] = $dt['billing_id'];
+						}
+					}else{
+						$billingDetailData[] = $dt;
 					}
 				}else{
 					$billingDetailData[] = $dt;
@@ -4218,8 +4226,8 @@ class BackupTrx extends MY_Controller {
 			$this->db->delete($this->prefix_pos.'billing_detail_trx',"billing_id IN (".$billingTrxId_sql.")");
 		}
 		
-		//update-2008.001
-		if(!empty($billingDataNoTaxID)){
+		//update-2011.001
+		if(!empty($billingDataNoTaxID) AND empty($get_opt['nontrx_allow_zero'])){
 			foreach($billingDataNoTaxID as $xID){
 				if(!empty($billingData[$xID])){
 					unset($billingData[$xID]);

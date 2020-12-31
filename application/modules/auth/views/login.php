@@ -7,12 +7,15 @@
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover" />
 	<meta http-equiv="X-UA-Compatible" content="chrome=1">
+	<meta name="theme-color" content="#00afef" />
 	<meta name="description" content="<?php echo $meta_description; ?>">
     <meta name="author" content="<?php echo $meta_author; ?>">
     <meta name="keywords" content="<?php echo $meta_keywords; ?>">
 
-    <link rel="shortcut icon" href="<?php echo base_url(); ?>apps.min/helper/login/favicon.ico" />
-	<link rel="apple-touch-icon" sizes="180x180" href="<?php echo base_url(); ?>apps.min/helper/login/icon-180x180.png">
+	<link rel="manifest" href="<?php echo base_url(); ?>manifest.json">
+	<link rel="shortcut icon" href="<?php echo base_url(); ?>apps.min/helper/login/icons-192.png" />
+	<link rel="icon" type="image/png" href="<?php echo base_url(); ?>apps.min/helper/login/icons-192.png">
+	<link rel="apple-touch-icon" sizes="192x192" href="<?php echo base_url(); ?>apps.min/helper/login/icons-192.png">
 	
 	<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>assets/js/extjs.4.2/theme/css/ext-all<?php echo $theme; ?>.css" />
 	<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>assets/desktop/css/modules.css" />	
@@ -20,7 +23,7 @@
 	<script>
 		var appUrl 		= "<?php echo BASE_URL; ?>";
 		var programName	= "<?php echo config_item('program_name'); ?>";
-		var copyright	= "<?php echo config_item('copyright'); ?>";
+		var copyright	= "<?php echo $copyright; ?>";
 	</script>
 	<style>
 		.button-login .x-btn-inner {
@@ -29,6 +32,7 @@
 	</style>
 </head>
 <body style="background:#83aac0 url(<?php echo BASE_URL; ?>apps.min/helper/login/background.jpg) center top no-repeat;">
+
 	<?php
 	if(!empty($view_multiple_store) AND !empty($data_multiple_store)){
 		?>
@@ -57,7 +61,7 @@
 	var from_apps = '<?php echo $from_apps; ?>';
 	var allowBlankMultiStore = true;
 	var hiddenBlankMultiStore = true;
-	var heightFormLogin = 215;
+	var heightFormLogin = 265;
 	var data_multiple_store = new Ext.data.Store({
 		    fields: ['val', 'name', 'data'],
 			data : [
@@ -85,7 +89,7 @@
 		?>
 		allowBlankMultiStore = false;
 		hiddenBlankMultiStore = false;
-		heightFormLogin = 250;
+		heightFormLogin = 300;
 		<?php
 	}
 	?>
@@ -248,10 +252,49 @@
 			dock: 'bottom',
 			items: [
 				{
-					xtype: 'displayfield',
-					width: 270,
-					value: copyright,
-					fieldStyle: 'text-align:center;',
+					xtype: 'fieldcontainer',
+					layout: {
+						type: 'column'
+					},
+					width: 290,
+					fieldLabel: '',
+					items: [
+						{
+							xtype: 'button',
+							text : 'Install Aplikasi ke Layar',
+							id : 'btnSave_Install',
+							//iconCls:'btn-save',
+							//cls: 'button-login',
+							width: 270,
+							height: 30,
+							handler : function() {
+								doInstall();
+							},
+							hidden: true,
+							margin: '0 0 10 0',
+						},
+						{
+							xtype: 'button',
+							text : 'Update Aplikasi',
+							id : 'btnSave_Update',
+							//iconCls:'btn-save',
+							//cls: 'button-login',
+							width: 270,
+							height: 30,
+							handler : function() {
+								//doUpdate();
+							},
+							hidden: true,
+							margin: '0 0 10 0',
+						},
+						{
+							xtype: 'displayfield',
+							width: 270,
+							value: copyright,
+							fieldStyle: 'text-align:center;',
+						},
+						
+					]
 				}
 			]
 		}],
@@ -339,6 +382,11 @@
 			Ext.getCmp('from_apps').setValue(1);
 			//window.location = appUrl+'login-apps';
 		}
+		
+		//SW
+		const options = {};
+		new SW(options);
+		
 	});
 	
 	function getMobileOperatingSystem() {
@@ -360,6 +408,124 @@
 
 		return "general";
 	}
+	
+	const installBtn = Ext.getCmp('btnSave_Install');
+	const updateBtn = Ext.getCmp('btnSave_Update');
+	
+	function SW(args) {
+	  //this.button = Ext.getCmp(args.button);
+	  //this.toast = Ext.getCmp(args.toast);
+
+	  this.registerSW();
+	};
+
+	SW.prototype.registerSW = function() {
+	  /*
+	   *  Register SW dimulai disini
+	   *  Copy script yang dicantumkan di artikel
+	   */
+	  if (!navigator.serviceWorker) return;
+
+	  const that = this;
+
+	  navigator.serviceWorker.register(appUrl+'sw-wepos.js')
+		.then(function(reg) {
+		  console.info('SW ok');
+
+		  if (!navigator.serviceWorker.controller) return;
+
+		  if (reg.waiting) {
+			that.updateReady(reg.waiting);
+			return;
+		  }
+
+		  if (reg.installing) {
+			that.trackInstall(reg.installing);
+			return;
+		  }
+
+		  reg.addEventListener('updatefound', function() {
+			that.trackInstall(reg.installing);
+		  });
+		  
+		  let refreshing;
+		  navigator.serviceWorker.addEventListener('controllerchange', function() {
+			if (refreshing) return;
+
+			window.location = appUrl+'';
+			refreshing = true;
+		  });
+		})
+		.catch(function() {
+		  console.error('SW failed!');
+		});
+	}
+
+	SW.prototype.trackInstall = function(worker) {
+	  const that = this;
+
+	  worker.addEventListener('statechange', function() {
+		if (worker.state === 'installed') {
+		  that.updateReady(worker)
+		}
+	  })
+	}
+
+	const xwroker = null;
+	SW.prototype.updateReady = function(worker) {
+	  
+	  //this.toast.show();
+	  updateBtn.show();
+	   
+	  updateBtn.on('click', function(event) {
+		//event.preventDefault();
+		updateBtn.hide();
+		window.location = appUrl+'';
+		worker.postMessage({ action: 'skipWaiting' })      
+	  });
+	  
+	}
+
+	let deferredPrompt;
+	//const addBtn = Ext.getCmp('btnSave_Install');
+	installBtn.hide();
+	updateBtn.hide();
+	
+
+	window.addEventListener('beforeinstallprompt', (e) => {
+	  // Prevent Chrome 67 and earlier from automatically showing the prompt
+	  e.preventDefault();
+	  // Stash the event so it can be triggered later.
+	  deferredPrompt = e;
+	  // Update UI to notify the user they can add to home screen
+	  installBtn.show();
+
+	  /*
+	  addBtn.addEventListener('click', (e) => {
+		//doInstall
+	  });
+	  */
+	  
+	});
+	
+	
+	function doInstall(){
+		// hide our user interface that shows our A2HS button
+		installBtn.hide();
+		
+		// Show the prompt
+		deferredPrompt.prompt();
+		// Wait for the user to respond to the prompt
+		deferredPrompt.userChoice.then((choiceResult) => {
+			if (choiceResult.outcome === 'accepted') {
+			  console.log('User accepted the A2HS prompt');
+			} else {
+			  console.log('User dismissed the A2HS prompt');
+			}
+			deferredPrompt = null;
+		  }); 
+	}
+
 	</script>	
 	<!-- Start of wepos Zendesk Widget script -->
 	<script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key=070b419f-4ff0-414d-9bee-29eb623a28b5"> </script>

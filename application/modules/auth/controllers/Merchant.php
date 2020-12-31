@@ -15,7 +15,7 @@ class Merchant extends MX_Controller {
 		}
 		
 		$opt_val = array(
-			'use_login_pin', 'view_multiple_store','is_cloud'
+			'use_login_pin', 'view_multiple_store','is_cloud','app_name','app_name_short','app_release','wepos_version'
 		);
 		
 		$get_opt = get_option_value($opt_val);
@@ -35,6 +35,10 @@ class Merchant extends MX_Controller {
 		$data['meta_keywords']		=	config_item('program_name');
 		$data['meta_author']		=	config_item('program_author');
 		$data['program_name']		=	config_item('program_name');
+		$data['copyright']			=	config_item('copyright');
+		if(!empty($get_opt['app_name_short']) AND !empty($get_opt['wepos_version']) AND !empty($get_opt['app_release'])){
+			$data['copyright'] = $get_opt['app_name_short'].' v'.$get_opt['wepos_version'].' &copy; '.$get_opt['app_release'];
+		}
 		
 		$theme = config_item('theme'); 
 		$button_color = '#666';
@@ -123,6 +127,48 @@ class Merchant extends MX_Controller {
 							}
 							die();
 						}
+					}
+					
+					//update-2009.002
+					if(!empty($data['cloud_data']['merchant_host']) AND !empty($data['cloud_data']['merchant_user']) AND !empty($data['cloud_data']['merchant_accesspw']) AND !empty($data['cloud_data']['merchant_db'])){
+						$this->client_ip = $data['cloud_data']['merchant_host'];
+						$this->mysql_port = $data['cloud_data']['mysql_port'];
+						$this->mysql_user = $data['cloud_data']['merchant_user'];
+						$this->mysql_database = $data['cloud_data']['merchant_db'];
+						$this->mysql_pass = $data['cloud_data']['merchant_accesspw'];
+					}
+					
+					if(!empty($this->client_ip) AND !empty($this->mysql_user) AND !empty($this->mysql_database)){
+						
+						$this->db->close();
+						$config = array();
+						$config['hostname'] = $this->client_ip;
+						$config['username'] = $this->mysql_user;
+						$config['password'] = $this->mysql_pass;
+						$config['port'] 	= $this->mysql_port;
+						$config['database'] = $this->mysql_database;
+						$config['dbdriver'] = 'mysqli';
+						$config['dbprefix'] = '';
+						$config['pconnect'] = FALSE;
+						$config['db_debug'] = (ENVIRONMENT !== 'production');
+						$config['cache_on'] = FALSE;
+						$config['cachedir'] = '';
+						$config['char_set'] = 'utf8';
+						$config['dbcollat'] = 'utf8_general_ci';
+						$config['swap_pre'] = '';
+						$config['encrypt'] = FALSE;
+						$config['compress'] = FALSE;
+						$config['stricton'] = FALSE;
+						$config['failover'] = array();
+						
+						$this->load->database($config);
+						
+						$opt_val = array(
+							'use_login_pin'
+						);
+						
+						$get_opt = get_option_value($opt_val);
+						
 					}
 					
 					if(!empty($get_opt['use_login_pin'])){
@@ -327,13 +373,25 @@ class Merchant extends MX_Controller {
 		die(json_encode($r));
 	}
 	
-	public function logout()
+	public function logout($mkey = '')
 	{
 		
 		$this->db->close();
 		$is_cloud = $this->session->userdata('is_cloud');
 		$from_apps = $this->session->userdata('from_apps');
 		$this->unreg_session();
+		
+		if(!empty($mkey)){
+			$exp_mkey = explode("-",$mkey);
+			if(!empty($exp_mkey[1])){
+				$is_cloud = $exp_mkey[0]."-".$exp_mkey[1];
+			}
+			
+			if(!empty($exp_mkey[2])){
+				$from_apps = $exp_mkey[2];
+			}
+			
+		}
 		
 		if(!empty($is_cloud)){
 			if(!empty($from_apps)){

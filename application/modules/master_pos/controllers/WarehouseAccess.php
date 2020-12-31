@@ -19,7 +19,8 @@ class WarehouseAccess extends MY_Controller {
 		
 		//is_active_text
 		$sortAlias = array(
-			'is_active_text' => 'a.is_active'
+			'is_active_text' => 'a.is_active',
+			'is_retail_warehouse_text' => 'a.is_retail_warehouse'
 		);		
 		
 		// Default Parameter

@@ -266,13 +266,27 @@ class CloseCashierShift extends MY_Controller {
 			$date_update_start = date("Y-m-d H:i:s", $mk_tanggal_jam_start);
 			$date_update_end = date("Y-m-d H:i:s", $mk_tanggal_jam_end);
 			
+			$billing_no_shift = date("ymd",strtotime($tanggal_shift_post));
+			
 			//lock billing shift
 			$update_shift_billing = array(
 				'shift'	 => $user_shift
 			);
-			$update_billing_shift = $this->db->update($this->prefix.'billing', $update_shift_billing, "billing_status != 'paid' AND (created >= '".$date_update_start."' AND created <= '".$date_update_end."')");
+			$update_billing_shift = $this->db->update($this->prefix.'billing', $update_shift_billing, "billing_no LIKE '".$billing_no_shift."%' AND billing_status != 'paid' AND (created >= '".$date_update_start."' AND created <= '".$date_update_end."')");
+			$update_billing_shift_paid = $this->db->update($this->prefix.'billing', $update_shift_billing, "billing_no LIKE '".$billing_no_shift."%' AND billing_status = 'paid' AND (payment_date >= '".$date_update_start."' AND payment_date <= '".$date_update_end."')");
 			
-			$update_billing_shift_paid = $this->db->update($this->prefix.'billing', $update_shift_billing, "billing_status = 'paid' AND (payment_date >= '".$date_update_start."' AND payment_date <= '".$date_update_end."')");
+			//update-2011.001
+			if($jumlah_shift > 1){
+				if($user_shift+1 <= $jumlah_shift){
+					
+					//update billing shift > jam end
+					$update_shiftplus_billing = array(
+						'shift'	 => ($user_shift+1)
+					);
+					$update_billing_shift_plus = $this->db->update($this->prefix.'billing', $update_shiftplus_billing, "billing_no LIKE '".$billing_no_shift."%' AND billing_status = 'paid' AND shift = ".$user_shift." AND payment_date >= '".$date_update_end."'");
+			
+				}
+			}
 			
 		}
 		
@@ -570,6 +584,7 @@ class CloseCashierShift extends MY_Controller {
 				
 		$this->table = $this->prefix.'open_close_shift';
 		$this->prefix2 = config_item('db_prefix2'); //pos_
+		$this->table_billing = $this->prefix2.'billing';
 		
 		$session_user = $this->session->userdata('user_username');
 		$id_user = $this->session->userdata('id_user');
@@ -640,6 +655,46 @@ class CloseCashierShift extends MY_Controller {
 			
 			if(empty($jam_shift_end)){
 				$jam_shift_end = $jam_shift;
+			}
+			
+			$tgl_shift_mk = strtotime($tanggal_shift);
+			
+			if(!empty($user_shift)){
+				//check billing terakhir
+				$tgl_shift_billing = date("ymd");
+				$this->db->select('a.billing_no, a.payment_date, a.shift');
+				$this->db->from($this->table_billing.' as a');
+				$this->db->where("a.billing_no LIKE '".$tgl_shift_billing."%'");
+				$this->db->where("a.shift = '".$user_shift."'");
+				$this->db->where("a.billing_status = 'paid'");
+				$this->db->where("a.is_deleted = 0");
+				$this->db->order_by("a.payment_date","DESC");
+				$get_lastBillingShift = $this->db->get();
+				$jam_shift_end1_mk = 0;
+				$jam_shift_end2_mk = 0;
+				if($get_lastBillingShift->num_rows() > 0){
+					$lastDt = $get_lastBillingShift->row();
+					$lastDt_paymentdate = $lastDt->payment_date;
+					//plus 1 menit
+					$lastDt_paymentdate_mk = strtotime($lastDt->payment_date)+60;
+					$tanggal_shift_x = date("d-m-Y", $lastDt_paymentdate_mk);
+					$jam_shift_end_x = date("H:i", $lastDt_paymentdate_mk);
+					
+					$tgl_shift_mk2 = strtotime($tanggal_shift_x);
+					if($tgl_shift_mk2 > $tgl_shift_mk){
+						$tanggal_shift = $tanggal_shift_x;
+						$jam_shift_end = $jam_shift_end_x;
+					}else{
+						if($tgl_shift_mk2 == $tgl_shift_mk){
+							$jam_shift_end1_mk = strtotime($tanggal_shift." ".$jam_shift_end.":00");
+							$jam_shift_end2_mk = strtotime($tanggal_shift_x." ".$jam_shift_end_x.":00");
+							if($jam_shift_end2_mk > $jam_shift_end1_mk){
+								$jam_shift_end = date("H:i", $jam_shift_end2_mk);
+							}
+						}
+					}
+					
+				}
 			}
 			
 			$closeShiftData = array(

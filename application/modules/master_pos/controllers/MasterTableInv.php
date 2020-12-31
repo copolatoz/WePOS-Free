@@ -288,6 +288,11 @@ class MasterTableInv extends MY_Controller {
 							'status'		=> 'booked'
 						);
 						
+						//update-2011.001
+						$s['billing_no'] = $get_billno;
+						$s['total_billing'] = count($data_billing[$s['table_id']]);
+						$s['status'] = 'booked';
+						
 					}else{
 					
 						if($s['status'] != 'available'){
@@ -358,8 +363,8 @@ class MasterTableInv extends MY_Controller {
 							$s['table_info'] .= '<div style="font-size:16px; margin:5px 0px 15px;"><b>Semua Lantai/Floorplan</b></div>';
 						}else{
 							$s['table_info'] .= '<div style="font-size:20px; margin:5px 0px 15px;"><b>'.$floorplan_name.'</b></div>';
+							$s['table_info'] .= '<div style="font-size:10px;">Klik u/ lihat Lantai Lainnya</div>';
 						}
-						$s['table_info'] .= '<div style="font-size:10px;">Klik u/ lihat Lantai Lainnya</div>';
 						$s['table_color'] = '6904a9';
 						$s['floorplan_button'] = 1;
 						array_push($newData, $s);
@@ -506,8 +511,8 @@ class MasterTableInv extends MY_Controller {
 					$s['table_info'] .= '<div style="font-size:16px; margin:5px 0px 15px;"><b>Semua Lantai/Floorplan</b></div>';
 				}else{
 					$s['table_info'] .= '<div style="font-size:20px; margin:5px 0px 15px;"><b>'.$floorplan_name.'</b></div>';
+					$s['table_info'] .= '<div style="font-size:10px;">Klik u/ lihat Lantai Lainnya</div>';
 				}
-				$s['table_info'] .= '<div style="font-size:10px;">Klik u/ lihat Lantai Lainnya</div>';
 				$s['table_color'] = '6904a9';
 				$s['floorplan_button'] = 1;
 				array_push($newData, $s);

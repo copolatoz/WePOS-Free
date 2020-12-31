@@ -31,7 +31,7 @@
 	
 </head>
 <body>
-	<?php $update_v = strtotime("24-11-2019 15:00:00"); ?>
+	<?php $update_v = strtotime("31-12-2020 00:00:00"); ?>
 	<div id="loading-mask"></div>
 	<div id="loading">
 		<img src="<?php echo BASE_URL; ?>apps.min/helper/login/loader.gif" width="160" height="20" alt="Loading..." style="margin-bottom:25px;"/>
