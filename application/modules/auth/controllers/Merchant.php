@@ -30,6 +30,7 @@ class Merchant extends MX_Controller {
 		
 		if($this->session->userdata('id_user') != '' && $this->session->userdata('client_id')!=''){ redirect('backend'); }
 		
+		$data = array();
 		$data['title']				=	'Login'.$from_apps_txt.' | '.config_item('program_name').' &mdash; '.$get_opt['merchant_key'];
 		$data['meta_description'] 	=	config_item('program_name');
 		$data['meta_keywords']		=	config_item('program_name');
@@ -88,6 +89,13 @@ class Merchant extends MX_Controller {
 				$data['meta_keywords']		=	config_item('program_name');
 				$data['meta_author']		=	config_item('program_author');
 				$data['program_name']		=	config_item('program_name');
+				
+				if(!isset($_COOKIE['mkey_login'])) {
+					setcookie("mkey_login", '', time() + 3600, '/');
+				}else{
+					$data['mkey'] = $_COOKIE['mkey_login'];
+				}
+				
 				$this->load->view('info', $data);
 			}else{
 				
@@ -188,7 +196,11 @@ class Merchant extends MX_Controller {
 					$data['meta_keywords']		=	config_item('program_name');
 					$data['meta_author']		=	config_item('program_author');
 					$data['program_name']		=	config_item('program_name');
-					$data['error'] 		= 'Merchant tidak dikenali / Salah Merchant Key!<br/>';
+					$data['mkey']				=	$mkey;
+					$data['error'] 				= 'Merchant tidak dikenali / Salah Merchant Key!<br/>';
+					
+					setcookie("mkey_login", $mkey, time() + 3600, '/');
+					
 					$this->load->view('info', $data);
 					
 				}
@@ -222,6 +234,7 @@ class Merchant extends MX_Controller {
 		$store_data = $this->input->post('store_data', true);
 		$mkey = $this->input->post('mkey', true);
 		$from_apps = $this->input->post('from_apps', true);
+		$is_cek = $this->input->post('is_cek', true);
 		
 		$conn_data = false;
 		if(!empty($view_multiple_store) AND !empty($store_data) AND empty($mkey)){
@@ -272,6 +285,13 @@ class Merchant extends MX_Controller {
 				'is_login'	=> true
 			);
 			
+			if(!empty($is_cek)){
+				$post_data = array(
+					'merchant_key'	=> $mkey,
+					'is_cek'	=> true
+				);
+			}
+			
 			$wepos_crt = ASSETS_PATH.config_item('wepos_crt_file');
 			$this->curl->create($client_url);
 			$this->curl->option('connecttimeout', 600);
@@ -287,6 +307,12 @@ class Merchant extends MX_Controller {
 			$ret_data = json_decode($curl_ret, true);
 			
 			$conn_data = false;
+			
+			if(!empty($is_cek)){
+				setcookie("mkey_login", $mkey, time() + 3600, '/');
+				die(json_encode($ret_data));
+			}
+			
 			if(!empty($ret_data['success'] === true)){
 				
 				if(!empty($ret_data['data'])){

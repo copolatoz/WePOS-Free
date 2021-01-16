@@ -121,7 +121,7 @@ class Model_BillingCashierPrint extends DB_Model {
 			'order_timer',
 			'produk_nama',
 			'produk_expired',
-			'custom_print_APS',
+			//'custom_print_APS',
 			'display_kode_menu_dibilling',
 			'theme_print_billing',
 			'print_sebaris_product_name',
@@ -146,10 +146,10 @@ class Model_BillingCashierPrint extends DB_Model {
 			$print_preview_billing = 0;
 		}
 		
-		$custom_print_APS = 0;
-		if(!empty($get_opt['custom_print_APS'])){
-			$custom_print_APS = $get_opt['custom_print_APS'];
-		}
+		//$custom_print_APS = 0;
+		//if(!empty($get_opt['custom_print_APS'])){
+		//	$custom_print_APS = $get_opt['custom_print_APS'];
+		//}
 		$display_kode_menu_dibilling = 0;
 		if(!empty($get_opt['display_kode_menu_dibilling'])){
 			$display_kode_menu_dibilling = $get_opt['display_kode_menu_dibilling'];
@@ -623,9 +623,9 @@ class Model_BillingCashierPrint extends DB_Model {
 									$template_order_data .= "\n";
 									
 									//custom_print_APS
-									if(!empty($custom_print_APS)){
-										$order_data_APS .= "\n";
-									}
+									//if(!empty($custom_print_APS)){
+									//	$order_data_APS .= "\n";
+									//}
 								}
 							}
 						}
@@ -823,7 +823,7 @@ class Model_BillingCashierPrint extends DB_Model {
 						} 
 						
 						//custom_print_APS
-						if(!empty($custom_print_APS)){
+						/*if(!empty($custom_print_APS)){
 							$product_name = $bil_det->product_name;
 							
 							if($printer_pin_cashierReceipt == 32){
@@ -890,7 +890,7 @@ class Model_BillingCashierPrint extends DB_Model {
 							 $billno_alp =  no2alphabet($billno_az1_div).no2alphabet($billno_az2_div);
 							 
 							 $billno_APS =  $billno_alp.$billno_thn_bln.'.'. $billno_tgl.$user_id.'.00'.substr($billno_APS,-4);
-						}
+						}*/
 						
 						////update 2018-02-14 PACKAGE Item
 						if($bil_det->package_item == 1 AND ($print_type == 1 OR $print_type == 0)){
@@ -1011,7 +1011,7 @@ class Model_BillingCashierPrint extends DB_Model {
 							}
 							
 							//custom_print_APS
-							if(!empty($custom_print_APS)){
+							/*if(!empty($custom_print_APS)){
 								//update-2003.001
 								if(strlen($bil_det->order_qty) == 4){
 									$x_separator = 0;
@@ -1023,7 +1023,7 @@ class Model_BillingCashierPrint extends DB_Model {
 									$order_data_APS .= "[align=0]".$bil_det->order_qty." x[tab]".$product_name."[tab]".$order_total_show_APS;
 								}
 							}
-							
+							*/
 						}
 						
 						$product_name_package = '';
@@ -1199,10 +1199,10 @@ class Model_BillingCashierPrint extends DB_Model {
 								}
 								
 								//custom_print_APS
-								if(!empty($custom_print_APS)){
+								/*if(!empty($custom_print_APS)){
 									$order_data_APS .= "\n"; 
 									$order_data_APS .= "[align=0][tab]".$product_name_extend."[tab]";
-								}
+								}*/
 								
 								if($bil_det->product_group == 'beverage'){
 									//$order_data_bar .= "[tab]".$product_name_extend."\n";
@@ -1248,9 +1248,9 @@ class Model_BillingCashierPrint extends DB_Model {
 							}
 							
 							//custom_print_APS
-							if(!empty($custom_print_APS)){
+							/*if(!empty($custom_print_APS)){
 								$order_data_APS .= "\n"."[align=0][tab]".$diskon_name."[tab]".$discount_total_print_APS;
-							}
+							}*/
 							
 						}
 						
@@ -1453,12 +1453,12 @@ class Model_BillingCashierPrint extends DB_Model {
 				if(!empty($billingData->txmark_no)){
 					$billing_no_receipt = str_replace($billing_no_title,"TRX-",$billing_no_receipt);
 				}
-				$billing_no_APS = str_replace($billing_no_title,"",$billing_no_receipt);
+				//$billing_no_APS = str_replace($billing_no_title,"",$billing_no_receipt);
 				
 				//custom_print_APS
-				if(!empty($custom_print_APS)){
-					$billing_no_APS = $billno_APS;
-				}
+				//if(!empty($custom_print_APS)){
+				//	$billing_no_APS = $billno_APS;
+				//}
 				
 				if(empty($grand_total)){
 					$grand_total_show = '.0';
@@ -1687,9 +1687,9 @@ class Model_BillingCashierPrint extends DB_Model {
 					if(!empty($theme_print_billing)){
 						$custom_print_data = 'theme'.$theme_print_billing;
 					}
-					if(!empty($custom_print_APS)){
-						$custom_print_data = 'APS';
-					}
+					//if(!empty($custom_print_APS)){
+					//	$custom_print_data = 'APS';
+					//}
 					
 					//update-2003.001
 					if($is_print_error == false){

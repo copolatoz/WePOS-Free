@@ -1,6 +1,6 @@
 
-WePOS - Cafe v.3.42.21 (Free Version)
-Updated: 07-01-2020 01:00:00
+WePOS - Cafe v.3.42.22 (Free Version)
+Updated: 07-01-2021 01:00:00
 
 Cocok untuk:
 Cafe/Resto/Rumah Makan (semua penjualan berbasis Cafe)
@@ -51,7 +51,7 @@ untuk versi Retail/Toko: https://github.com/copolatoz/wepos-retail
 
 Team WePOS ^^
 contact@wepos.id 
-081222549676 // 087722294411
+081222549676
 
 *SELALU DUKUNG KARYA ANAK BANGSA!! 
 *JANGAN MALU UNTUK BERTANYA - GRATIS KONSULTASI

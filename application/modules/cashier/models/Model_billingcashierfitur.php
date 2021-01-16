@@ -3242,7 +3242,7 @@ class Model_BillingCashierFitur extends DB_Model {
 			//update-2003.001
 			$this->db->select("a.*");
 			$this->db->from($this->table_split." as a");
-			$this->db->where("a.id = ".$id." AND (a.product_type = 'package' OR is_buyget = 1");
+			$this->db->where("a.id = ".$id." AND (a.product_type = 'package' OR is_buyget = 1)");
 			$get_dt_split = $this->db->get();
 			if($get_dt_split->num_rows() > 0){
 				$dt_split = $get_dt_split->row();
